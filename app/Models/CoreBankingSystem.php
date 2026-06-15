@@ -18,10 +18,16 @@ class CoreBankingSystem extends Model
         'description',
         'is_active',
         'base_url',
+        'driver',
+        'auth_type',
+        'auth_config',
+        'timeout_seconds',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'auth_config' => 'array',
+        'timeout_seconds' => 'integer',
     ];
 
     public function getActivitylogOptions(): LogOptions
@@ -37,5 +43,15 @@ class CoreBankingSystem extends Model
     public function businessUnits()
     {
         return $this->hasMany(BusinessUnit::class);
+    }
+
+    public function isKatoDriver(): bool
+    {
+        return $this->driver === 'kato' || strtolower((string) $this->code) === 'kato';
+    }
+
+    public function isConfigurableDriver(): bool
+    {
+        return $this->driver === 'configurable' && ! $this->isKatoDriver();
     }
 }

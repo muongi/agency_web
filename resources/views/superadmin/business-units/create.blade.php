@@ -174,7 +174,7 @@
                 >
                     <option value="">{{ __('common.no_cbs_selected') }}</option>
                     @foreach($coreBankingSystems as $cbs)
-                        <option value="{{ $cbs->id }}" {{ old('core_banking_system_id') == $cbs->id ? 'selected' : '' }}>
+                        <option value="{{ $cbs->id }}" data-code="{{ strtolower($cbs->code ?? '') }}" {{ old('core_banking_system_id') == $cbs->id ? 'selected' : '' }}>
                             {{ $cbs->name }}@if($cbs->code) ({{ $cbs->code }})@endif
                         </option>
                     @endforeach
@@ -197,6 +197,34 @@
                 @error('logo')
                     <div style="color: #ff6b6b; margin-top: 5px; font-size: 14px;">{{ $message }}</div>
                 @enderror
+            </div>
+
+            <div id="kato-admin-credentials" class="form-group" style="grid-column: 1 / -1; display: none; padding: 15px; background: var(--bg-tertiary); border-radius: 4px; border: 1px solid var(--border-color);">
+                <h3 style="color: #4a9eff; margin-bottom: 10px; font-size: 16px;">{{ __('common.kato_admin_credentials') }}</h3>
+                <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 15px;">{{ __('common.kato_admin_credentials_optional') }}</p>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+                    <div class="form-group" style="margin: 0;">
+                        <label class="form-label" for="kato_admin_name">{{ __('common.kato_admin_name') }}</label>
+                        <input type="text" id="kato_admin_name" name="kato_admin_name" class="form-control" value="{{ old('kato_admin_name') }}">
+                        @error('kato_admin_name')
+                            <div style="color: #ff6b6b; margin-top: 5px; font-size: 14px;">{{ $message }}</div>
+                        @enderror
+                    </div>
+                    <div class="form-group" style="margin: 0;">
+                        <label class="form-label" for="kato_admin_username">{{ __('common.admin_username') }}</label>
+                        <input type="text" id="kato_admin_username" name="kato_admin_username" class="form-control" value="{{ old('kato_admin_username') }}">
+                        @error('kato_admin_username')
+                            <div style="color: #ff6b6b; margin-top: 5px; font-size: 14px;">{{ $message }}</div>
+                        @enderror
+                    </div>
+                    <div class="form-group" style="margin: 0;">
+                        <label class="form-label" for="kato_admin_password">{{ __('common.admin_password') }}</label>
+                        <input type="password" id="kato_admin_password" name="kato_admin_password" class="form-control" autocomplete="new-password">
+                        @error('kato_admin_password')
+                            <div style="color: #ff6b6b; margin-top: 5px; font-size: 14px;">{{ $message }}</div>
+                        @enderror
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -249,5 +277,22 @@
         </div>
     </form>
 </div>
+
+<script>
+(function() {
+    const cbsSelect = document.getElementById('core_banking_system_id');
+    const katoSection = document.getElementById('kato-admin-credentials');
+    if (!cbsSelect || !katoSection) return;
+
+    function toggleKatoCredentials() {
+        const option = cbsSelect.options[cbsSelect.selectedIndex];
+        const isKato = option && option.getAttribute('data-code') === 'kato';
+        katoSection.style.display = isKato ? 'block' : 'none';
+    }
+
+    cbsSelect.addEventListener('change', toggleKatoCredentials);
+    toggleKatoCredentials();
+})();
+</script>
 @endsection
 

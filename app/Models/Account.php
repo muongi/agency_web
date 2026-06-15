@@ -16,6 +16,7 @@ class Account extends Model
         'accountable_id',
         'account_type',
         'account_number',
+        'kato_account_code',
         'balance',
         'currency',
         'status',
@@ -89,9 +90,9 @@ class Account extends Model
     /**
      * Generate a unique account number for the given business unit.
      *
-     * @param int $businessUnitId
-     * @param string $accountType
-     * @param int|null $accountableId
+     * @param  int  $businessUnitId
+     * @param  string  $accountType
+     * @param  int|null  $accountableId
      * @return string
      */
     public static function generateAccountNumber($businessUnitId, $accountType, $accountableId = null)
@@ -104,15 +105,18 @@ class Account extends Model
             case 'commission':
                 $prefix = 'COM';
                 break;
+            case 'business_fee':
+                $prefix = 'BU';
+                break;
             case 'general':
                 $prefix = 'GEN';
                 break;
         }
 
-        $baseNumber = $prefix . '-' . str_pad($businessUnitId, 4, '0', STR_PAD_LEFT);
-        
+        $baseNumber = $prefix.'-'.str_pad($businessUnitId, 4, '0', STR_PAD_LEFT);
+
         if ($accountableId) {
-            $baseNumber .= '-' . str_pad($accountableId, 6, '0', STR_PAD_LEFT);
+            $baseNumber .= '-'.str_pad($accountableId, 6, '0', STR_PAD_LEFT);
         }
 
         // Check if account number exists, if so, append a suffix
@@ -121,7 +125,7 @@ class Account extends Model
         while (static::where('business_unit_id', $businessUnitId)
             ->where('account_number', $accountNumber)
             ->exists()) {
-            $accountNumber = $baseNumber . '-' . str_pad($counter, 3, '0', STR_PAD_LEFT);
+            $accountNumber = $baseNumber.'-'.str_pad($counter, 3, '0', STR_PAD_LEFT);
             $counter++;
         }
 

@@ -590,6 +590,30 @@
                             <span>{{ __('common.transactions') }}</span>
                         </a>
                     @endif
+
+                    @php
+                        $canViewCnssMembers = $user->isSuperAdmin() || ($businessUnit && $user->hasPermission('view-cnss-members', $businessUnit->id));
+                    @endphp
+                    @if($canViewCnssMembers)
+                        <div class="menu-group">
+                            <div class="menu-group-title {{ request()->routeIs('business.cnss.*') ? '' : '' }}" onclick="toggleSubmenu(this)">
+                                <span class="menu-icon">🧾</span>
+                                <span>{{ __('common.cnss_menu_title') }}</span>
+                                <span class="menu-toggle {{ request()->routeIs('business.cnss.*') ? '' : 'collapsed' }}">▼</span>
+                            </div>
+                            <div class="submenu {{ request()->routeIs('business.cnss.*') ? 'expanded' : 'collapsed' }}">
+                                <a href="{{ route('business.cnss.contributions.dashboard') }}" class="submenu-item {{ request()->routeIs('business.cnss.contributions.dashboard') ? 'active' : '' }}">
+                                    {{ __('common.cnss_dashboard') }}
+                                </a>
+                                <a href="{{ route('business.cnss.members.index') }}" class="submenu-item {{ request()->routeIs('business.cnss.members.*') ? 'active' : '' }}">
+                                    {{ __('common.cnss_members') }}
+                                </a>
+                                <a href="{{ route('business.cnss.contributions.index') }}" class="submenu-item {{ request()->routeIs('business.cnss.contributions.index') ? 'active' : '' }}">
+                                    {{ __('common.cnss_all_contributions') }}
+                                </a>
+                            </div>
+                        </div>
+                    @endif
                     
                     @php
                         $canViewAuditTrail = $user->isSuperAdmin() || ($businessUnit && $user->hasPermission('view-audit-trail', $businessUnit->id));

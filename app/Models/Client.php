@@ -40,11 +40,15 @@ class Client extends Model
         'fingerprint3',
         'fingerprint4',
         'biometrics_status',
+        'kato_member_no',
+        'kato_registration_error',
+        'kato_api_response',
     ];
 
     protected $casts = [
         'year_of_birth' => 'string',
         'biometrics_status' => 'boolean',
+        'kato_api_response' => 'array',
     ];
 
     public function getActivitylogOptions(): LogOptions

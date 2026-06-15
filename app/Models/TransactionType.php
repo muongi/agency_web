@@ -5,18 +5,27 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class TransactionType extends Model
 {
     use HasFactory, SoftDeletes, LogsActivity;
+
+    public const INTERNAL_LEDGER_FLOW_CASH_WITHDRAWAL = 'cash_withdrawal';
+
+    public const INTERNAL_LEDGER_FLOW_CASH_DEPOSIT = 'cash_deposit';
+
+    public const INTERNAL_LEDGER_FLOW_BALANCE_ENQUIRY = 'balance_enquiry';
+
+    public const INTERNAL_LEDGER_FLOW_MINI_STATEMENT = 'mini_statement';
 
     protected $fillable = [
         'business_unit_id',
         'name',
         'code',
         'description',
+        'internal_ledger_flow',
         'is_active',
     ];
 

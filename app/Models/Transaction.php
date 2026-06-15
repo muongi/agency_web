@@ -28,6 +28,9 @@ class Transaction extends Model
         'status',
         'reference',
         'metadata',
+        'kato_transaction_id',
+        'kato_sync_error',
+        'kato_synced_at',
         'created_by',
     ];
 
@@ -38,6 +41,7 @@ class Transaction extends Model
         'business_share' => 'decimal:2',
         'transaction_date' => 'datetime',
         'metadata' => 'array',
+        'kato_synced_at' => 'datetime',
     ];
 
     public function getActivitylogOptions(): LogOptions

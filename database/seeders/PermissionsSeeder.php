@@ -2,9 +2,8 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\Permission;
-use Illuminate\Support\Str;
+use Illuminate\Database\Seeder;
 
 class PermissionsSeeder extends Seeder
 {
@@ -41,7 +40,7 @@ class PermissionsSeeder extends Seeder
                 'description' => 'Can view list of users in the business unit',
                 'group' => 'Users',
             ],
-            
+
             // Role Management Permissions
             [
                 'name' => 'Create Role',
@@ -67,7 +66,7 @@ class PermissionsSeeder extends Seeder
                 'description' => 'Can view list of roles in the business unit',
                 'group' => 'Roles',
             ],
-            
+
             // Business Unit Permissions
             [
                 'name' => 'View Business Unit',
@@ -81,7 +80,7 @@ class PermissionsSeeder extends Seeder
                 'description' => 'Can edit business unit information',
                 'group' => 'Business Unit',
             ],
-            
+
             // Dashboard Permissions
             [
                 'name' => 'View Dashboard',
@@ -89,7 +88,7 @@ class PermissionsSeeder extends Seeder
                 'description' => 'Can access the business unit dashboard',
                 'group' => 'Dashboard',
             ],
-            
+
             // Reports Permissions
             [
                 'name' => 'View Reports',
@@ -145,7 +144,7 @@ class PermissionsSeeder extends Seeder
                 'description' => 'Can export reports to various formats',
                 'group' => 'Reports',
             ],
-            
+
             // Card Management Permissions
             [
                 'name' => 'View Cards',
@@ -201,7 +200,7 @@ class PermissionsSeeder extends Seeder
                 'description' => 'Can manage card prefix and settings',
                 'group' => 'Cards',
             ],
-            
+
             // SMS Management Permissions
             [
                 'name' => 'View SMS',
@@ -245,7 +244,7 @@ class PermissionsSeeder extends Seeder
                 'description' => 'Can view SMS balances for all business units',
                 'group' => 'SMS',
             ],
-            
+
             // Clients Permissions
             [
                 'name' => 'View Clients',
@@ -271,7 +270,7 @@ class PermissionsSeeder extends Seeder
                 'description' => 'Can delete clients',
                 'group' => 'Clients',
             ],
-            
+
             // Agents Permissions
             [
                 'name' => 'View Agents',
@@ -297,7 +296,7 @@ class PermissionsSeeder extends Seeder
                 'description' => 'Can delete agents',
                 'group' => 'Agents',
             ],
-            
+
             // Accounts Permissions
             [
                 'name' => 'View Accounts',
@@ -323,7 +322,7 @@ class PermissionsSeeder extends Seeder
                 'description' => 'Can delete accounts',
                 'group' => 'Accounts',
             ],
-            
+
             // Terminals Permissions
             [
                 'name' => 'View Terminals',
@@ -349,7 +348,7 @@ class PermissionsSeeder extends Seeder
                 'description' => 'Can delete terminals',
                 'group' => 'Terminals',
             ],
-            
+
             // Transactions Permissions
             [
                 'name' => 'View Transactions',
@@ -375,7 +374,33 @@ class PermissionsSeeder extends Seeder
                 'description' => 'Can create transactions via API',
                 'group' => 'Transactions',
             ],
-            
+
+            // CNSS (voluntary enrollments & contributions)
+            [
+                'name' => 'View CNSS Members',
+                'slug' => 'view-cnss-members',
+                'description' => 'Can view CNSS voluntary enrollment list for the business unit',
+                'group' => 'CNSS',
+            ],
+            [
+                'name' => 'View CNSS Member',
+                'slug' => 'view-cnss-member',
+                'description' => 'Can view a CNSS voluntary enrollment and its contributions',
+                'group' => 'CNSS',
+            ],
+            [
+                'name' => 'Edit CNSS Member',
+                'slug' => 'edit-cnss-member',
+                'description' => 'Can edit CNSS voluntary enrollments for the business unit',
+                'group' => 'CNSS',
+            ],
+            [
+                'name' => 'Delete CNSS Member',
+                'slug' => 'delete-cnss-member',
+                'description' => 'Can delete CNSS voluntary enrollments when they have no contributions',
+                'group' => 'CNSS',
+            ],
+
             // Audit Trail Permissions
             [
                 'name' => 'View Audit Trail',
@@ -395,7 +420,7 @@ class PermissionsSeeder extends Seeder
                 'description' => 'Can export audit logs',
                 'group' => 'Audit Trail',
             ],
-            
+
             // Configuration Permissions
             [
                 'name' => 'View Transaction Types',

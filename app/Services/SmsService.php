@@ -19,6 +19,11 @@ class SmsService
         // Get business unit and check sender number
         $businessUnit = BusinessUnit::find($businessUnitId);
         if (!$businessUnit) {
+            Log::info('SMS API send aborted', [
+                'business_unit_id' => $businessUnitId,
+                'reason' => 'business_unit_not_found',
+            ]);
+
             return [
                 'success' => false,
                 'message' => 'Business unit not found'
@@ -26,7 +31,11 @@ class SmsService
         }
 
         if (!$businessUnit->sms_sender_number) {
-            Log::error("SMS sender number not configured for business unit: {$businessUnitId}");
+            Log::info('SMS API send aborted', [
+                'business_unit_id' => $businessUnitId,
+                'reason' => 'sms_sender_number_not_configured',
+            ]);
+
             return [
                 'success' => false,
                 'message' => 'SMS sender number not configured for this business unit'
@@ -35,7 +44,11 @@ class SmsService
 
         // Check SMS balance first
         if (!AccountSms::checkBalance($businessUnitId)) {
-            Log::error("Insufficient SMS balance for business unit: {$businessUnitId}");
+            Log::info('SMS API send aborted', [
+                'business_unit_id' => $businessUnitId,
+                'reason' => 'insufficient_sms_balance',
+            ]);
+
             return [
                 'success' => false,
                 'message' => 'Insufficient SMS balance'
@@ -45,7 +58,11 @@ class SmsService
         // Get SMS configuration
         $config = SmsConfiguration::getActive();
         if (!$config || !SmsConfiguration::isConfigured()) {
-            Log::error("SMS configuration not found or incomplete");
+            Log::info('SMS API send aborted', [
+                'business_unit_id' => $businessUnitId,
+                'reason' => 'sms_configuration_missing',
+            ]);
+
             return [
                 'success' => false,
                 'message' => 'SMS configuration not found'
@@ -58,7 +75,11 @@ class SmsService
         $token = $this->getAccessToken($credentials);
         
         if (!$token) {
-            Log::error("Failed to get SMS access token");
+            Log::info('SMS API send aborted', [
+                'business_unit_id' => $businessUnitId,
+                'reason' => 'orange_token_failed',
+            ]);
+
             return [
                 'success' => false,
                 'message' => 'Failed to authenticate with SMS provider'
@@ -100,12 +121,34 @@ class SmsService
             'sent_by_user_id' => auth()->id(),
         ]);
 
+        $orangeUrl = 'https://api.orange.com/smsmessaging/v1/outbound/tel:+'.urlencode($senderNumber).'/requests';
+
+        $logRequestBody = $this->sanitizeSmsDataForLog($smsData);
+
         try {
+            Log::info('SMS API outgoing request', [
+                'business_unit_id' => $businessUnitId,
+                'url' => $orangeUrl,
+                'authorization' => 'Bearer '.$this->maskBearerToken($token),
+                'recipient_last4' => substr(preg_replace('/\D/', '', $recipient), -4),
+                'sender' => $businessUnit->sms_sender_number,
+                'reference' => $reference,
+                'message_length' => strlen($message),
+                'request_body' => $logRequestBody,
+            ]);
+
             // Send SMS using Orange API v1 endpoint
             $response = Http::withHeaders($headers)
-                ->post("https://api.orange.com/smsmessaging/v1/outbound/tel:+" . urlencode($senderNumber) . "/requests", $smsData);
+                ->post($orangeUrl, $smsData);
 
             $responseData = $response->json();
+
+            Log::info('SMS API response', [
+                'business_unit_id' => $businessUnitId,
+                'status' => $response->status(),
+                'successful' => $response->successful(),
+                'payload' => $responseData ?? $response->body(),
+            ]);
             
             // 201 Created is success for Orange API
             if ($response->status() === 201 || $response->successful()) {
@@ -155,7 +198,15 @@ class SmsService
                     'sent_at' => now(),
                 ]);
 
-                Log::error("SMS sending failed: " . $response->status() . " - " . $errorMessage);
+                Log::info('SMS API send failed', [
+                    'business_unit_id' => $businessUnitId,
+                    'status' => $response->status(),
+                    'error' => $errorMessage,
+                    'sms_message_id' => $smsMessage->id,
+                    'request_body' => $logRequestBody,
+                    'response_payload' => $responseData ?? $response->body(),
+                ]);
+
                 return [
                     'success' => false,
                     'message' => 'Failed to send SMS: ' . $errorMessage,
@@ -170,7 +221,12 @@ class SmsService
                 'sent_at' => now(),
             ]);
 
-            Log::error("Exception in SMS sending: " . $e->getMessage());
+            Log::info('SMS API send exception', [
+                'business_unit_id' => $businessUnitId,
+                'message' => $e->getMessage(),
+                'sms_message_id' => $smsMessage->id,
+                'request_body' => $logRequestBody,
+            ]);
             return [
                 'success' => false,
                 'message' => 'Exception: ' . $e->getMessage(),
@@ -220,18 +276,54 @@ class SmsService
     }
 
     /**
+     * @param  array<string, mixed>  $smsData
+     * @return array<string, mixed>
+     */
+    private function sanitizeSmsDataForLog(array $smsData): array
+    {
+        $sanitized = json_decode(json_encode($smsData), true);
+        if (! is_array($sanitized)) {
+            return $smsData;
+        }
+
+        if (! config('logging.log_otp_plaintext')
+            && isset($sanitized['outboundSMSMessageRequest']['outboundSMSTextMessage']['message'])) {
+            $sanitized['outboundSMSMessageRequest']['outboundSMSTextMessage']['message'] = '[REDACTED]';
+        }
+
+        return $sanitized;
+    }
+
+    private function maskBearerToken(string $token): string
+    {
+        if (strlen($token) < 8) {
+            return '***';
+        }
+
+        return '***'.substr($token, -4);
+    }
+
+    /**
      * Get access token from Orange API using Basic authentication
      */
     private function getAccessToken($credentials)
     {
         // If JWT token is provided and still valid, use it
         if (!empty($credentials['jwt_token'])) {
-            // TODO: Validate token expiration if needed
+            Log::info('SMS API oauth request', [
+                'method' => 'use_stored_jwt',
+            ]);
+
             return $credentials['jwt_token'];
         }
 
         // Get token using Basic authentication with client credentials
         try {
+            Log::info('SMS API oauth request', [
+                'url' => 'https://api.orange.com/oauth/v3/token',
+                'grant_type' => 'client_credentials',
+            ]);
+
             $authString = base64_encode($credentials['client_id'] . ':' . $credentials['client_secret']);
             $response = Http::withHeaders([
                 'Authorization' => 'Basic ' . $authString,
@@ -241,14 +333,27 @@ class SmsService
             ]);
 
             if ($response->successful()) {
+                Log::info('SMS API oauth response', [
+                    'status' => $response->status(),
+                    'successful' => true,
+                ]);
                 $data = $response->json();
+
                 return $data['access_token'] ?? null;
             }
 
-            Log::error("Failed to get access token: " . $response->status() . " - " . $response->body());
+            Log::info('SMS API oauth response', [
+                'status' => $response->status(),
+                'successful' => false,
+                'payload' => $response->json() ?? $response->body(),
+            ]);
+
             return null;
         } catch (\Exception $e) {
-            Log::error("Exception getting access token: " . $e->getMessage());
+            Log::info('SMS API oauth exception', [
+                'message' => $e->getMessage(),
+            ]);
+
             return null;
         }
     }

@@ -37,7 +37,7 @@ class SuperAdminController extends Controller
 
     public function storeBusinessUnit(Request $request)
     {
-        $validated = $request->validate([
+        $validated = $request->validate(array_merge([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'email' => 'nullable|email',
@@ -51,10 +51,13 @@ class SuperAdminController extends Controller
             'sms_sender_number' => 'nullable|string|max:50|regex:/^tel:\+\d+$/',
             'core_banking_system_id' => 'nullable|exists:core_banking_systems,id',
             'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-        ]);
+        ], $this->katoCredentialValidationRules()));
 
         $validated['slug'] = Str::slug($validated['name']);
         $validated['is_active'] = true;
+        if ($this->isKatoCbsId($validated['core_banking_system_id'] ?? null)) {
+            $validated = array_merge($validated, $this->katoCredentialFieldsFromRequest($request));
+        }
 
         // Handle logo upload
         if ($request->hasFile('logo')) {
@@ -74,39 +77,9 @@ class SuperAdminController extends Controller
             $businessUnit->assignedTransactionTypes()->sync($globalTransactionTypeIds);
         }
 
-        // Attempt KATO registration if CBS is KATO and not already registered
-        if ($businessUnit->core_banking_system_id && !$businessUnit->kato_company_id) {
-            $cbs = CoreBankingSystem::find($businessUnit->core_banking_system_id);
-            if ($cbs && strtolower($cbs->code) === 'kato' && $cbs->base_url) {
-                $katoService = new KatoService();
-                $result = $katoService->registerCompany($businessUnit, $cbs);
-                
-                if ($result['success']) {
-                    $businessUnit->update([
-                        'kato_company_id' => $result['data']['companyId'],
-                        'kato_admin_user_id' => $result['data']['adminUserId'],
-                        'kato_registered_at' => now(),
-                        'kato_registration_error' => null,
-                        'kato_api_response' => $result['full_response'] ?? null,
-                    ]);
-                    return redirect()->route('superadmin.dashboard')
-                        ->with('success', __('common.kato_registration_success'));
-                } else {
-                    $businessUnit->update([
-                        'kato_company_id' => null,
-                        'kato_admin_user_id' => null,
-                        'kato_registered_at' => null,
-                        'kato_registration_error' => $result['error'],
-                        'kato_api_response' => null,
-                    ]);
-                    Log::error('KATO registration failed for business unit', [
-                        'business_unit_id' => $businessUnit->id,
-                        'error' => $result['error']
-                    ]);
-                    return redirect()->route('superadmin.dashboard')
-                        ->with('warning', __('common.kato_registration_failed') . ': ' . $result['error']);
-                }
-            }
+        $katoRedirect = $this->attemptInitialKatoRegistration($businessUnit, 'superadmin.dashboard');
+        if ($katoRedirect) {
+            return $katoRedirect;
         }
 
         return redirect()->route('superadmin.dashboard')
@@ -115,7 +88,7 @@ class SuperAdminController extends Controller
 
     public function editBusinessUnit($id)
     {
-        $businessUnit = BusinessUnit::with('coreBankingSystem')->findOrFail($id);
+        $businessUnit = BusinessUnit::with(['coreBankingSystem', 'cbsCredentials'])->findOrFail($id);
         $coreBankingSystems = CoreBankingSystem::where('is_active', true)->orderBy('name')->get();
         $globalTransactionTypes = TransactionType::global()->active()->orderBy('name')->get();
         $assignedTransactionTypeIds = $businessUnit->assignedTransactionTypes()->pluck('transaction_types.id')->toArray();
@@ -126,7 +99,10 @@ class SuperAdminController extends Controller
     {
         $businessUnit = BusinessUnit::findOrFail($id);
 
-        $validated = $request->validate([
+        $oldKatoUsername = $businessUnit->kato_admin_username;
+        $passwordChanging = $request->filled('kato_admin_password');
+
+        $validated = $request->validate(array_merge([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'email' => 'nullable|email',
@@ -142,7 +118,7 @@ class SuperAdminController extends Controller
             'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             'transaction_types' => 'nullable|array',
             'transaction_types.*' => 'exists:transaction_types,id',
-        ]);
+        ], $this->katoCredentialValidationRules(), $this->cbsCredentialValidationRules()));
 
         // Handle logo upload
         if ($request->hasFile('logo')) {
@@ -165,7 +141,23 @@ class SuperAdminController extends Controller
         $newCbsId = $validated['core_banking_system_id'] ?? null;
         $cbsChanged = $oldCbsId != $newCbsId;
         
-        $businessUnit->update($validated);
+        $updateData = $validated;
+        if ($this->isKatoCbsId($validated['core_banking_system_id'] ?? null)) {
+            $updateData = array_merge($updateData, $this->katoCredentialFieldsFromRequest($request, true));
+        }
+        unset(
+            $updateData['cbs_username'],
+            $updateData['cbs_password'],
+            $updateData['cbs_bearer_token'],
+            $updateData['cbs_extra_headers']
+        );
+        $businessUnit->update($updateData);
+
+        if ($this->isConfigurableCbsId($validated['core_banking_system_id'] ?? null)) {
+            $this->syncCbsCredentials($businessUnit, $request);
+        } elseif ($businessUnit->cbsCredentials) {
+            $businessUnit->cbsCredentials->delete();
+        }
         
         // Sync assigned transaction types
         if ($request->has('transaction_types')) {
@@ -178,63 +170,101 @@ class SuperAdminController extends Controller
             $businessUnit->assignedTransactionTypes()->sync([]);
         }
         
-        // Refresh to get updated values
         $businessUnit->refresh();
 
-        // Attempt KATO registration if:
-        // 1. CBS changed to KATO, OR
-        // 2. CBS is already KATO but not registered yet (no companyId)
-        if ($businessUnit->core_banking_system_id && !$businessUnit->kato_company_id) {
-            $cbs = CoreBankingSystem::find($businessUnit->core_banking_system_id);
-            if ($cbs && strtolower($cbs->code) === 'kato' && $cbs->base_url) {
-                // If CBS was changed to KATO, or if not registered yet, attempt registration
-                if ($cbsChanged || !$businessUnit->kato_registered_at) {
-                    $katoService = new KatoService();
-                    $result = $katoService->registerCompany($businessUnit, $cbs);
-                    
-                    if ($result['success']) {
-                        $businessUnit->update([
-                            'kato_company_id' => $result['data']['companyId'],
-                            'kato_admin_user_id' => $result['data']['adminUserId'],
-                            'kato_registered_at' => now(),
-                            'kato_registration_error' => null,
-                            'kato_api_response' => $result['full_response'] ?? null,
-                        ]);
-                        return redirect()->route('superadmin.business-units.edit', $businessUnit->id)
-                            ->with('success', __('common.updated_successfully') . '. ' . __('common.kato_registration_success'));
-                    } else {
-                        $businessUnit->update([
-                            'kato_company_id' => null,
-                            'kato_admin_user_id' => null,
-                            'kato_registered_at' => null,
-                            'kato_registration_error' => $result['error'],
-                            'kato_api_response' => null,
-                        ]);
-                        Log::error('KATO registration failed for business unit', [
-                            'business_unit_id' => $businessUnit->id,
-                            'error' => $result['error']
-                        ]);
-                        return redirect()->route('superadmin.business-units.edit', $businessUnit->id)
-                            ->with('warning', __('common.updated_successfully') . '. ' . __('common.kato_registration_failed') . ': ' . $result['error']);
-                    }
-                }
-            } elseif ($cbsChanged && $oldCbsId) {
-                // If CBS was changed FROM KATO to something else, clear KATO fields
-                $oldCbs = CoreBankingSystem::find($oldCbsId);
-                if ($oldCbs && strtolower($oldCbs->code) === 'kato') {
-                    $businessUnit->update([
-                        'kato_company_id' => null,
-                        'kato_admin_user_id' => null,
-                        'kato_registered_at' => null,
-                        'kato_registration_error' => null,
-                        'kato_api_response' => null,
-                    ]);
-                }
+        if ($cbsChanged && $oldCbsId) {
+            $oldCbs = CoreBankingSystem::find($oldCbsId);
+            if ($oldCbs && strtolower($oldCbs->code) === 'kato') {
+                $this->clearKatoRegistration($businessUnit);
+                $businessUnit->refresh();
             }
         }
 
-        return redirect()->route('superadmin.business-units.index')
-            ->with('success', __('common.updated_successfully'));
+        if ($businessUnit->core_banking_system_id && ! $businessUnit->kato_company_id) {
+            $katoRedirect = $this->attemptInitialKatoRegistration(
+                $businessUnit,
+                'superadmin.business-units.edit',
+                ['businessUnit' => $businessUnit->id]
+            );
+            if ($katoRedirect) {
+                return $katoRedirect;
+            }
+        }
+
+        $credentialsChanged = $oldKatoUsername !== $businessUnit->kato_admin_username || $passwordChanging;
+        $loginWarning = $this->refreshKatoTokenAfterCredentialChange($businessUnit, $credentialsChanged);
+
+        $flash = ['success' => __('common.updated_successfully')];
+        if ($loginWarning) {
+            $flash = ['warning' => __('common.updated_successfully').'. '.$loginWarning];
+        } elseif ($credentialsChanged && $businessUnit->kato_company_id) {
+            $flash = ['success' => __('common.updated_successfully').'. '.__('common.kato_credentials_updated')];
+        }
+
+        return redirect()->route('superadmin.business-units.edit', $businessUnit->id)->with($flash);
+    }
+
+    /**
+     * Manually refresh KATO JWT using stored company admin credentials.
+     */
+    public function refreshKatoToken($id)
+    {
+        $businessUnit = BusinessUnit::with('coreBankingSystem')->findOrFail($id);
+
+        $cbs = $businessUnit->coreBankingSystem;
+        if (! $cbs || strtolower($cbs->code) !== 'kato') {
+            return redirect()->back()
+                ->with('error', __('common.kato_core_banking_not_enabled'));
+        }
+
+        if (! $businessUnit->kato_company_id) {
+            return redirect()->back()
+                ->with('error', __('common.kato_company_not_registered'));
+        }
+
+        if (! $businessUnit->hasKatoRefreshCredentials()) {
+            return redirect()->back()
+                ->with('error', __('common.kato_admin_credentials_required'));
+        }
+
+        $refreshResult = (new KatoService())->refreshKatoToken($businessUnit);
+        if (! $refreshResult['success']) {
+            return redirect()->route('superadmin.business-units.edit', $businessUnit->id)
+                ->with('warning', $refreshResult['error'] ?? __('common.kato_login_failed'));
+        }
+
+        return redirect()->route('superadmin.business-units.edit', $businessUnit->id)
+            ->with('success', __('common.kato_token_refreshed'));
+    }
+
+    /**
+     * Restore KATO admin username from the stored registration API response.
+     */
+    public function restoreKatoUsername($id)
+    {
+        $businessUnit = BusinessUnit::with('coreBankingSystem')->findOrFail($id);
+
+        $cbs = $businessUnit->coreBankingSystem;
+        if (! $cbs || strtolower($cbs->code) !== 'kato') {
+            return redirect()->back()
+                ->with('error', __('common.kato_core_banking_not_enabled'));
+        }
+
+        if (! $businessUnit->kato_company_id) {
+            return redirect()->back()
+                ->with('error', __('common.kato_company_not_registered'));
+        }
+
+        $registeredUsername = $businessUnit->getKatoRegisteredAdminUsername();
+        if (! $registeredUsername) {
+            return redirect()->route('superadmin.business-units.edit', $businessUnit->id)
+                ->with('warning', __('common.kato_registered_username_not_found'));
+        }
+
+        $businessUnit->update(['kato_admin_username' => $registeredUsername]);
+
+        return redirect()->route('superadmin.business-units.edit', $businessUnit->id)
+            ->with('success', __('common.kato_username_restored', ['username' => $registeredUsername]));
     }
 
     /**
@@ -266,30 +296,22 @@ class SuperAdminController extends Controller
         $result = $katoService->registerCompany($businessUnit, $cbs);
         
         if ($result['success']) {
-            $businessUnit->update([
-                'kato_company_id' => $result['data']['companyId'],
-                'kato_admin_user_id' => $result['data']['adminUserId'],
-                'kato_registered_at' => now(),
-                'kato_registration_error' => null,
-                'kato_api_response' => $result['full_response'] ?? null,
-            ]);
+            $this->applyKatoRegistrationResult($businessUnit, $result);
+
             return redirect()->back()
-                ->with('success', __('common.kato_registration_success'));
-        } else {
-            $businessUnit->update([
-                'kato_company_id' => null,
-                'kato_admin_user_id' => null,
-                'kato_registered_at' => null,
-                'kato_registration_error' => $result['error'],
-                'kato_api_response' => null,
-            ]);
-            Log::error('KATO registration failed for business unit', [
-                'business_unit_id' => $businessUnit->id,
-                'error' => $result['error']
-            ]);
-            return redirect()->back()
-                ->with('error', __('common.kato_registration_failed') . ': ' . $result['error']);
+                ->with('success', __('common.kato_registration_success'))
+                ->with('kato_credentials', $this->katoCredentialsForFlash($result));
         }
+
+        $this->clearKatoRegistration($businessUnit);
+        $businessUnit->update(['kato_registration_error' => $result['error']]);
+        Log::error('KATO registration failed for business unit', [
+            'business_unit_id' => $businessUnit->id,
+            'error' => $result['error'],
+        ]);
+
+        return redirect()->back()
+            ->with('error', __('common.kato_registration_failed').': '.$result['error']);
     }
 
     public function indexBusinessUnits()
@@ -424,5 +446,221 @@ class SuperAdminController extends Controller
 
         return redirect()->route('superadmin.business-units.transaction-types', $businessUnitId)
             ->with('success', __('common.updated_successfully'));
+    }
+
+    private function isKatoCbsId(?int $cbsId): bool
+    {
+        if (! $cbsId) {
+            return false;
+        }
+
+        $cbs = CoreBankingSystem::find($cbsId);
+
+        return $cbs && $cbs->isKatoDriver();
+    }
+
+    private function isConfigurableCbsId(?int $cbsId): bool
+    {
+        if (! $cbsId) {
+            return false;
+        }
+
+        $cbs = CoreBankingSystem::find($cbsId);
+
+        return $cbs && $cbs->isConfigurableDriver();
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function cbsCredentialValidationRules(): array
+    {
+        return [
+            'cbs_username' => 'nullable|string|max:255',
+            'cbs_password' => 'nullable|string|max:255',
+            'cbs_bearer_token' => 'nullable|string',
+            'cbs_extra_headers' => 'nullable|string',
+        ];
+    }
+
+    private function syncCbsCredentials(BusinessUnit $businessUnit, Request $request): void
+    {
+        $extraHeaders = null;
+        if ($request->filled('cbs_extra_headers')) {
+            $decoded = json_decode($request->input('cbs_extra_headers'), true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                $extraHeaders = $decoded;
+            }
+        }
+
+        $credentials = $businessUnit->cbsCredentials ?: new \App\Models\BusinessUnitCbsCredential([
+            'business_unit_id' => $businessUnit->id,
+        ]);
+
+        $credentials->username = $request->input('cbs_username');
+
+        if ($request->filled('cbs_password')) {
+            $credentials->password = $request->input('cbs_password');
+        }
+
+        if ($request->filled('cbs_bearer_token')) {
+            $credentials->bearer_token = $request->input('cbs_bearer_token');
+        }
+
+        $credentials->extra_headers = $extraHeaders;
+        $credentials->save();
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function katoCredentialValidationRules(): array
+    {
+        return [
+            'kato_admin_name' => 'nullable|string|max:255',
+            'kato_admin_username' => 'nullable|string|max:255',
+            'kato_admin_password' => 'nullable|string|min:8',
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function katoCredentialFieldsFromRequest(Request $request, bool $passwordOptionalOnUpdate = false): array
+    {
+        $fields = [];
+
+        if ($passwordOptionalOnUpdate) {
+            if ($request->filled('kato_admin_name')) {
+                $fields['kato_admin_name'] = $request->input('kato_admin_name');
+            }
+            if ($request->filled('kato_admin_username')) {
+                $fields['kato_admin_username'] = $request->input('kato_admin_username');
+            }
+        } else {
+            $fields['kato_admin_name'] = $request->input('kato_admin_name');
+            $fields['kato_admin_username'] = $request->input('kato_admin_username');
+        }
+
+        if ($request->filled('kato_admin_password')) {
+            $fields['kato_admin_password'] = $request->input('kato_admin_password');
+        } elseif (! $passwordOptionalOnUpdate && $request->has('kato_admin_password')) {
+            $fields['kato_admin_password'] = null;
+        }
+
+        return $fields;
+    }
+
+    private function applyKatoRegistrationResult(BusinessUnit $businessUnit, array $result): void
+    {
+        $registrationData = $result['data'] ?? [];
+
+        $businessUnit->update([
+            'kato_company_id' => $registrationData['companyId'] ?? null,
+            'kato_admin_user_id' => $registrationData['adminUserId'] ?? null,
+            'kato_token' => $registrationData['token'] ?? null,
+            'kato_token_expires_at' => ! empty($registrationData['expiresIn'])
+                ? now()->addSeconds((int) $registrationData['expiresIn'])
+                : null,
+            'kato_admin_username' => $registrationData['adminUsername'] ?? null,
+            'kato_admin_password' => $registrationData['adminPassword'] ?? null,
+            'kato_admin_name' => $registrationData['adminName'] ?? $businessUnit->kato_admin_name,
+            'kato_registered_at' => now(),
+            'kato_registration_error' => null,
+            'kato_api_response' => $result['full_response'] ?? null,
+        ]);
+    }
+
+    private function clearKatoRegistration(BusinessUnit $businessUnit): void
+    {
+        $businessUnit->update([
+            'kato_company_id' => null,
+            'kato_admin_user_id' => null,
+            'kato_token' => null,
+            'kato_token_expires_at' => null,
+            'kato_admin_username' => null,
+            'kato_admin_name' => null,
+            'kato_admin_password' => null,
+            'kato_registered_at' => null,
+            'kato_registration_error' => null,
+            'kato_api_response' => null,
+        ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $routeParams
+     * @return \Illuminate\Http\RedirectResponse|null
+     */
+    private function attemptInitialKatoRegistration(
+        BusinessUnit $businessUnit,
+        string $redirectRoute,
+        array $routeParams = []
+    ) {
+        if (! $businessUnit->core_banking_system_id || $businessUnit->kato_company_id) {
+            return null;
+        }
+
+        $cbs = CoreBankingSystem::find($businessUnit->core_banking_system_id);
+        if (! $cbs || strtolower($cbs->code) !== 'kato') {
+            return null;
+        }
+
+        if (! $cbs->base_url && ! config('kato.default_base_url')) {
+            return null;
+        }
+
+        $katoService = new KatoService();
+        $result = $katoService->registerCompany($businessUnit, $cbs);
+
+        if ($result['success']) {
+            $this->applyKatoRegistrationResult($businessUnit, $result);
+
+            return redirect()->route($redirectRoute, $routeParams)
+                ->with('success', __('common.kato_registration_success'))
+                ->with('kato_credentials', $this->katoCredentialsForFlash($result));
+        }
+
+        $this->clearKatoRegistration($businessUnit);
+        $businessUnit->update(['kato_registration_error' => $result['error']]);
+        Log::error('KATO registration failed for business unit', [
+            'business_unit_id' => $businessUnit->id,
+            'error' => $result['error'],
+        ]);
+
+        return redirect()->route($redirectRoute, $routeParams)
+            ->with('warning', __('common.kato_registration_failed').': '.$result['error']);
+    }
+
+    private function refreshKatoTokenAfterCredentialChange(
+        BusinessUnit $businessUnit,
+        bool $credentialsChanged
+    ): ?string {
+        if (! $credentialsChanged || ! $businessUnit->kato_company_id) {
+            return null;
+        }
+
+        $cbs = $businessUnit->coreBankingSystem ?? CoreBankingSystem::find($businessUnit->core_banking_system_id);
+        if (! $cbs || strtolower($cbs->code) !== 'kato') {
+            return null;
+        }
+
+        $refreshResult = (new KatoService())->refreshKatoToken($businessUnit);
+        if ($refreshResult['success']) {
+            return null;
+        }
+
+        return __('common.kato_login_failed').': '.($refreshResult['error'] ?? '');
+    }
+
+    /**
+     * @return array<string, string|null>
+     */
+    private function katoCredentialsForFlash(array $result): array
+    {
+        return [
+            'adminName' => $result['data']['adminName'] ?? null,
+            'adminUsername' => $result['data']['adminUsername'] ?? null,
+            'adminPassword' => $result['data']['adminPassword'] ?? null,
+        ];
     }
 }

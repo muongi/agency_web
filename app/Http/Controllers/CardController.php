@@ -9,6 +9,8 @@ use App\Models\CardSettings;
 use App\Services\CardNumberGeneratorService;
 use App\Services\ExportService;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 
 class CardController extends Controller
 {
@@ -16,7 +18,8 @@ class CardController extends Controller
 
     public function __construct(ExportService $exportService)
     {
-        $this->middleware(['auth', 'business.access']);
+        $this->middleware(['auth', 'business.access'])
+            ->except(['getByUid', 'markAsWritten']);
         $this->exportService = $exportService;
     }
 
@@ -529,75 +532,160 @@ class CardController extends Controller
      */
     public function getByUid(Request $request, $uid)
     {
-        // Validate business_unit_id from request (query parameter or request body)
-        $validated = $request->validate([
-            'business_unit_id' => 'required|integer|exists:business_units,id',
+        $normalizedUid = strtoupper((string) $uid);
+
+        Log::info('Card API getByUid start', [
+            'uid' => $uid,
+            'normalized_uid' => $normalizedUid,
         ]);
-        
-        $businessUnitId = $validated['business_unit_id'];
-        
-        // Verify business unit exists and is active
-        $businessUnit = \App\Models\BusinessUnit::find($businessUnitId);
-        if (!$businessUnit || !$businessUnit->is_active) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Business unit not found or inactive'
-            ], 404);
+
+        try {
+            $validated = $request->validate([
+                'business_unit_id' => 'nullable|integer|exists:business_units,id',
+            ]);
+        } catch (ValidationException $e) {
+            Log::info('Card API getByUid validation_failed', [
+                'uid' => $uid,
+                'query' => $request->query(),
+                'input' => $request->all(),
+                'errors' => $e->errors(),
+                'expected_payload' => [
+                    'business_unit_id' => 'integer (query or body), optional',
+                    'uid' => 'path: /cards/uid/{uid}',
+                ],
+            ]);
+            throw $e;
         }
 
-        // Find card by card_serial
-        $card = Card::where('business_unit_id', $businessUnitId)
-            ->where('card_serial', $uid)
-            ->with(['account.accountable'])
-            ->first();
+        $businessUnitId = $validated['business_unit_id'] ?? null;
+        $businessUnitResolvedFrom = $businessUnitId ? 'request' : 'card_serial';
+        $matchType = 'not_found';
+        $card = null;
 
-        // If not found by serial, try to find a card without serial in this business unit
-        // This supports auto-assignment when Android app first reads a card
-        // Note: This is a simple implementation - you may want to add additional matching
-        // criteria (like card_number) if provided in the request
-        if (!$card) {
-            // Find first inactive card without serial in this business unit
-            // This allows auto-assignment when card is first read
+        Log::info('Card API getByUid validated', [
+            'business_unit_id' => $businessUnitId,
+            'uid' => $normalizedUid,
+            'business_unit_resolved_from' => $businessUnitResolvedFrom,
+        ]);
+
+        if ($businessUnitId) {
+            $businessUnit = \App\Models\BusinessUnit::find($businessUnitId);
+            if (! $businessUnit || ! $businessUnit->is_active) {
+                Log::info('Card API getByUid business unit invalid', [
+                    'business_unit_id' => $businessUnitId,
+                    'found' => (bool) $businessUnit,
+                    'is_active' => $businessUnit?->is_active,
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Business unit not found or inactive',
+                ], 404);
+            }
+
             $card = Card::where('business_unit_id', $businessUnitId)
-                ->whereNull('card_serial')
-                ->where('status', 'inactive')
+                ->where('card_serial', $normalizedUid)
                 ->with(['account.accountable'])
                 ->first();
-            
-            // Auto-assign card_serial if found
+
+            $matchType = $card ? 'serial' : 'not_found';
+
+            if (! $card) {
+                $card = Card::where('business_unit_id', $businessUnitId)
+                    ->whereNull('card_serial')
+                    ->where('status', 'inactive')
+                    ->with(['account.accountable'])
+                    ->first();
+
+                if ($card) {
+                    $matchType = 'auto_assign_inactive';
+                    $card->card_serial = $normalizedUid;
+                    $card->save();
+
+                    Log::info('Card API getByUid auto_assigned_serial', [
+                        'card_id' => $card->id,
+                        'uid' => $normalizedUid,
+                    ]);
+                }
+            }
+        } else {
+            $matches = Card::where('card_serial', $normalizedUid)
+                ->with(['account.accountable'])
+                ->get();
+
+            if ($matches->count() > 1) {
+                Log::warning('Card API getByUid duplicate_serial', [
+                    'uid' => $normalizedUid,
+                    'card_ids' => $matches->pluck('id')->all(),
+                ]);
+            }
+
+            $card = $matches->first();
+            $matchType = $card ? 'serial_global' : 'not_found';
+
             if ($card) {
-                $card->card_serial = $uid;
-                $card->save();
+                $businessUnitId = $card->business_unit_id;
+                $businessUnit = \App\Models\BusinessUnit::find($businessUnitId);
+                if (! $businessUnit || ! $businessUnit->is_active) {
+                    Log::info('Card API getByUid business unit invalid', [
+                        'business_unit_id' => $businessUnitId,
+                        'found' => (bool) $businessUnit,
+                        'is_active' => $businessUnit?->is_active,
+                        'business_unit_resolved_from' => $businessUnitResolvedFrom,
+                    ]);
+
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Business unit not found or inactive',
+                    ], 404);
+                }
             }
         }
 
-        if (!$card) {
+        Log::info('Card API getByUid lookup', [
+            'business_unit_id' => $businessUnitId,
+            'uid' => $normalizedUid,
+            'match_type' => $matchType,
+            'card_id' => $card?->id,
+            'business_unit_resolved_from' => $businessUnitResolvedFrom,
+        ]);
+
+        if (! $card) {
             return response()->json([
                 'success' => false,
-                'message' => 'Card not found'
+                'message' => 'Card not found',
             ], 404);
         }
 
         return response()->json([
             'success' => true,
-            'card' => [
-                'id' => $card->id,
-                'card_number' => $card->card_number,
-                'card_serial' => $card->card_serial,
-                'account_id' => $card->account_id,
-                'account_number' => $card->account->account_number ?? null,
-                'client_name' => ($card->account->accountable_type == 'App\Models\Client' && $card->account->accountable) 
-                    ? $card->account->accountable->full_name 
-                    : null,
-                'first_name' => ($card->account->accountable_type == 'App\Models\Client' && $card->account->accountable) 
-                    ? $card->account->accountable->first_name 
-                    : null,
-                'last_name' => ($card->account->accountable_type == 'App\Models\Client' && $card->account->accountable) 
-                    ? $card->account->accountable->last_name 
-                    : null,
-                'status' => $card->status,
-            ]
+            'card' => $this->formatCardApiPayload($card),
         ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function formatCardApiPayload(Card $card): array
+    {
+        return [
+            'id' => $card->id,
+            'business_unit_id' => $card->business_unit_id,
+            'card_number' => $card->card_number,
+            'card_serial' => $card->card_serial,
+            'account_id' => $card->account_id,
+            'account_number' => $card->account->account_number ?? null,
+            'client_name' => ($card->account->accountable_type == 'App\Models\Client' && $card->account->accountable)
+                ? $card->account->accountable->full_name
+                : null,
+            'first_name' => ($card->account->accountable_type == 'App\Models\Client' && $card->account->accountable)
+                ? $card->account->accountable->first_name
+                : null,
+            'last_name' => ($card->account->accountable_type == 'App\Models\Client' && $card->account->accountable)
+                ? $card->account->accountable->last_name
+                : null,
+            'status' => $card->status,
+        ];
     }
 
     /**
@@ -605,25 +693,60 @@ class CardController extends Controller
      */
     public function markAsWritten(Request $request, $id)
     {
-        // Validate business_unit_id and device_serial from request
-        $validated = $request->validate([
-            'business_unit_id' => 'required|integer|exists:business_units,id',
-            'device_serial' => 'nullable|string|max:255',
+        Log::info('Card API markAsWritten start', [
+            'card_id' => $id,
         ]);
-        
-        $businessUnitId = $validated['business_unit_id'];
-        
-        // Verify business unit exists and is active
-        $businessUnit = \App\Models\BusinessUnit::find($businessUnitId);
-        if (!$businessUnit || !$businessUnit->is_active) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Business unit not found or inactive'
-            ], 404);
+
+        try {
+            $validated = $request->validate([
+                'business_unit_id' => 'nullable|integer|exists:business_units,id',
+                'device_serial' => 'nullable|string|max:255',
+            ]);
+        } catch (ValidationException $e) {
+            Log::info('Card API markAsWritten validation_failed', [
+                'card_id' => $id,
+                'query' => $request->query(),
+                'input' => $request->all(),
+                'errors' => $e->errors(),
+                'expected_payload' => [
+                    'business_unit_id' => 'integer (query or body), optional',
+                    'device_serial' => 'string (optional)',
+                    'id' => 'path: /cards/{id}/mark-written',
+                ],
+            ]);
+            throw $e;
         }
 
-        $card = Card::where('business_unit_id', $businessUnitId)
-            ->findOrFail($id);
+        $businessUnitId = $validated['business_unit_id'] ?? null;
+
+        Log::info('Card API markAsWritten validated', [
+            'card_id' => $id,
+            'business_unit_id' => $businessUnitId,
+            'device_serial' => $validated['device_serial'] ?? null,
+        ]);
+
+        if ($businessUnitId) {
+            $card = Card::where('business_unit_id', $businessUnitId)
+                ->findOrFail($id);
+        } else {
+            $card = Card::findOrFail($id);
+            $businessUnitId = $card->business_unit_id;
+        }
+
+        $businessUnit = \App\Models\BusinessUnit::find($businessUnitId);
+        if (! $businessUnit || ! $businessUnit->is_active) {
+            Log::info('Card API markAsWritten business unit invalid', [
+                'business_unit_id' => $businessUnitId,
+                'card_id' => $id,
+                'found' => (bool) $businessUnit,
+                'is_active' => $businessUnit?->is_active,
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Business unit not found or inactive',
+            ], 404);
+        }
 
         $card->update([
             'status' => 'active',
@@ -634,7 +757,7 @@ class CardController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Card marked as written'
+            'message' => 'Card marked as written',
         ]);
     }
 

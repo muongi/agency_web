@@ -24,8 +24,13 @@ class Agent extends Model
         'po_box',
         'username',
         'password',
+        'is_first_time_pin',
         'kato_agent_id',
         'kato_registration_error',
+    ];
+
+    protected $casts = [
+        'is_first_time_pin' => 'boolean',
     ];
 
     protected $hidden = [
@@ -118,6 +123,43 @@ class Agent extends Model
     {
         $commissionAccount = $this->commissionAccount();
         return $commissionAccount ? $commissionAccount->balance : 0;
+    }
+
+    /**
+     * KATO float account number (e.g. AGT2605001FLOAT) for agentAccountNumber on CBS calls.
+     */
+    public function katoFloatAccountNumber(): ?string
+    {
+        $account = $this->floatAccount();
+
+        return $account?->account_number;
+    }
+
+    /**
+     * KATO commission account number (e.g. AGT2605001COMM).
+     */
+    public function katoCommissionAccountNumber(): ?string
+    {
+        $account = $this->commissionAccount();
+
+        return $account?->account_number;
+    }
+
+    /**
+     * Whether this agent has KATO CBS account numbers synced after registration.
+     */
+    public function hasKatoCbsAccounts(): bool
+    {
+        if (! $this->kato_agent_id) {
+            return false;
+        }
+
+        $float = $this->katoFloatAccountNumber();
+        if (! $float || ! str_ends_with(strtoupper($float), 'FLOAT')) {
+            return false;
+        }
+
+        return true;
     }
 
     public function getActivitylogOptions(): LogOptions

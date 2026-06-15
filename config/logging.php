@@ -21,6 +21,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | OTP plaintext in API logs (debug only)
+    |--------------------------------------------------------------------------
+    |
+    | When true, OTP API middleware and SMS logs include full otp_code / message.
+    | Never enable in production.
+    |
+    */
+
+    'log_otp_plaintext' => env('LOG_OTP_PLAINTEXT', false),
+
+    /*
+    |--------------------------------------------------------------------------
     | Deprecations Log Channel
     |--------------------------------------------------------------------------
     |

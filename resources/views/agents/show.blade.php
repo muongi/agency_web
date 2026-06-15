@@ -15,6 +15,13 @@
             @endphp
             @if($canEdit)
                 <a href="{{ route('agents.edit', $agent->id) }}" class="btn">{{ __('common.edit') }}</a>
+                <form method="POST" action="{{ route('agents.reset-pin-otp', $agent->id) }}" style="display: inline;">
+                    @csrf
+                    <button type="submit" class="btn" style="background: var(--warning-bg);"
+                            onclick="return confirm(@json(__('common.confirm_reset_agent_pin')));">
+                        {{ __('common.reset_agent_pin') }}
+                    </button>
+                </form>
             @endif
             <a href="{{ route('agents.index') }}" class="btn btn-secondary">{{ __('common.back') }}</a>
         </div>

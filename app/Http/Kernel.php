@@ -67,5 +67,9 @@ class Kernel extends HttpKernel
         'superadmin' => \App\Http\Middleware\SuperAdmin::class,
         'business.access' => \App\Http\Middleware\BusinessAccess::class,
         'api.key' => \App\Http\Middleware\ApiKeyAuth::class,
+        'log.card.api' => \App\Http\Middleware\LogCardApiRequest::class,
+        'log.transaction.api' => \App\Http\Middleware\LogTransactionApiRequest::class,
+        'log.otp.api' => \App\Http\Middleware\LogOtpApiRequest::class,
+        'cnss.member.search' => \App\Http\Middleware\CnssMemberSearchAuth::class,
     ];
 }

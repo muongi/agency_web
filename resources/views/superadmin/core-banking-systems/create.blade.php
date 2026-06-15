@@ -63,13 +63,16 @@
                 name="base_url" 
                 class="form-control" 
                 value="{{ old('base_url') }}"
-                placeholder="https://api.livecodesolutions.co.ke/api/v2/company/register"
+                placeholder="https://api.saccoworks.co.ke/api/v2/agency"
             >
             <small style="color: var(--text-muted); font-size: 12px; margin-top: 5px; display: block;">{{ __('common.kato_base_url_help') }}</small>
             @error('base_url')
                 <div style="color: #ff6b6b; margin-top: 5px; font-size: 14px;">{{ $message }}</div>
             @enderror
         </div>
+
+        @php $cbs = new \App\Models\CoreBankingSystem(); @endphp
+        @include('superadmin.core-banking-systems._auth_fields')
 
         <div class="form-group">
             <label class="form-label" for="is_active">

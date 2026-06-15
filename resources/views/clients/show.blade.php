@@ -40,6 +40,29 @@
             @if($client->id_passport)
                 <p style="color: var(--text-secondary); margin: 5px 0;">{{ __('common.id_passport') }}: {{ $client->id_passport }}</p>
             @endif
+            @if(!empty($isKato))
+                <div style="margin-top: 12px; padding: 12px; background: var(--bg-primary); border-radius: 6px; border: 1px solid var(--border-color);">
+                    <strong style="color: var(--accent-color);">{{ __('common.kato_member_status') }}</strong>
+                    @if($client->kato_member_no)
+                        <p style="margin: 8px 0 0 0; color: #90ee90;">{{ __('common.kato_member_no') }}: {{ $client->kato_member_no }}</p>
+                    @elseif($client->kato_registration_error)
+                        <p style="margin: 8px 0 0 0; color: #ee9090;">{{ __('common.error') }}: {{ $client->kato_registration_error }}</p>
+                    @else
+                        <p style="margin: 8px 0 0 0; color: var(--text-muted);">{{ __('common.not_synced_with_kato') }}</p>
+                    @endif
+                    @php
+                        $canSyncKato = $user->isSuperAdmin() || ($businessUnit && $user->hasPermission('edit-client', $businessUnit->id));
+                    @endphp
+                    @if($canSyncKato && !$client->kato_member_no)
+                        <form method="POST" action="{{ route('clients.sync-kato', $client->id) }}" style="margin-top: 10px;">
+                            @csrf
+                            <button type="submit" class="btn" style="padding: 6px 12px; font-size: 12px;">
+                                {{ __('common.sync_with_kato') }}
+                            </button>
+                        </form>
+                    @endif
+                </div>
+            @endif
         </div>
     </div>
 

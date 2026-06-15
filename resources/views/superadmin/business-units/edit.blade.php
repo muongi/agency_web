@@ -6,6 +6,18 @@
 @section('content')
 <div class="card">
     <h1 style="margin-bottom: 24px; color: #4a9eff;">{{ __('common.edit') }} {{ __('common.business_unit') }}</h1>
+
+    @if(session('kato_credentials'))
+        <div style="margin-bottom: 20px; padding: 15px; background: #2d4a2d; border: 1px solid #4a9eff; border-radius: 4px;">
+            <strong style="color: #90ee90;">{{ __('common.kato_credentials_flash_title') }}</strong>
+            <p style="margin: 10px 0 0; color: var(--text-primary); font-size: 14px;">
+                <strong>{{ __('common.kato_admin_name') }}:</strong> {{ session('kato_credentials.adminName') ?? '-' }}<br>
+                <strong>{{ __('common.admin_username') }}:</strong> {{ session('kato_credentials.adminUsername') ?? '-' }}<br>
+                <strong>{{ __('common.admin_password') }}:</strong> {{ session('kato_credentials.adminPassword') ?? '-' }}
+            </p>
+            <p style="margin: 8px 0 0; color: var(--text-muted); font-size: 12px;">{{ __('common.kato_credentials_flash_note') }}</p>
+        </div>
+    @endif
     
     <form method="POST" action="{{ route('superadmin.business-units.update', $businessUnit->id) }}" enctype="multipart/form-data">
         @csrf
@@ -176,7 +188,7 @@
                 >
                     <option value="">{{ __('common.no_cbs_selected') }}</option>
                     @foreach($coreBankingSystems as $cbs)
-                        <option value="{{ $cbs->id }}" {{ old('core_banking_system_id', $businessUnit->core_banking_system_id) == $cbs->id ? 'selected' : '' }}>
+                        <option value="{{ $cbs->id }}" data-code="{{ strtolower($cbs->code ?? '') }}" data-driver="{{ $cbs->driver ?? 'configurable' }}" {{ old('core_banking_system_id', $businessUnit->core_banking_system_id) == $cbs->id ? 'selected' : '' }}>
                             {{ $cbs->name }}@if($cbs->code) ({{ $cbs->code }})@endif
                         </option>
                     @endforeach
@@ -187,8 +199,108 @@
             </div>
 
             @php
-                $isKato = $businessUnit->coreBankingSystem && strtolower($businessUnit->coreBankingSystem->code) === 'kato';
+                $isKato = $businessUnit->coreBankingSystem && $businessUnit->coreBankingSystem->isKatoDriver();
+                $isConfigurableCbs = $businessUnit->coreBankingSystem && $businessUnit->coreBankingSystem->isConfigurableDriver();
+                $cbsCredentials = $businessUnit->cbsCredentials;
+                $katoRegisteredUsername = $businessUnit->getKatoRegisteredAdminUsername();
+                $katoCanRefresh = $businessUnit->hasKatoRefreshCredentials();
+                $katoCredentialsMismatch = $businessUnit->katoCredentialsMismatch();
             @endphp
+            <div id="kato-admin-credentials" class="form-group" style="grid-column: 1 / -1; display: {{ $isKato ? 'block' : 'none' }}; padding: 15px; background: var(--bg-tertiary); border-radius: 4px; border: 1px solid var(--border-color);">
+                <h3 style="color: #4a9eff; margin-bottom: 15px; font-size: 16px;">{{ __('common.kato_admin_credentials') }}</h3>
+                <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 15px;">{{ __('common.kato_admin_credentials_help') }}</p>
+
+                @if($isKato && $businessUnit->kato_company_id)
+                    @if($katoRegisteredUsername)
+                        <p style="margin-bottom: 12px; color: var(--text-muted); font-size: 13px;">
+                            <strong>{{ __('common.kato_registered_username') }}:</strong>
+                            <code>{{ $katoRegisteredUsername }}</code>
+                        </p>
+                    @endif
+
+                    @if(!$katoCanRefresh)
+                        <div style="margin-bottom: 12px; padding: 12px; background: #5a5a2d; border-radius: 4px; color: #eeee90; font-size: 13px;">
+                            {{ __('common.kato_credentials_missing_warning') }}
+                        </div>
+                    @elseif($katoCredentialsMismatch)
+                        <div style="margin-bottom: 12px; padding: 12px; background: #5a3d2d; border-radius: 4px; color: #eecc90; font-size: 13px;">
+                            {{ __('common.kato_credentials_mismatch_warning', ['username' => $katoRegisteredUsername]) }}
+                        </div>
+                    @endif
+
+                    <div style="margin-bottom: 15px; padding: 12px; background: var(--bg-secondary); border-radius: 4px; font-size: 13px; color: var(--text-muted);">
+                        <strong>{{ __('common.kato_password_recovery_title') }}</strong>
+                        <p style="margin: 8px 0 0;">{{ __('common.kato_password_recovery_help') }}</p>
+                    </div>
+                @endif
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+                    <div class="form-group" style="margin: 0;">
+                        <label class="form-label" for="kato_admin_name">{{ __('common.kato_admin_name') }}</label>
+                        <input type="text" id="kato_admin_name" name="kato_admin_name" class="form-control"
+                            value="{{ old('kato_admin_name', $businessUnit->kato_admin_name) }}">
+                        @error('kato_admin_name')
+                            <div style="color: #ff6b6b; margin-top: 5px; font-size: 14px;">{{ $message }}</div>
+                        @enderror
+                    </div>
+                    <div class="form-group" style="margin: 0;">
+                        <label class="form-label" for="kato_admin_username">{{ __('common.admin_username') }}</label>
+                        <input type="text" id="kato_admin_username" name="kato_admin_username" class="form-control"
+                            value="{{ old('kato_admin_username', $businessUnit->kato_admin_username) }}">
+                        @error('kato_admin_username')
+                            <div style="color: #ff6b6b; margin-top: 5px; font-size: 14px;">{{ $message }}</div>
+                        @enderror
+                    </div>
+                    <div class="form-group" style="margin: 0;">
+                        <label class="form-label" for="kato_admin_password">{{ __('common.admin_password') }}</label>
+                        <input type="password" id="kato_admin_password" name="kato_admin_password" class="form-control"
+                            placeholder="{{ __('common.kato_admin_password_leave_blank') }}" autocomplete="new-password">
+                        @error('kato_admin_password')
+                            <div style="color: #ff6b6b; margin-top: 5px; font-size: 14px;">{{ $message }}</div>
+                        @enderror
+                    </div>
+                </div>
+
+                @if($isKato && $businessUnit->kato_company_id && $katoRegisteredUsername)
+                    <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button type="submit"
+                            formaction="{{ route('superadmin.business-units.restore-kato-username', $businessUnit->id) }}"
+                            formmethod="post"
+                            class="btn btn-secondary"
+                            style="font-size: 13px;">
+                            {{ __('common.kato_restore_username') }}
+                        </button>
+                    </div>
+                @endif
+            </div>
+
+            <div id="configurable-cbs-credentials" class="form-group" style="grid-column: 1 / -1; display: {{ $isConfigurableCbs ? 'block' : 'none' }}; padding: 15px; background: var(--bg-tertiary); border-radius: 4px; border: 1px solid var(--border-color);">
+                <h3 style="color: #4a9eff; margin-bottom: 15px; font-size: 16px;">{{ __('common.cbs_credentials') }}</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+                    <div class="form-group" style="margin: 0;">
+                        <label class="form-label" for="cbs_username">{{ __('common.cbs_username') }}</label>
+                        <input type="text" id="cbs_username" name="cbs_username" class="form-control" value="{{ old('cbs_username', $cbsCredentials->username ?? '') }}">
+                    </div>
+                    <div class="form-group" style="margin: 0;">
+                        <label class="form-label" for="cbs_password">{{ __('common.cbs_password') }}</label>
+                        <input type="password" id="cbs_password" name="cbs_password" class="form-control" placeholder="{{ __('common.cbs_password_leave_blank') }}" autocomplete="new-password">
+                    </div>
+                    <div class="form-group" style="margin: 0;">
+                        <label class="form-label" for="cbs_bearer_token">{{ __('common.cbs_bearer_token') }}</label>
+                        <input type="password" id="cbs_bearer_token" name="cbs_bearer_token" class="form-control" placeholder="{{ __('common.cbs_password_leave_blank') }}" autocomplete="new-password">
+                    </div>
+                    <div class="form-group" style="margin: 0; grid-column: 1 / -1;">
+                        <label class="form-label" for="cbs_extra_headers">{{ __('common.cbs_extra_headers') }}</label>
+                        <textarea id="cbs_extra_headers" name="cbs_extra_headers" class="form-control" rows="3" placeholder='{"X-Company-ID": "..."}'>{{ old('cbs_extra_headers', isset($cbsCredentials) && $cbsCredentials?->extra_headers ? json_encode($cbsCredentials->extra_headers, JSON_PRETTY_PRINT) : '') }}</textarea>
+                    </div>
+                </div>
+                @if($isConfigurableCbs)
+                    <div style="margin-top: 15px;">
+                        <a href="{{ route('superadmin.business-units.cbs-mappings.index', $businessUnit->id) }}" class="btn btn-secondary">{{ __('common.manage_cbs_mappings') }}</a>
+                    </div>
+                @endif
+            </div>
+
             @if($isKato)
                 <div class="form-group" style="grid-column: 1 / -1; padding: 15px; background: var(--bg-secondary); border-radius: 4px; border: 1px solid var(--border-color);">
                     <h3 style="color: #4a9eff; margin-bottom: 15px; font-size: 16px;">{{ __('common.kato_sync_status') }}</h3>
@@ -201,11 +313,21 @@
                             <p style="margin-top: 8px; color: var(--text-muted); font-size: 13px;">
                                 <strong>{{ __('common.kato_company_id') }}:</strong> {{ $businessUnit->kato_company_id }}<br>
                                 @if($businessUnit->kato_api_response)
-                                    <strong>{{ __('common.company_name') }}:</strong> {{ $businessUnit->kato_api_response['companyName'] ?? '-' }}<br>
-                                    <strong>{{ __('common.sacco_type') }}:</strong> {{ $businessUnit->kato_api_response['saccoType'] ?? '-' }}<br>
-                                    <strong>{{ __('common.admin_username') }}:</strong> {{ $businessUnit->kato_api_response['adminUsername'] ?? '-' }}<br>
+                                    <strong>{{ __('common.company_name') }}:</strong> {{ $businessUnit->kato_api_response['data']['companyName'] ?? '-' }}<br>
+                                    <strong>{{ __('common.sacco_type') }}:</strong> {{ $businessUnit->kato_api_response['data']['saccoType'] ?? '-' }}<br>
                                 @endif
                                 <strong>{{ __('common.kato_admin_user_id') }}:</strong> {{ $businessUnit->kato_admin_user_id ?? '-' }}<br>
+                                <strong>{{ __('common.kato_token_status') }}:</strong>
+                                @if($businessUnit->kato_token)
+                                    @if($businessUnit->kato_token_expires_at && $businessUnit->kato_token_expires_at->isPast())
+                                        {{ __('common.kato_token_expired') }}
+                                    @else
+                                        {{ __('common.kato_token_active') }}
+                                    @endif
+                                @else
+                                    {{ __('common.kato_token_missing') }}
+                                @endif
+                                <br>
                                 <strong>{{ __('common.registered_at') }}:</strong> 
                                 @if($businessUnit->kato_registered_at)
                                     @php
@@ -239,12 +361,13 @@
 
                     @if(!$businessUnit->kato_company_id)
                         @if($businessUnit->coreBankingSystem->base_url)
-                            <form action="{{ route('superadmin.business-units.register-kato', $businessUnit->id) }}" method="POST" style="display: inline-block; margin-top: 10px;">
-                                @csrf
-                                <button type="submit" class="btn" style="background: #4a9eff;">
-                                    🔄 {{ __('common.sync_with_kato') }}
-                                </button>
-                            </form>
+                            <button type="submit"
+                                formaction="{{ route('superadmin.business-units.register-kato', $businessUnit->id) }}"
+                                formmethod="post"
+                                class="btn"
+                                style="background: #4a9eff; margin-top: 10px;">
+                                🔄 {{ __('common.sync_with_kato') }}
+                            </button>
                         @else
                             <p style="margin-top: 10px; color: #ee9090; font-size: 13px;">
                                 {{ __('common.kato_base_url_not_configured') }}
@@ -254,6 +377,19 @@
                         <p style="margin-top: 10px; color: var(--text-muted); font-size: 13px;">
                             {{ __('common.kato_already_registered') }} - {{ __('common.company_id') }}: <strong>{{ $businessUnit->kato_company_id }}</strong>
                         </p>
+                        <button type="submit"
+                            formaction="{{ route('superadmin.business-units.refresh-kato-token', $businessUnit->id) }}"
+                            formmethod="post"
+                            class="btn btn-secondary"
+                            style="margin-top: 10px;"
+                            @disabled(! $katoCanRefresh)>
+                            {{ __('common.kato_refresh_token') }}
+                        </button>
+                        @if(! $katoCanRefresh)
+                            <p style="margin-top: 8px; color: #eecc90; font-size: 13px;">
+                                {{ __('common.kato_refresh_token_disabled_help') }}
+                            </p>
+                        @endif
                     @endif
                 </div>
             @endif
@@ -329,5 +465,27 @@
         </div>
     </form>
 </div>
+
+<script>
+(function() {
+    const cbsSelect = document.getElementById('core_banking_system_id');
+    const katoSection = document.getElementById('kato-admin-credentials');
+    const configurableSection = document.getElementById('configurable-cbs-credentials');
+    if (!cbsSelect) return;
+
+    function toggleCbsSections() {
+        const option = cbsSelect.options[cbsSelect.selectedIndex];
+        const driver = option ? option.getAttribute('data-driver') : '';
+        const isKato = driver === 'kato';
+        const isConfigurable = driver === 'configurable';
+
+        if (katoSection) katoSection.style.display = isKato ? 'block' : 'none';
+        if (configurableSection) configurableSection.style.display = isConfigurable ? 'block' : 'none';
+    }
+
+    cbsSelect.addEventListener('change', toggleCbsSections);
+    toggleCbsSections();
+})();
+</script>
 @endsection
 

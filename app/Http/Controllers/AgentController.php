@@ -7,6 +7,7 @@ use App\Models\Agent;
 use App\Models\BusinessUnit;
 use App\Services\ExportService;
 use App\Services\KatoService;
+use App\Services\SmsService;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
@@ -16,10 +17,13 @@ class AgentController extends Controller
 {
     protected $exportService;
 
-    public function __construct(ExportService $exportService)
+    protected $smsService;
+
+    public function __construct(ExportService $exportService, SmsService $smsService)
     {
         $this->middleware(['auth', 'business.access']);
         $this->exportService = $exportService;
+        $this->smsService = $smsService;
     }
 
     /**
@@ -109,15 +113,22 @@ class AgentController extends Controller
         // Attempt KATO registration if business unit is registered with KATO
         if ($businessUnit->core_banking_system_id && $businessUnit->kato_company_id) {
             $cbs = $businessUnit->coreBankingSystem;
-            if ($cbs && strtolower($cbs->code) === 'kato' && $cbs->base_url) {
+            if ($cbs && strtolower($cbs->code) === 'kato' && ($cbs->base_url || config('kato.default_base_url'))) {
                 $katoService = new KatoService();
                 $result = $katoService->registerAgent($agent, $businessUnit);
-                
+
                 if ($result['success']) {
                     $agent->update([
                         'kato_agent_id' => $result['data']['agentId'],
                         'kato_registration_error' => null,
                     ]);
+                    if (! empty($result['data']['accounts'])) {
+                        $katoService->syncAgentAccountsFromKato(
+                            $agent,
+                            $businessUnit,
+                            $result['data']['accounts']
+                        );
+                    }
                     return redirect()->route('agents.index')
                         ->with('success', __('common.created_successfully') . '. ' . __('common.kato_agent_registration_success'));
                 } else {
@@ -264,15 +275,22 @@ class AgentController extends Controller
         // Attempt KATO registration if agent doesn't have kato_agent_id yet
         if (!$agent->kato_agent_id && $businessUnit->core_banking_system_id && $businessUnit->kato_company_id) {
             $cbs = $businessUnit->coreBankingSystem;
-            if ($cbs && strtolower($cbs->code) === 'kato' && $cbs->base_url) {
+            if ($cbs && strtolower($cbs->code) === 'kato' && ($cbs->base_url || config('kato.default_base_url'))) {
                 $katoService = new KatoService();
                 $result = $katoService->registerAgent($agent, $businessUnit);
-                
+
                 if ($result['success']) {
                     $agent->update([
                         'kato_agent_id' => $result['data']['agentId'],
                         'kato_registration_error' => null,
                     ]);
+                    if (! empty($result['data']['accounts'])) {
+                        $katoService->syncAgentAccountsFromKato(
+                            $agent,
+                            $businessUnit,
+                            $result['data']['accounts']
+                        );
+                    }
                     return redirect()->route('agents.index')
                         ->with('success', __('common.updated_successfully') . '. ' . __('common.kato_agent_registration_success'));
                 } else {
@@ -459,5 +477,78 @@ class AgentController extends Controller
             default:
                 return $this->exportService->exportCsv($data, $headers, $filename);
         }
+    }
+
+    /**
+     * Reset agent PIN (stored as agents.password): generate 4-digit PIN, SMS agent, log for support.
+     */
+    public function sendPinResetOtp(Request $request, $id)
+    {
+        $businessUnit = auth()->user()->currentBusinessUnit;
+
+        if (! $businessUnit) {
+            return redirect()->route('business.dashboard')
+                ->with('error', __('common.no_business_unit_assigned'));
+        }
+
+        if (! auth()->user()->hasPermission('edit-agent', $businessUnit->id)) {
+            abort(403, __('common.unauthorized_access'));
+        }
+
+        $agent = $businessUnit->agents()->findOrFail($id);
+
+        if (! $agent->phone_number) {
+            return redirect()->back()
+                ->with('error', __('common.agent_phone_required_for_pin_reset'));
+        }
+
+        $pin = $this->generateNumericPin(4);
+
+        Log::info('Agent PIN reset (web)', [
+            'agent_id' => $agent->id,
+            'username' => $agent->username,
+            'business_unit_id' => $businessUnit->id,
+            'generated_pin' => $pin,
+            'reset_by_user_id' => auth()->id(),
+        ]);
+
+        $agent->update([
+            'password' => Hash::make($pin),
+            'is_first_time_pin' => true,
+        ]);
+
+        $message = __('sms.agent_pin_reset_web', ['pin' => $pin], 'fr');
+
+        $smsResult = $this->smsService->sendSms(
+            $businessUnit->id,
+            $agent->phone_number,
+            $message,
+            null,
+            "AGENT-PIN-RESET-{$agent->id}"
+        );
+
+        if (! $smsResult['success']) {
+            Log::warning('Agent PIN reset SMS failed', [
+                'agent_id' => $agent->id,
+                'business_unit_id' => $businessUnit->id,
+                'error' => $smsResult['message'] ?? 'unknown',
+            ]);
+
+            return redirect()->back()
+                ->with('warning', __('common.agent_pin_reset_sms_failed'));
+        }
+
+        return redirect()->back()
+            ->with('success', __('common.agent_pin_reset_success'));
+    }
+
+    /**
+     * Generate a numeric PIN string of the given length.
+     */
+    protected function generateNumericPin(int $length = 4): string
+    {
+        $max = (10 ** $length) - 1;
+
+        return str_pad((string) random_int(0, $max), $length, '0', STR_PAD_LEFT);
     }
 }

@@ -6,7 +6,7 @@ return [
     'logout' => 'Sair',
     'login' => 'Entrar',
     'register' => 'Registrar',
-    
+
     // Super Admin
     'super_admin' => 'Super Administrador',
     'superadmin' => 'Super Administrador',
@@ -14,7 +14,7 @@ return [
     'create_business_unit' => 'Criar Unidade de Negócio',
     'switch_business' => 'Trocar Empresa',
     'all_businesses' => 'Todas as Empresas',
-    
+
     // Business Unit
     'business_unit' => 'Unidade de Negócio',
     'name' => 'Nome',
@@ -25,7 +25,7 @@ return [
     'status' => 'Status',
     'active' => 'Ativo',
     'inactive' => 'Inativo',
-    
+
     // Users
     'users' => 'Usuários',
     'user' => 'Usuário',
@@ -35,13 +35,13 @@ return [
     'password' => 'Senha',
     'role' => 'Função',
     'select_role' => 'Selecionar Função',
-    
+
     // Roles
     'roles' => 'Funções',
     'create_role' => 'Criar Função',
     'role_name' => 'Nome da Função',
     'role_description' => 'Descrição da Função',
-    
+
     // Actions
     'save' => 'Salvar',
     'cancel' => 'Cancelar',
@@ -52,7 +52,7 @@ return [
     'submit' => 'Enviar',
     'create' => 'Criar',
     'update' => 'Atualizar',
-    
+
     // Messages
     'success' => 'Sucesso',
     'error' => 'Erro',
@@ -61,22 +61,22 @@ return [
     'deleted_successfully' => 'Excluído com sucesso',
     'language_changed' => 'Idioma alterado com sucesso',
     'invalid_language' => 'Idioma inválido selecionado',
-    
+
     // Auth
     'email_address' => 'Endereço de E-mail',
     'remember_me' => 'Lembrar-me',
     'forgot_password' => 'Esqueceu a senha?',
     'login_to_account' => 'Entre na sua conta',
-    
+
     // Validation
     'required' => 'Este campo é obrigatório',
     'email_invalid' => 'O endereço de e-mail não é válido',
     'password_min' => 'A senha deve ter pelo menos :min caracteres',
-    
+
     // Language
     'language' => 'Idioma',
     'select_language' => 'Selecionar Idioma',
-    
+
     // Additional
     'view_all' => 'Ver Tudo',
     'actions' => 'Ações',
@@ -85,7 +85,7 @@ return [
     'no_users' => 'Nenhum usuário encontrado',
     'no_roles' => 'Nenhuma função encontrada',
     'no_permissions' => 'Nenhuma permissão encontrada',
-    
+
     // User Management
     'user_management' => 'Gerenciamento de Usuários',
     'permissions' => 'Permissões',
@@ -101,7 +101,7 @@ return [
     'select_permissions' => 'Selecionar Permissões',
     'no_permissions_available' => 'Nenhuma permissão disponível. Entre em contato com o super administrador para criar permissões.',
     'contact_super_admin' => 'Entre em contato com o super administrador para criar permissões.',
-    
+
     // Business Unit Additional Fields
     'account' => 'Conta',
     'tax_number' => 'Número de Imposto',
@@ -114,7 +114,7 @@ return [
     'switch_to_light' => 'Alternar para Modo Claro',
     'switch_to_dark' => 'Alternar para Modo Escuro',
     'preferred_language' => 'Idioma Preferido',
-    
+
     // Clients
     'clients' => 'Clientes',
     'client_groups' => 'Grupos de Clientes',
@@ -168,6 +168,19 @@ return [
     'region' => 'Região',
     'home_town' => 'Cidade Natal',
     'nationality' => 'Nacionalidade',
+    'date_of_birth' => 'Data de nascimento',
+    'place_of_birth' => 'Local de nascimento',
+    'geo_location' => 'Localização geográfica',
+    'distance_from_branch' => 'Distância da agência',
+    'occupation' => 'Ocupação',
+    'spouse_name' => 'Nome do cônjuge',
+    'number_of_dependents' => 'Número de dependentes',
+    'housing_type' => 'Tipo de habitação',
+    'housing_type_other' => 'Outro (habitação)',
+    'monthly_income' => 'Renda mensal',
+    'observation' => 'Observação',
+    'mobile_phone' => 'Telemóvel',
+    'location' => 'Localização',
     'next_of_kin_first_name' => 'Primeiro Nome do Próximo de Parente',
     'next_of_kin_middle_name' => 'Nome do Meio do Próximo de Parente',
     'next_of_kin_last_name' => 'Sobrenome do Próximo de Parente',
@@ -178,7 +191,7 @@ return [
     'deleted_successfully' => 'Excluído com sucesso',
     'search' => 'Pesquisar',
     'clear' => 'Limpar',
-    
+
     // Agents
     'agents' => 'Agentes',
     'agent' => 'Agente',
@@ -192,7 +205,7 @@ return [
     'physical_address' => 'Endereço Físico',
     'po_box' => 'Caixa Postal',
     'show' => 'Mostrar',
-    
+
     // Terminals
     'terminals' => 'Terminais',
     'terminal' => 'Terminal',
@@ -206,7 +219,7 @@ return [
     'simcard_number' => 'Número do Cartão SIM',
     'device_alias' => 'Alias do Dispositivo',
     'model_make' => 'Modelo e Marca',
-    
+
     // Agent Terminal Assignment
     'assigned_terminals' => 'Terminais Atribuídos',
     'assign_terminal' => 'Atribuir Terminal',
@@ -229,7 +242,7 @@ return [
     'assigned' => 'Atribuído',
     'unassigned' => 'Desatribuído',
     'status' => 'Status',
-    
+
     // Configuration
     'configuration' => 'Configuração',
     'transaction_types' => 'Tipos de Transação',
@@ -245,7 +258,9 @@ return [
     'is_active' => 'Ativo',
     'no_transaction_types_available' => 'Nenhum tipo de transação disponível. Por favor, crie um tipo de transação primeiro.',
     'create_transaction_type_first' => 'Criar Tipo de Transação Primeiro',
-    
+    'assign_transaction_types' => 'Atribuir tipos de transacao',
+    'transaction_type_assignment_help' => 'Os tipos de transacao globais ficam disponiveis para uma empresa somente depois da atribuicao na secao Unidades de Negocio.',
+
     // Commission Setup
     'commission_setup' => 'Configuração de Comissão',
     'commissions' => 'Comissões',
@@ -287,7 +302,7 @@ return [
     'transaction_type_cannot_be_changed' => 'O tipo de transação não pode ser alterado após a criação',
     'no_tiers_configured' => 'Nenhum nível configurado',
     'unlimited' => 'Ilimitado',
-    
+
     // Accounts
     'accounts' => 'Contas',
     'account' => 'Conta',
@@ -342,7 +357,7 @@ return [
     'float_account_not_found' => 'Conta flutuante não encontrada',
     'commission_account_not_found' => 'Conta de comissão não encontrada',
     'view_details' => 'Ver Detalhes',
-    
+
     // SMS Management
     'sms_management' => 'Gerenciamento de SMS',
     'sms_credits' => 'Créditos de SMS',
@@ -445,7 +460,7 @@ return [
     'permission_send-bulk-sms_desc' => 'Pode enviar SMS em massa para múltiplos clientes',
     'permission_view-sms-history' => 'Ver Histórico de SMS',
     'permission_view-sms-history_desc' => 'Pode ver o histórico de mensagens SMS',
-    
+
     // Transaction Costs
     'transaction_cost_setup' => 'Configuração de Custo de Transação',
     'transaction_cost' => 'Custo de Transação',
@@ -464,7 +479,7 @@ return [
     'search_transaction_costs' => 'Pesquisar custos de transação...',
     'commission_calculated_from_cost' => 'A comissão é calculada a partir do custo da transação, não do valor da transação',
     'commission_calculation_note' => 'Nota: A comissão é calculada a partir do custo da transação. Primeiro, o custo da transação é calculado a partir do valor da transação, depois a comissão é calculada a partir desse custo.',
-    
+
     // Transactions
     'transactions' => 'Transações',
     'transaction_management' => 'Gerenciamento de Transações',
@@ -490,7 +505,7 @@ return [
     'all' => 'Todos',
     'terminal_serial' => 'Serial do Terminal',
     'metadata' => 'Metadados',
-    
+
     // Dashboard Transaction Summary
     'transaction_summary' => 'Resumo de Transações',
     'total_transactions_month' => 'Total de Transações (Este Mês)',
@@ -506,7 +521,7 @@ return [
     'unknown' => 'Desconhecido',
     'unauthorized_access' => 'Você não tem permissão para acessar este recurso',
     'back_to_dashboard' => 'Voltar ao Painel',
-    
+
     // Audit Trail
     'audit_trail' => 'Pista de Auditoria',
     'audit_log' => 'Registro de Auditoria',
@@ -536,21 +551,21 @@ return [
     'date_time' => 'Data/Hora',
     'full_properties' => 'Propriedades Completas',
     'field' => 'Campo',
-    
+
     // Chart/Dashboard
     'monthly_for_year' => 'Mensal para',
     'values' => 'Valores',
-    
+
     // Agent Tabs
     'information' => 'Informações',
     'transaction_history' => 'Histórico de Transações',
     'warning_text' => 'Aviso',
-    
+
     // Terminal/Client Tabs
     'assigned_agents' => 'Agentes Atribuídos',
     'no_current_assignment' => 'Nenhuma atribuição atual',
     'no_assignment_history' => 'Nenhum histórico de atribuição',
-    
+
     // Reports
     'reports' => 'Relatórios',
     'report' => 'Relatório',
@@ -582,7 +597,7 @@ return [
     'retry' => 'Tentar Novamente',
     'all_agents' => 'Todos os Agentes',
     'all_clients' => 'Todos os Clientes',
-    
+
     // Cards
     'cards' => 'Cartões',
     'card' => 'Cartão',
@@ -652,13 +667,13 @@ return [
     'optional' => 'Opcional',
     'leave_empty_to_use_current' => 'Deixe em branco para usar o valor atual',
     'leave_empty_to_keep_current' => 'Deixe em branco para manter o PIN atual',
-    
+
     // Export
     'export' => 'Exportar',
     'export_as_csv' => 'Exportar como CSV',
     'export_as_excel' => 'Exportar como Excel',
     'export_as_pdf' => 'Exportar como PDF',
-    
+
     // Permission Translations - Users
     'permission_add-user' => 'Adicionar Usuário',
     'permission_add-user_desc' => 'Pode criar novos usuários na unidade de negócio',
@@ -668,7 +683,7 @@ return [
     'permission_delete-user_desc' => 'Pode excluir usuários da unidade de negócio',
     'permission_view-users' => 'Ver Usuários',
     'permission_view-users_desc' => 'Pode ver a lista de usuários na unidade de negócio',
-    
+
     // Permission Translations - Roles
     'permission_create-role' => 'Criar Função',
     'permission_create-role_desc' => 'Pode criar novas funções para a unidade de negócio',
@@ -678,11 +693,11 @@ return [
     'permission_delete-role_desc' => 'Pode excluir funções da unidade de negócio',
     'permission_view-roles' => 'Ver Funções',
     'permission_view-roles_desc' => 'Pode ver a lista de funções na unidade de negócio',
-    
+
     // Permission Translations - Dashboard
     'permission_view-dashboard' => 'Ver Painel',
     'permission_view-dashboard_desc' => 'Pode acessar o painel da unidade de negócio',
-    
+
     // Permission Translations - Reports
     'permission_view-reports' => 'Ver Relatórios',
     'permission_view-reports_desc' => 'Pode ver relatórios e análises',
@@ -702,7 +717,7 @@ return [
     'permission_delete-reports_desc' => 'Pode excluir relatórios',
     'permission_export-reports' => 'Exportar Relatórios',
     'permission_export-reports_desc' => 'Pode exportar relatórios para vários formatos',
-    
+
     // Permission Translations - Cards
     'permission_view-cards' => 'Ver Cartões',
     'permission_view-cards_desc' => 'Pode ver a lista de cartões',
@@ -722,7 +737,7 @@ return [
     'permission_replace-card_desc' => 'Pode substituir cartões',
     'permission_manage-card-settings' => 'Gerenciar Configurações do Cartão',
     'permission_manage-card-settings_desc' => 'Pode gerenciar prefixo e configurações do cartão',
-    
+
     // Permission Translations - Audit Trail
     'permission_view-audit-trail' => 'Ver Pista de Auditoria',
     'permission_view-audit-trail_desc' => 'Pode ver registros de pista de auditoria',
@@ -730,7 +745,7 @@ return [
     'permission_view-audit-details_desc' => 'Pode ver entradas detalhadas do registro de auditoria',
     'permission_export-audit-trail' => 'Exportar Pista de Auditoria',
     'permission_export-audit-trail_desc' => 'Pode exportar registros de auditoria',
-    
+
     // Permission Translations - Configuration
     'permission_view-transaction-types' => 'Ver Tipos de Transação',
     'permission_view-transaction-types_desc' => 'Pode ver configuração de tipos de transação',
@@ -756,7 +771,7 @@ return [
     'permission_edit-commission_desc' => 'Pode editar configurações de comissão',
     'permission_delete-commission' => 'Excluir Comissão',
     'permission_delete-commission_desc' => 'Pode excluir configurações de comissão',
-    
+
     // Permission Translations - Clients
     'permission_view-clients' => 'Ver Clientes',
     'permission_view-clients_desc' => 'Pode ver a lista de clientes',
@@ -766,7 +781,7 @@ return [
     'permission_edit-client_desc' => 'Pode editar clientes existentes',
     'permission_delete-client' => 'Excluir Cliente',
     'permission_delete-client_desc' => 'Pode excluir clientes',
-    
+
     // Permission Translations - Agents
     'permission_view-agents' => 'Ver Agentes',
     'permission_view-agents_desc' => 'Pode ver a lista de agentes',
@@ -776,7 +791,7 @@ return [
     'permission_edit-agent_desc' => 'Pode editar agentes existentes',
     'permission_delete-agent' => 'Excluir Agente',
     'permission_delete-agent_desc' => 'Pode excluir agentes',
-    
+
     // Permission Translations - Accounts
     'permission_view-accounts' => 'Ver Contas',
     'permission_view-accounts_desc' => 'Pode ver a lista de contas',
@@ -786,7 +801,7 @@ return [
     'permission_edit-account_desc' => 'Pode editar contas existentes',
     'permission_delete-account' => 'Excluir Conta',
     'permission_delete-account_desc' => 'Pode excluir contas',
-    
+
     // Permission Translations - Terminals
     'permission_view-terminals' => 'Ver Terminais',
     'permission_view-terminals_desc' => 'Pode ver a lista de terminais',
@@ -796,7 +811,7 @@ return [
     'permission_edit-terminal_desc' => 'Pode editar terminais existentes',
     'permission_delete-terminal' => 'Excluir Terminal',
     'permission_delete-terminal_desc' => 'Pode excluir terminais',
-    
+
     // Permission Translations - Transactions
     'permission_view-transactions' => 'Ver Transações',
     'permission_view-transactions_desc' => 'Pode ver a lista de transações',
@@ -806,7 +821,79 @@ return [
     'permission_view-transaction_desc' => 'Pode ver detalhes da transação',
     'permission_api-create-transaction' => 'Criar Transação via API',
     'permission_api-create-transaction_desc' => 'Pode criar transações via API',
-    
+    'permission_view-cnss-members' => 'Ver membros CNSS',
+    'permission_view-cnss-members_desc' => 'Pode ver a lista de adesões voluntárias CNSS',
+    'permission_view-cnss-member' => 'Ver membro CNSS',
+    'permission_view-cnss-member_desc' => 'Pode ver a adesão e as contribuições',
+    'permission_edit-cnss-member' => 'Editar membro CNSS',
+    'permission_edit-cnss-member_desc' => 'Pode editar adesões voluntárias CNSS',
+    'permission_delete-cnss-member' => 'Excluir membro CNSS',
+    'permission_delete-cnss-member_desc' => 'Pode excluir adesões sem contribuições',
+    'cnss_cannot_delete_member_with_contributions' => 'Não é possível excluir este membro porque existem registos de contribuição.',
+    'cnss_edit_member' => 'Editar membro CNSS',
+    'cnss_identification' => 'Identificação',
+    'cnss_other_information' => 'Seguro e outras informações',
+    'cnss_beneficiary' => 'Beneficiário',
+    'cnss_insurance_type_art' => 'Tipo de seguro (Art.)',
+    'cnss_branch_of_activity' => 'Ramo de atividade',
+    'cnss_occupation' => 'Profissão',
+    'cnss_insurance_start_date' => 'Data de início do seguro',
+    'cnss_declared_contribution_amount' => 'Montante de contribuição declarado',
+    'cnss_declared_income' => 'Rendimento declarado',
+    'cnss_existing_cnss_number' => 'Número CNSS existente',
+    'cnss_maiden_name' => 'Nome de solteira',
+    'cnss_marital_status' => 'Estado civil',
+    'cnss_date_of_birth' => 'Data de nascimento',
+    'cnss_gender' => 'Género',
+    'cnss_nationality' => 'Nacionalidade',
+    'cnss_address' => 'Morada',
+    'cnss_email' => 'E-mail',
+    'cnss_replace_documents_hint' => 'Carregue novos ficheiros JPEG apenas para substituir documentos existentes (máx. 4 MB cada).',
+
+    'first_names' => 'Nomes próprios',
+    'approved' => 'Aprovado',
+    'rejected' => 'Rejeitado',
+    'created_at' => 'Criado em',
+
+    'cnss_members' => 'Membros CNSS',
+    'cnss_member_detail' => 'Membro CNSS',
+    'cnss_voluntary_insured_number' => 'N.º assurado voluntário',
+    'cnss_affiliation_number' => 'N.º de filiação',
+    'cnss_worker_number' => 'N.º de trabalhador',
+    'cnss_contributions' => 'Contribuições',
+    'cnss_search_members_placeholder' => 'Pesquisar nome, telefone, VINS ou filiação…',
+    'cnss_no_members' => 'Nenhuma adesão CNSS encontrada.',
+    'cnss_no_contributions' => 'Nenhuma contribuição registada para esta adesão.',
+    'cnss_mode' => 'Modo',
+    'cnss_amount' => 'Montante',
+    'cnss_reference_period' => 'Período de referência',
+    'cnss_payment_frequency' => 'Frequência de pagamento',
+    'cnss_form_data' => 'Formulário de adesão (JSON)',
+    'cnss_enrollment_documents' => 'Documentos de adesão',
+    'cnss_id_document' => 'Documento de identidade',
+    'cnss_id_document_front' => 'Documento de identidade — frente',
+    'cnss_id_document_back' => 'Documento de identidade — verso',
+    'cnss_birth_certificate' => 'Certidão de nascimento',
+    'cnss_no_documents' => 'Nenhum documento digitalizado para esta adesão.',
+    'cnss_emergency_contact_name' => 'Contacto de emergência (nome)',
+    'cnss_emergency_contact_phone' => 'Contacto de emergência (telefone)',
+    'cnss_menu_title' => 'CNSS',
+    'cnss_all_contributions' => 'Contribuições CNSS',
+    'cnss_dashboard' => 'Painel',
+    'cnss_contributions_search_placeholder' => 'Pesquisar VINS, filiação ou referência…',
+    'cnss_no_contributions_bu' => 'Nenhuma contribuição CNSS para esta unidade.',
+    'cnss_dashboard_scope_note' => 'Os valores abaixo são totais de contribuições CNSS apenas para a sua unidade de negócio atual (não são transações bancárias gerais).',
+    'cnss_collected_today' => 'Recolhido hoje',
+    'cnss_collected_this_month' => 'Recolhido este mês',
+    'cnss_collected_this_year' => 'Recolhido este ano',
+    'cnss_top_contributors' => 'Top contribuintes (por membro)',
+    'cnss_top_agents' => 'Top agentes (contribuições CNSS)',
+    'cnss_no_contributors_ranked' => 'Ainda não há contribuintes classificados.',
+    'cnss_no_agents_ranked' => 'Ainda não há agentes com contribuições CNSS registadas.',
+    'cnss_member' => 'Membro',
+    'cnss_mode_record' => 'Registo',
+    'cnss_mode_ledger' => 'Contabilidade',
+
     // Core Banking Systems
     'core_banking_system' => 'Sistema Bancário Central',
     'core_banking_systems' => 'Sistemas Bancários Centrais',
@@ -822,10 +909,10 @@ return [
     'no_cbs_found' => 'Nenhum Sistema Bancário Central encontrado',
     'cbs_code_help' => 'Identificador curto para o SBC (ex: T24, Flexcube)',
     'cbs_in_use_cannot_delete' => 'Não é possível eliminar o SBC pois está a ser usado por uma ou mais unidades comerciais',
-    
+
     // KATO Integration
     'kato_base_url' => 'URL Base KATO',
-    'kato_base_url_help' => 'URL completa do endpoint para registo de empresa KATO (ex: https://api.livecodesolutions.co.ke/api/v2/company/register)',
+    'kato_base_url_help' => 'URL base da API da KATO (ex: https://api.saccoworks.co.ke/api/v2/agency). Os endpoints da KATO são adicionados automaticamente.',
     'kato_company_id' => 'ID Empresa KATO',
     'kato_admin_user_id' => 'ID Utilizador Admin KATO',
     'kato_agent_id' => 'ID Agente KATO',
@@ -842,6 +929,23 @@ return [
     'kato_already_registered' => 'A unidade comercial já está registada com KATO',
     'kato_sync_status' => 'Estado de Sincronização KATO',
     'sync_with_kato' => 'Sincronizar com KATO',
+    'kato_member_no' => 'Nº membro KATO',
+    'kato_account_numbers' => 'Nº de conta(s)',
+    'kato_member_registration_success' => 'Membro registado com sucesso no KATO',
+    'kato_member_registration_failed' => 'Falha no registo do membro KATO',
+    'kato_member_sync_success' => 'Membro sincronizado com KATO',
+    'kato_member_sync_failed' => 'Falha ao sincronizar membro com KATO',
+    'kato_member_already_synced' => 'Membro já sincronizado com KATO',
+    'kato_sync_selected_members' => 'Sincronizar selecionados com KATO',
+    'select_clients_to_sync' => 'Selecione pelo menos um cliente para sincronizar com KATO',
+    'gender_required_for_kato' => 'O género é obrigatório para registo KATO (Masculino ou Feminino)',
+    'kato_gender_required_note' => 'Obrigatório para KATO Core Banking',
+    'kato_member_id_required' => 'BI/passaporte obrigatório para KATO',
+    'kato_member_phone_required' => 'Telefone obrigatório para KATO',
+    'kato_member_dob_required' => 'Ano de nascimento obrigatório para KATO',
+    'kato_bulk_sync_summary' => ':synced sincronizados, :failed falharam, :skipped ignorados',
+    'kato_member_status' => 'Estado membro KATO',
+    'not_synced_with_kato' => 'Não sincronizado',
     'registered_at' => 'Registado Em',
     'error' => 'Erro',
     'registered' => 'Registado',
@@ -851,5 +955,27 @@ return [
     'company_name' => 'Nome da Empresa',
     'sacco_type' => 'Tipo de Sacco',
     'admin_username' => 'Nome de Utilizador Admin',
+    'admin_password' => 'Palavra-passe de administrador',
+    'kato_admin_name' => 'Nome do administrador KATO',
+    'kato_admin_credentials' => 'Credenciais do administrador KATO',
+    'kato_admin_credentials_help' => 'Usadas no registo KATO e autenticação API.',
+    'kato_admin_credentials_optional' => 'Opcional. Deixe em branco para gerar automaticamente no registo KATO.',
+    'kato_admin_password_leave_blank' => 'Deixe em branco para manter a palavra-passe atual',
+    'kato_credentials_updated' => 'Credenciais KATO guardadas e token atualizado.',
+    'kato_refresh_token' => 'Atualizar token KATO',
+    'kato_token_refreshed' => 'Token API KATO atualizado com sucesso.',
+    'kato_core_banking_not_enabled' => 'O core banking KATO não está ativo para esta unidade.',
+    'kato_admin_credentials_required' => 'O utilizador e palavra-passe admin KATO são necessários para atualizar o token.',
+    'kato_login_failed' => 'Falha no login KATO',
+    'kato_credentials_flash_title' => 'Credenciais administrador KATO (guarde agora)',
+    'kato_credentials_flash_note' => 'Esta mensagem é mostrada apenas uma vez.',
+    'kato_registered_username' => 'Nome de utilizador KATO registado',
+    'kato_credentials_missing_warning' => 'As credenciais de administrador KATO estão em falta. Introduza o nome de utilizador e a palavra-passe acima e guarde.',
+    'kato_credentials_mismatch_warning' => 'O nome de utilizador guardado não corresponde ao registo KATO (:username).',
+    'kato_password_recovery_title' => 'Recuperação da palavra-passe',
+    'kato_password_recovery_help' => 'A palavra-passe KATO não pode ser lida da base de dados após o registo. Introduza-a aqui ou contacte o suporte KATO.',
+    'kato_restore_username' => 'Restaurar nome de utilizador do registo',
+    'kato_username_restored' => 'Nome de utilizador KATO restaurado para :username. Introduza a palavra-passe e guarde.',
+    'kato_registered_username_not_found' => 'Nenhum nome de utilizador encontrado na resposta de registo KATO.',
+    'kato_refresh_token_disabled_help' => 'Introduza o nome de utilizador e a palavra-passe KATO acima e guarde para ativar a atualização do token.',
 ];
-

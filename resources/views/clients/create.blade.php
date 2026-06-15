@@ -93,13 +93,23 @@
             </div>
 
             <div class="form-group">
-                <label class="form-label" for="gender">{{ __('common.gender') }}</label>
-                <select id="gender" name="gender" class="form-select">
+                <label class="form-label" for="gender">
+                    {{ __('common.gender') }}
+                    @if(!empty($isKato))
+                        <span style="color: #ff6b6b;">*</span>
+                    @endif
+                </label>
+                <select id="gender" name="gender" class="form-select" @if(!empty($isKato)) required @endif>
                     <option value="">{{ __('common.select_gender') }}</option>
                     <option value="Male" {{ old('gender') == 'Male' ? 'selected' : '' }}>Male</option>
                     <option value="Female" {{ old('gender') == 'Female' ? 'selected' : '' }}>Female</option>
-                    <option value="Other" {{ old('gender') == 'Other' ? 'selected' : '' }}>Other</option>
+                    @if(empty($isKato))
+                        <option value="Other" {{ old('gender') == 'Other' ? 'selected' : '' }}>Other</option>
+                    @endif
                 </select>
+                @if(!empty($isKato))
+                    <small style="color: var(--text-muted); display: block; margin-top: 5px;">{{ __('common.kato_gender_required_note') }}</small>
+                @endif
                 @error('gender')
                     <div style="color: #ff6b6b; margin-top: 5px; font-size: 14px;">{{ $message }}</div>
                 @enderror

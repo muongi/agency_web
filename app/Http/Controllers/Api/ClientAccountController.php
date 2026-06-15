@@ -7,10 +7,12 @@ use Illuminate\Http\Request;
 use App\Models\Client;
 use App\Models\Account;
 use App\Models\BusinessUnit;
+use App\Services\KatoService;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class ClientAccountController extends Controller
 {
@@ -107,18 +109,16 @@ class ClientAccountController extends Controller
             'user_agent' => $request->userAgent(),
         ]);
 
-        // Validate client data (non-file fields)
-        $clientValidator = Validator::make($request->input('client', []), [
+        $businessUnit->loadMissing('coreBankingSystem');
+        $isKato = $businessUnit->isKatoEnabled();
+
+        $clientRules = [
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
             'middle_name' => 'nullable|string|max:255',
             'email' => 'nullable|email|max:255',
-            'id_passport' => 'nullable|string|max:255',
             'home_address' => 'nullable|string',
-            'phone_number' => 'nullable|string|max:50',
-            'gender' => 'nullable|in:Male,Female,Other',
             'marital_status' => 'nullable|in:Single,Married,Divorced,Widowed',
-            'year_of_birth' => 'nullable|string|max:10',
             'region' => 'nullable|string|max:255',
             'home_town' => 'nullable|string|max:255',
             'nationality' => 'nullable|string|max:255',
@@ -134,7 +134,21 @@ class ClientAccountController extends Controller
             'fingerprint3' => 'nullable|string',
             'fingerprint4' => 'nullable|string',
             'biometrics_status' => 'nullable|boolean',
-        ]);
+        ];
+
+        if ($isKato) {
+            $clientRules['gender'] = ['required', Rule::in(['Male', 'Female'])];
+            $clientRules['id_passport'] = 'required|string|max:255';
+            $clientRules['phone_number'] = 'required|string|max:50';
+            $clientRules['year_of_birth'] = 'required|string|max:10';
+        } else {
+            $clientRules['id_passport'] = 'nullable|string|max:255';
+            $clientRules['phone_number'] = 'nullable|string|max:50';
+            $clientRules['gender'] = 'nullable|in:Male,Female,Other';
+            $clientRules['year_of_birth'] = 'nullable|string|max:10';
+        }
+
+        $clientValidator = Validator::make($request->input('client', []), $clientRules);
 
         // Validate account data
         $accountValidator = Validator::make($request->input('account', []), [
@@ -280,49 +294,108 @@ class ClientAccountController extends Controller
             // Create client
             $client = Client::create($clientData);
 
-            // Prepare account data
-            $accountData = $accountValidator->validated();
-            
-            // Generate account number if not provided
-            if (empty($accountData['account_number'])) {
-                $accountData['account_number'] = Account::generateAccountNumber(
-                    $businessUnitId,
-                    'general',
-                    $client->id
-                );
-            } else {
-                // Check if account number is unique
-                $exists = Account::where('business_unit_id', $businessUnitId)
-                    ->where('account_number', $accountData['account_number'])
-                    ->exists();
+            $account = null;
+            $katoAccountsForResponse = collect();
 
-                if ($exists) {
+            if ($businessUnit->isKatoEnabled()) {
+                $katoService = new KatoService();
+                $katoResult = $katoService->registerMember($client, $businessUnit);
+
+                if (! $katoResult['success']) {
                     DB::rollBack();
-                    
-                    Log::warning('API Client Account Creation Failed - Account Number Exists', [
-                        'business_unit_id' => $businessUnitId,
-                        'account_number' => $accountData['account_number'],
-                        'ip' => $request->ip(),
-                    ]);
 
                     return response()->json([
                         'success' => false,
-                        'message' => 'Account number already exists',
-                        'errors' => ['account.account_number' => ['The account number has already been taken.']],
+                        'message' => $katoResult['error'] ?? 'KATO member registration failed',
                     ], 422);
                 }
+
+                $accountSyncSummary = $katoService->syncMemberAccountsFromKato(
+                    $client,
+                    $businessUnit,
+                    $katoResult['data']['accounts'] ?? []
+                );
+
+                $registrationError = null;
+                if (! empty($accountSyncSummary['errors'])) {
+                    $registrationError = implode('; ', $accountSyncSummary['errors']);
+                }
+
+                $client->update([
+                    'kato_member_no' => $katoResult['data']['memberNo'] ?? null,
+                    'kato_registration_error' => $registrationError,
+                    'kato_api_response' => $katoResult['full_response'] ?? null,
+                ]);
+
+                $client->refresh();
+                $katoAccountsForResponse = $client->accounts()
+                    ->where('account_type', 'general')
+                    ->orderBy('kato_account_code')
+                    ->orderBy('id')
+                    ->get();
+
+                $requestedAccountNumber = $accountValidator->validated()['account_number'] ?? null;
+                $account = $requestedAccountNumber
+                    ? $katoAccountsForResponse->firstWhere('account_number', $requestedAccountNumber)
+                    : $katoAccountsForResponse->first();
+
+                if (! $account && $katoAccountsForResponse->isNotEmpty()) {
+                    $account = $katoAccountsForResponse->first();
+                }
+
+                if (! $account) {
+                    DB::rollBack();
+
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'KATO member registered but no accounts were returned',
+                    ], 422);
+                }
+            } else {
+                // Prepare account data
+                $accountData = $accountValidator->validated();
+
+                // Generate account number if not provided
+                if (empty($accountData['account_number'])) {
+                    $accountData['account_number'] = Account::generateAccountNumber(
+                        $businessUnitId,
+                        'general',
+                        $client->id
+                    );
+                } else {
+                    // Check if account number is unique
+                    $exists = Account::where('business_unit_id', $businessUnitId)
+                        ->where('account_number', $accountData['account_number'])
+                        ->exists();
+
+                    if ($exists) {
+                        DB::rollBack();
+
+                        Log::warning('API Client Account Creation Failed - Account Number Exists', [
+                            'business_unit_id' => $businessUnitId,
+                            'account_number' => $accountData['account_number'],
+                            'ip' => $request->ip(),
+                        ]);
+
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Account number already exists',
+                            'errors' => ['account.account_number' => ['The account number has already been taken.']],
+                        ], 422);
+                    }
+                }
+
+                // Set account defaults
+                $accountData['business_unit_id'] = $businessUnitId;
+                $accountData['accountable_type'] = Client::class;
+                $accountData['accountable_id'] = $client->id;
+                $accountData['account_type'] = 'general';
+                $accountData['balance'] = $accountData['balance'] ?? 0.00;
+                $accountData['currency'] = $accountData['currency'] ?? config('currency.default', 'CFA');
+
+                $account = Account::create($accountData);
+                $katoAccountsForResponse = collect([$account]);
             }
-
-            // Set account defaults
-            $accountData['business_unit_id'] = $businessUnitId;
-            $accountData['accountable_type'] = Client::class;
-            $accountData['accountable_id'] = $client->id;
-            $accountData['account_type'] = 'general';
-            $accountData['balance'] = $accountData['balance'] ?? 0.00;
-            $accountData['currency'] = $accountData['currency'] ?? config('currency.default', 'CFA');
-
-            // Create account
-            $account = Account::create($accountData);
 
             DB::commit();
 
@@ -370,6 +443,7 @@ class ClientAccountController extends Controller
                     'account' => [
                         'id' => $account->id,
                         'account_number' => $account->account_number,
+                        'kato_account_code' => $account->kato_account_code,
                         'account_type' => $account->account_type,
                         'balance' => number_format($account->balance, 2, '.', ''),
                         'currency' => $account->currency,
@@ -377,6 +451,17 @@ class ClientAccountController extends Controller
                         'opening_date' => $account->opening_date->format('Y-m-d'),
                         'description' => $account->description,
                     ],
+                    'accounts' => $katoAccountsForResponse->map(fn ($acc) => [
+                        'id' => $acc->id,
+                        'account_number' => $acc->account_number,
+                        'kato_account_code' => $acc->kato_account_code,
+                        'account_type' => $acc->account_type,
+                        'balance' => number_format($acc->balance, 2, '.', ''),
+                        'currency' => $acc->currency,
+                        'status' => $acc->status,
+                        'opening_date' => $acc->opening_date->format('Y-m-d'),
+                        'description' => $acc->description,
+                    ])->values()->all(),
                 ],
             ], 201);
 
