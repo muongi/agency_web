@@ -1346,6 +1346,7 @@ def generate_technical_en():
         "3. Step 2: Select account type and currency\n"
         "4. Step 3: Capture 4 fingerprint templates using biometric scanner\n"
         "5. All data submitted to backend API (POST /api/v1/client/account/open) as multipart form\n"
+        "   including business_unit_id, agent_id (from login session), client fields, account fields, and photo\n"
         "6. Backend creates client record, opens account, stores biometric templates\n"
         "7. Account opening receipt is printed with account details",
         font_size=10, color=DARK_GRAY, space_after=8, line_spacing=1.4
@@ -1375,7 +1376,7 @@ def generate_technical_en():
     add_feature_table(doc, ["Method", "Endpoint", "Description"], [
         ["POST", "/api/v1/agent/login", "Agent authentication. Returns agent profile, business unit, and linked accounts."],
         ["POST", "/api/v1/agent/pin/reset", "Reset agent PIN via OTP verification."],
-        ["POST", "/api/v1/client/account/open", "Open new client account. Multipart form with client data, account info, and photo."],
+        ["POST", "/api/v1/client/account/open", "Open new client account. Multipart form with agent_id (required for KATO), client data, account info, and photo."],
         ["POST", "/api/v1/transactions", "Create general transaction with type, amount, and verification."],
         ["POST", "/api/v1/transactions/cash-deposit", "Process cash deposit. Parameters: businessUnitId, agentId, pin, otp, amount, accountNumber."],
         ["POST", "/api/v1/transactions/biometric-withdraw", "Process biometric withdrawal. Parameters: businessUnitId, accountNumber, biometricTemplate, amount."],
@@ -1884,6 +1885,7 @@ def generate_technical_fr():
         "3. Etape 2 : Selectionner le type de compte et la devise\n"
         "4. Etape 3 : Capturer 4 modeles d'empreintes digitales avec le scanner biometrique\n"
         "5. Toutes les donnees sont soumises a l'API backend (POST /api/v1/client/account/open) en formulaire multipart\n"
+        "   incluant business_unit_id, agent_id (session de connexion), champs client, compte et photo\n"
         "6. Le backend cree l'enregistrement client, ouvre le compte, stocke les modeles biometriques\n"
         "7. Le recu d'ouverture de compte est imprime avec les details du compte",
         font_size=10, color=DARK_GRAY, space_after=8, line_spacing=1.4
@@ -1913,7 +1915,7 @@ def generate_technical_fr():
     add_feature_table(doc, ["Methode", "Point de Terminaison", "Description"], [
         ["POST", "/api/v1/agent/login", "Authentification de l'agent. Retourne le profil, l'unite commerciale et les comptes lies."],
         ["POST", "/api/v1/agent/pin/reset", "Reinitialiser le PIN de l'agent via verification OTP."],
-        ["POST", "/api/v1/client/account/open", "Ouvrir un nouveau compte client. Formulaire multipart avec donnees client, info compte et photo."],
+        ["POST", "/api/v1/client/account/open", "Ouvrir un nouveau compte client. Formulaire multipart avec agent_id (requis pour KATO), donnees client, info compte et photo."],
         ["POST", "/api/v1/transactions", "Creer une transaction generale avec type, montant et verification."],
         ["POST", "/api/v1/transactions/cash-deposit", "Traiter un depot en especes. Parametres : businessUnitId, agentId, pin, otp, amount, accountNumber."],
         ["POST", "/api/v1/transactions/biometric-withdraw", "Traiter un retrait biometrique. Parametres : businessUnitId, accountNumber, biometricTemplate, amount."],

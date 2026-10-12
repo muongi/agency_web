@@ -73,7 +73,7 @@ Route::middleware(['auth'])->group(function () {
             'edit' => 'core-banking-systems.edit',
             'update' => 'core-banking-systems.update',
             'destroy' => 'core-banking-systems.destroy',
-        ]);
+        ])->middleware('core.banking');
 
         // User Management
         Route::prefix('user-management')->name('user-management.')->group(function () {
@@ -123,11 +123,11 @@ Route::middleware(['auth'])->group(function () {
             'edit' => 'transaction-types.edit',
             'update' => 'transaction-types.update',
             'destroy' => 'transaction-types.destroy',
-        ]);
+        ])->middleware('core.banking');
 
         // Business Unit Transaction Type Assignment
-        Route::get('/business-units/{businessUnit}/transaction-types', [\App\Http\Controllers\SuperAdminController::class, 'manageBusinessTransactionTypes'])->name('business-units.transaction-types');
-        Route::put('/business-units/{businessUnit}/transaction-types', [\App\Http\Controllers\SuperAdminController::class, 'updateBusinessTransactionTypes'])->name('business-units.transaction-types.update');
+        Route::get('/business-units/{businessUnit}/transaction-types', [\App\Http\Controllers\SuperAdminController::class, 'manageBusinessTransactionTypes'])->name('business-units.transaction-types')->middleware('core.banking');
+        Route::put('/business-units/{businessUnit}/transaction-types', [\App\Http\Controllers\SuperAdminController::class, 'updateBusinessTransactionTypes'])->name('business-units.transaction-types.update')->middleware('core.banking');
 
         Route::get('/business-units/{businessUnit}/cbs-mappings', [\App\Http\Controllers\BusinessUnitCbsMappingController::class, 'index'])->name('business-units.cbs-mappings.index');
         Route::get('/business-units/{businessUnit}/cbs-mappings/create', [\App\Http\Controllers\BusinessUnitCbsMappingController::class, 'create'])->name('business-units.cbs-mappings.create');
@@ -156,7 +156,7 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/roles/{id}', [\App\Http\Controllers\BusinessRoleController::class, 'update'])->name('roles.update');
 
         // Configuration routes
-        Route::prefix('config')->name('config.')->group(function () {
+        Route::prefix('config')->name('config.')->middleware('core.banking')->group(function () {
             // Transaction Types
             Route::resource('transaction-types', \App\Http\Controllers\TransactionTypeController::class);
 
@@ -174,7 +174,7 @@ Route::middleware(['auth'])->group(function () {
         });
 
         // Reports routes
-        Route::prefix('reports')->name('reports.')->group(function () {
+        Route::prefix('reports')->name('reports.')->middleware('core.banking')->group(function () {
             Route::get('/', [\App\Http\Controllers\ReportsController::class, 'index'])->name('index');
             Route::get('/agents', [\App\Http\Controllers\ReportsController::class, 'agentReports'])->name('agents');
             Route::get('/clients', [\App\Http\Controllers\ReportsController::class, 'clientReports'])->name('clients');
@@ -192,7 +192,7 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/{id}/retry', [\App\Http\Controllers\ReportsController::class, 'retry'])->name('retry');
         });
 
-        Route::prefix('cnss')->name('cnss.')->group(function () {
+        Route::prefix('cnss')->name('cnss.')->middleware('cnss.module')->group(function () {
             Route::get('/members', [\App\Http\Controllers\CnssMemberController::class, 'index'])->name('members.index');
             Route::get('/members/export', [\App\Http\Controllers\CnssMemberController::class, 'export'])->name('members.export');
             Route::get('/members/{enrollment}/edit', [\App\Http\Controllers\CnssMemberController::class, 'edit'])
@@ -219,6 +219,50 @@ Route::middleware(['auth'])->group(function () {
                 ->name('contributions.index');
         });
 
+        Route::prefix('sunu')->name('sunu.')->group(function () {
+            Route::get('/reports/premiums', [\App\Http\Controllers\SunuReportController::class, 'premiums'])->name('reports.premiums');
+            Route::get('/reports/reconciliation', [\App\Http\Controllers\SunuReportController::class, 'reconciliation'])->name('reports.reconciliation');
+            Route::get('/reports/subscriptions', [\App\Http\Controllers\SunuReportController::class, 'subscriptions'])->name('reports.subscriptions');
+            Route::get('/reports/cards', [\App\Http\Controllers\SunuReportController::class, 'cards'])->name('reports.cards');
+            Route::get('/proposals', [\App\Http\Controllers\SunuWebController::class, 'proposalsIndex'])->name('proposals.index');
+            Route::get('/proposals/{id}', [\App\Http\Controllers\SunuWebController::class, 'proposalShow'])->whereNumber('id')->name('proposals.show');
+            Route::get('/proposals/{id}/file/{which}', [\App\Http\Controllers\SunuWebController::class, 'proposalFile'])
+                ->whereNumber('id')
+                ->where('which', 'proposal_image_path|id_document_front_path|id_document_back_path')
+                ->name('proposals.file');
+            Route::post('/proposals/{id}/accept', [\App\Http\Controllers\SunuWebController::class, 'proposalAccept'])->whereNumber('id')->name('proposals.accept');
+            Route::post('/proposals/{id}/insured-number', [\App\Http\Controllers\SunuWebController::class, 'proposalInsuredNumber'])->whereNumber('id')->name('proposals.insured-number');
+            Route::post('/proposals/{id}/link-card', [\App\Http\Controllers\SunuWebController::class, 'proposalLinkCard'])->whereNumber('id')->name('proposals.link-card');
+            Route::get('/premiums', [\App\Http\Controllers\SunuWebController::class, 'premiumsIndex'])->name('premiums.index');
+            Route::get('/premiums/export', [\App\Http\Controllers\SunuWebController::class, 'premiumsExport'])->name('premiums.export');
+            Route::get('/policies', [\App\Http\Controllers\SunuWebController::class, 'policiesIndex'])->name('policies.index');
+            Route::post('/policies/{id}/link-card', [\App\Http\Controllers\SunuWebController::class, 'policyLinkCard'])->whereNumber('id')->name('policies.link-card');
+            Route::get('/products', [\App\Http\Controllers\SunuWebController::class, 'productsIndex'])->name('products.index');
+            Route::get('/products/create', [\App\Http\Controllers\SunuWebController::class, 'productCreate'])->name('products.create');
+            Route::post('/products', [\App\Http\Controllers\SunuWebController::class, 'productStore'])->name('products.store');
+            Route::get('/products/{id}/edit', [\App\Http\Controllers\SunuWebController::class, 'productEdit'])->whereNumber('id')->name('products.edit');
+            Route::put('/products/{id}', [\App\Http\Controllers\SunuWebController::class, 'productUpdate'])->whereNumber('id')->name('products.update');
+            Route::post('/products/{id}/toggle', [\App\Http\Controllers\SunuWebController::class, 'productToggle'])->whereNumber('id')->name('products.toggle');
+            Route::get('/pay-ins', [\App\Http\Controllers\SunuWebController::class, 'payInsIndex'])->name('payins.index');
+            Route::post('/pay-ins/{id}/confirm', [\App\Http\Controllers\SunuWebController::class, 'payInConfirm'])->whereNumber('id')->name('payins.confirm');
+            Route::post('/pay-ins/{id}/reject', [\App\Http\Controllers\SunuWebController::class, 'payInReject'])->whereNumber('id')->name('payins.reject');
+            Route::post('/pay-ins', [\App\Http\Controllers\SunuWebController::class, 'payInStore'])->name('payins.store');
+            Route::get('/pay-ins/{id}/slip', [\App\Http\Controllers\SunuWebController::class, 'payInSlip'])->whereNumber('id')->name('payins.slip');
+            Route::post('/collectors/cap-default', [\App\Http\Controllers\SunuWebController::class, 'collectorCapDefault'])->name('collectors.cap-default');
+            Route::post('/collectors/{agentId}/release', [\App\Http\Controllers\SunuWebController::class, 'collectorRelease'])->whereNumber('agentId')->name('collectors.release');
+            Route::get('/corrections', [\App\Http\Controllers\SunuCorrectionWebController::class, 'index'])->name('corrections.index');
+            Route::get('/corrections/{id}', [\App\Http\Controllers\SunuCorrectionWebController::class, 'show'])->whereNumber('id')->name('corrections.show');
+            Route::post('/corrections/{id}/approve', [\App\Http\Controllers\SunuCorrectionWebController::class, 'approve'])->whereNumber('id')->name('corrections.approve');
+            Route::post('/corrections/{id}/reject', [\App\Http\Controllers\SunuCorrectionWebController::class, 'reject'])->whereNumber('id')->name('corrections.reject');
+            Route::post('/corrections/{id}/apply/{action}', [\App\Http\Controllers\SunuCorrectionWebController::class, 'apply'])->whereNumber('id')
+                ->where('action', 'cancel-premium|premium-amount|premium-policy|cancel-proposal|proposal-identity')
+                ->name('corrections.apply');
+            Route::post('/corrections/{id}/close', [\App\Http\Controllers\SunuCorrectionWebController::class, 'close'])->whereNumber('id')->name('corrections.close');
+            Route::get('/import', [\App\Http\Controllers\SunuWebController::class, 'importForm'])->name('import');
+            Route::get('/import/sample', [\App\Http\Controllers\SunuWebController::class, 'importSample'])->name('import.sample');
+            Route::post('/import', [\App\Http\Controllers\SunuWebController::class, 'importStore'])->name('import.store');
+        });
+
         // SMS Dashboard (accessible to all authenticated users with permission)
         Route::prefix('sms')->name('sms.')->group(function () {
             Route::get('/dashboard', [\App\Http\Controllers\SmsController::class, 'index'])->name('index');
@@ -241,8 +285,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('clients/export', [\App\Http\Controllers\ClientController::class, 'export'])->name('clients.export')->middleware('business.access');
     Route::get('agents/export', [\App\Http\Controllers\AgentController::class, 'export'])->name('agents.export')->middleware('business.access');
     Route::get('terminals/export', [\App\Http\Controllers\TerminalController::class, 'export'])->name('terminals.export')->middleware('business.access');
-    Route::get('accounts/export', [\App\Http\Controllers\AccountController::class, 'export'])->name('accounts.export')->middleware('business.access');
-    Route::get('transactions/export', [\App\Http\Controllers\TransactionController::class, 'export'])->name('transactions.export')->middleware('business.access');
+    Route::get('accounts/export', [\App\Http\Controllers\AccountController::class, 'export'])->name('accounts.export')->middleware(['business.access', 'core.banking']);
+    Route::get('transactions/export', [\App\Http\Controllers\TransactionController::class, 'export'])->name('transactions.export')->middleware(['business.access', 'core.banking']);
     Route::get('cards/export', [\App\Http\Controllers\CardController::class, 'export'])->name('cards.export')->middleware('business.access');
 
     // Client Groups routes (must be defined before clients resource route to avoid conflicts)
@@ -271,14 +315,16 @@ Route::middleware(['auth'])->group(function () {
     // Agent Terminal Assignment routes
     Route::post('/agents/{id}/assign-terminal', [\App\Http\Controllers\AgentController::class, 'assignTerminal'])->name('agents.assign-terminal');
     Route::delete('/agents/{id}/unassign-terminal/{terminalId}', [\App\Http\Controllers\AgentController::class, 'unassignTerminal'])->name('agents.unassign-terminal');
+    Route::post('/agents/{id}/card-rights', [\App\Http\Controllers\AgentController::class, 'updateCardRights'])->name('agents.card-rights');
+    Route::post('/agents/{id}/collector-cap', [\App\Http\Controllers\AgentController::class, 'updateCollectorCap'])->name('agents.collector-cap');
     Route::post('/agents/{id}/reset-pin-otp', [\App\Http\Controllers\AgentController::class, 'sendPinResetOtp'])->name('agents.reset-pin-otp');
 
     // Accounts routes (accessible to business users)
-    Route::resource('accounts', \App\Http\Controllers\AccountController::class)->middleware('business.access');
-    Route::post('/clients/{id}/accounts', [\App\Http\Controllers\ClientController::class, 'storeAccount'])->name('clients.accounts.store');
+    Route::resource('accounts', \App\Http\Controllers\AccountController::class)->middleware(['business.access', 'core.banking']);
+    Route::post('/clients/{id}/accounts', [\App\Http\Controllers\ClientController::class, 'storeAccount'])->name('clients.accounts.store')->middleware('core.banking');
 
     // Transactions routes (accessible to business users)
-    Route::resource('transactions', \App\Http\Controllers\TransactionController::class)->middleware('business.access');
+    Route::resource('transactions', \App\Http\Controllers\TransactionController::class)->middleware(['business.access', 'core.banking']);
 
     // Card management routes
     // Card settings routes must be defined BEFORE resource route to avoid conflicts
@@ -293,7 +339,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('cards/{card}/replace', [\App\Http\Controllers\CardController::class, 'replace'])->name('cards.replace');
     Route::post('cards/import-uids', [\App\Http\Controllers\CardController::class, 'importUids'])->name('cards.import-uids');
     Route::get('cards/import-uids/sample', [\App\Http\Controllers\CardController::class, 'downloadSampleTemplate'])->name('cards.import-uids.sample');
-    Route::post('cards/{card}/assign-account', [\App\Http\Controllers\CardController::class, 'assignToAccount'])->name('cards.assign-account');
+    Route::post('cards/{card}/assign-account', [\App\Http\Controllers\CardController::class, 'assignToAccount'])->name('cards.assign-account')->middleware('core.banking');
 
     // Audit Trail routes (accessible to business users)
     Route::prefix('audit-trail')->name('audit-trail.')->middleware('business.access')->group(function () {

@@ -11,20 +11,20 @@
         @csrf
         @method('PUT')
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+        <div class="detail-grid">
             <div class="form-group">
-                <label class="form-label" for="name">{{ __('common.group_name') }} <span style="color: #ff6b6b;">*</span></label>
+                <label class="form-label" for="name">{{ __('common.group_name') }} <span class="text-error">*</span></label>
                 <input type="text" id="name" name="name" class="form-control" value="{{ old('name', $group->name) }}" required autofocus placeholder="e.g., VIP Clients, Regular Customers">
                 @error('name')
-                    <div style="color: #ff6b6b; margin-top: 5px; font-size: 14px;">{{ $message }}</div>
+                    <div class="field-error">{{ $message }}</div>
                 @enderror
             </div>
 
-            <div class="form-group" style="grid-column: 1 / -1;">
+            <div class="form-group detail-full">
                 <label class="form-label" for="description">{{ __('common.group_description') }}</label>
                 <textarea id="description" name="description" class="form-control" rows="3" placeholder="{{ __('common.optional_description') }}">{{ old('description', $group->description) }}</textarea>
                 @error('description')
-                    <div style="color: #ff6b6b; margin-top: 5px; font-size: 14px;">{{ $message }}</div>
+                    <div class="field-error">{{ $message }}</div>
                 @enderror
             </div>
         </div>
@@ -33,7 +33,7 @@
         <div class="form-group" style="margin-top: 30px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                 <label class="form-label" style="font-size: 18px; margin: 0;">{{ __('common.select_group_members') }}</label>
-                <div style="display: flex; gap: 10px;">
+                <div class="btn-row">
                     <button type="button" class="btn btn-secondary" style="padding: 5px 15px; font-size: 12px;" onclick="selectAllClients()">{{ __('common.select_all') }}</button>
                     <button type="button" class="btn btn-secondary" style="padding: 5px 15px; font-size: 12px;" onclick="deselectAllClients()">{{ __('common.deselect_all') }}</button>
                 </div>
@@ -57,7 +57,7 @@
                 </div>
             </div>
             @error('client_ids')
-                <div style="color: #ff6b6b; margin-top: 5px; font-size: 14px;">{{ $message }}</div>
+                <div class="field-error">{{ $message }}</div>
             @enderror
         </div>
         @else
@@ -67,7 +67,7 @@
         </div>
         @endif
 
-        <div style="display: flex; gap: 10px; margin-top: 24px;">
+        <div class="btn-row mt-24">
             <button type="submit" class="btn">{{ __('common.update') }}</button>
             <a href="{{ route('clients.groups.index') }}" class="btn btn-secondary">{{ __('common.cancel') }}</a>
         </div>

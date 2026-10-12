@@ -231,24 +231,24 @@ class TerminalController extends Controller
         // Transform data for export
         $data = $terminals->map(function ($terminal) {
             return [
-                'Serial Number' => $terminal->serial_number,
-                'SIM Card Number' => $terminal->simcard_number ?? '-',
-                'Device Alias' => $terminal->device_alias ?? '-',
-                'Model/Make' => $terminal->model_make ?? '-',
-                'Status' => ucfirst($terminal->status ?? 'active'),
-                'Created At' => $terminal->created_at->format('Y-m-d H:i'),
+                __('common.export_col_serial_number') => $terminal->serial_number,
+                __('common.export_col_sim_number') => $terminal->simcard_number ?? '-',
+                __('common.export_col_device_alias') => $terminal->device_alias ?? '-',
+                __('common.export_col_model_make') => $terminal->model_make ?? '-',
+                __('common.export_col_status') => $this->exportService->valueLabel($terminal->status ?? 'active', ''),
+                __('common.export_col_created_at') => $terminal->created_at->format('Y-m-d H:i'),
             ];
         });
 
-        $headers = ['Serial Number', 'SIM Card Number', 'Device Alias', 'Model/Make', 'Status', 'Created At'];
+        $headers = array_map(fn ($k) => __('common.export_col_'.$k), ['serial_number', 'sim_number', 'device_alias', 'model_make', 'status', 'created_at']);
         $filters = $request->only(['search']);
         $filename = $this->exportService->generateFilename('terminals', $filters);
 
         switch ($format) {
             case 'excel':
-                return $this->exportService->exportExcel($data, $headers, $filename, 'Terminals');
+                return $this->exportService->exportExcel($data, $headers, $filename, __('common.terminals'));
             case 'pdf':
-                return $this->exportService->exportPdf($data, $headers, $filename, 'Terminals Export', $filters);
+                return $this->exportService->exportPdf($data, $headers, $filename, __('common.terminals'), $filters);
             case 'csv':
             default:
                 return $this->exportService->exportCsv($data, $headers, $filename);

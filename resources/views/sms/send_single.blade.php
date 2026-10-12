@@ -29,7 +29,7 @@
 
         <div style="display: grid; grid-template-columns: 1fr; gap: 20px;">
             <div class="form-group">
-                <label class="form-label" for="client_id">{{ __('common.select_client') }} <span style="color: #ff6b6b;">*</span></label>
+                <label class="form-label" for="client_id">{{ __('common.select_client') }} <span class="text-error">*</span></label>
                 <select id="client_id" name="client_id" class="form-select" required>
                     <option value="">{{ __('common.select_client') }}</option>
                     @foreach($clients as $client)
@@ -39,7 +39,7 @@
                     @endforeach
                 </select>
                 @error('client_id')
-                    <div style="color: #ff6b6b; margin-top: 5px; font-size: 14px;">{{ $message }}</div>
+                    <div class="field-error">{{ $message }}</div>
                 @enderror
                 <div id="recipient-preview" style="margin-top: 10px; padding: 10px; background: var(--bg-secondary); border-radius: 4px; display: none;">
                     <strong style="color: var(--text-primary);">{{ __('common.recipient_phone_number') }}:</strong>
@@ -48,18 +48,18 @@
             </div>
 
             <div class="form-group">
-                <label class="form-label" for="message">{{ __('common.message') }} <span style="color: #ff6b6b;">*</span></label>
+                <label class="form-label" for="message">{{ __('common.message') }} <span class="text-error">*</span></label>
                 <textarea id="message" name="message" class="form-control" rows="5" maxlength="160" required placeholder="{{ __('common.enter_sms_message') }}">{{ old('message') }}</textarea>
                 <div style="margin-top: 5px; display: flex; justify-content: space-between; align-items: center;">
                     <span id="char-count" style="font-size: 12px; color: var(--text-muted);">0 / 160</span>
                     <span style="font-size: 12px; color: var(--text-muted);">{{ __('common.estimated_cost') }}: 1 {{ __('common.sms_credit') }}</span>
                 </div>
                 @error('message')
-                    <div style="color: #ff6b6b; margin-top: 5px; font-size: 14px;">{{ $message }}</div>
+                    <div class="field-error">{{ $message }}</div>
                 @enderror
             </div>
 
-            <div style="display: flex; gap: 10px;">
+            <div class="btn-row">
                 <button type="submit" class="btn" id="sendBtn">
                     <span>{{ __('common.send_sms') }}</span>
                 </button>

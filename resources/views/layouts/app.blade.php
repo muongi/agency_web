@@ -8,414 +8,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', __('common.dashboard')) - {{ config('app.name', 'Agency') }}</title>
-    <style>
-        :root[data-theme="dark"] {
-            --bg-primary: #1a1a1a;
-            --bg-secondary: #2d2d2d;
-            --bg-tertiary: #3d3d3d;
-            --text-primary: #e0e0e0;
-            --text-secondary: #aaa;
-            --text-muted: #888;
-            --border-color: #404040;
-            --accent-color: #4a9eff;
-            --accent-hover: #357abd;
-            --success-bg: #2d5a2d;
-            --success-text: #90ee90;
-            --error-bg: #5a2d2d;
-            --error-text: #ee9090;
-            --logo-bg: #ffffff;
-            --logo-border: #404040;
-        }
-        
-        :root[data-theme="light"] {
-            --bg-primary: #ffffff;
-            --bg-secondary: #f5f5f5;
-            --bg-tertiary: #e8e8e8;
-            --text-primary: #1a1a1a;
-            --text-secondary: #555;
-            --text-muted: #888;
-            --border-color: #ddd;
-            --accent-color: #4a9eff;
-            --accent-hover: #357abd;
-            --success-bg: #d4edda;
-            --success-text: #155724;
-            --error-bg: #f8d7da;
-            --error-text: #721c24;
-            --logo-bg: #ffffff;
-            --logo-border: #ddd;
-        }
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            line-height: 1.6;
-            transition: background 0.3s, color 0.3s;
-        }
-        
-        .app-wrapper {
-            display: flex;
-            min-height: 100vh;
-        }
-        
-        .sidebar {
-            width: 260px;
-            background: var(--bg-secondary);
-            border-right: 1px solid var(--border-color);
-            position: fixed;
-            height: 100vh;
-            overflow-y: auto;
-            z-index: 1000;
-            transition: background 0.3s, border-color 0.3s;
-        }
-        
-        .sidebar-header {
-            padding: 20px;
-            border-bottom: 1px solid var(--border-color);
-        }
-        
-        .business-logo {
-            max-width: 120px;
-            max-height: 80px;
-            border-radius: 6px;
-            object-fit: contain;
-            background: var(--logo-bg);
-            padding: 8px;
-            border: 2px solid var(--logo-border);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .business-logo-small {
-            max-width: 80px;
-            max-height: 60px;
-            border-radius: 6px;
-            object-fit: contain;
-            background: var(--logo-bg);
-            padding: 6px;
-            border: 2px solid var(--logo-border);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .business-logo-header {
-            max-width: 100px;
-            max-height: 70px;
-            border-radius: 6px;
-            object-fit: contain;
-            background: var(--logo-bg);
-            padding: 8px;
-            border: 2px solid var(--logo-border);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .logo {
-            font-size: 24px;
-            font-weight: bold;
-            color: var(--accent-color);
-        }
-        
-        .sidebar-menu {
-            padding: 0;
-            margin: 0;
-        }
-        
-        .sidebar-menu > * {
-            margin: 0;
-        }
-        
-        .menu-item {
-            display: flex;
-            align-items: center;
-            padding: 12px 20px;
-            color: var(--text-primary);
-            text-decoration: none;
-            transition: background 0.3s;
-            border-left: 3px solid transparent;
-            font-size: 14px;
-            font-weight: 400;
-            margin: 0;
-            line-height: 1.5;
-        }
-        
-        .menu-item:hover {
-            background: var(--bg-tertiary);
-            border-left-color: var(--accent-color);
-        }
-        
-        .menu-item.active {
-            background: var(--bg-tertiary);
-            border-left-color: var(--accent-color);
-            color: var(--accent-color);
-            font-weight: 500;
-        }
-        
-        .menu-icon {
-            width: 20px;
-            height: 20px;
-            margin-right: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            flex-shrink: 0;
-        }
-        
-        .menu-group {
-            margin: 0;
-            padding: 0;
-        }
-        
-        .menu-group-title {
-            padding: 12px 20px;
-            font-size: 14px;
-            color: var(--text-primary);
-            font-weight: 400;
-            display: flex;
-            align-items: center;
-            justify-content: flex-start;
-            gap: 12px;
-            cursor: pointer;
-            user-select: none;
-            transition: background 0.3s;
-            border-left: 3px solid transparent;
-            margin: 0;
-            line-height: 1.5;
-        }
-        
-        .menu-group-title:hover {
-            background: var(--bg-tertiary);
-            border-left-color: var(--accent-color);
-        }
-        
-        .menu-group-title .menu-icon {
-            margin-right: 0;
-        }
-        
-        .menu-toggle {
-            font-size: 10px;
-            transition: transform 0.3s;
-            color: var(--text-muted);
-            margin-left: auto;
-        }
-        
-        .menu-toggle.collapsed {
-            transform: rotate(-90deg);
-        }
-        
-        .submenu {
-            padding: 0;
-            margin: 0;
-            overflow: hidden;
-            transition: max-height 0.3s ease-out;
-        }
-        
-        .submenu.collapsed {
-            max-height: 0;
-        }
-        
-        .submenu.expanded {
-            max-height: 500px;
-        }
-        
-        .submenu-item {
-            padding: 10px 20px 10px 52px;
-            display: flex;
-            align-items: center;
-            color: var(--text-secondary);
-            text-decoration: none;
-            transition: background 0.3s;
-            font-size: 14px;
-            font-weight: 400;
-        }
-        
-        .submenu-item:hover {
-            background: var(--bg-tertiary);
-            color: var(--text-primary);
-        }
-        
-        .submenu-item.active {
-            background: var(--bg-tertiary);
-            color: var(--accent-color);
-            border-left: 3px solid var(--accent-color);
-            padding-left: 49px;
-            font-weight: 500;
-        }
-        
-        .main-content {
-            flex: 1;
-            margin-left: 260px;
-            min-height: 100vh;
-        }
-        
-        .top-header {
-            background: var(--bg-secondary);
-            padding: 15px 30px;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            transition: background 0.3s, border-color 0.3s;
-        }
-        
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        
-        .theme-toggle-btn {
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            padding: 8px 12px;
-            cursor: pointer;
-            transition: background 0.3s;
-            font-size: 18px;
-        }
-        
-        .theme-toggle-btn:hover {
-            background: var(--bg-secondary);
-        }
-        
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 30px;
-        }
-        
-        .btn {
-            display: inline-block;
-            padding: 10px 20px;
-            background: var(--accent-color);
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            text-decoration: none;
-            font-size: 14px;
-            transition: background 0.3s;
-        }
-        
-        .btn:hover {
-            background: var(--accent-hover);
-        }
-        
-        .btn-secondary {
-            background: var(--bg-tertiary);
-            color: var(--text-primary);
-        }
-        
-        .btn-secondary:hover {
-            background: var(--border-color);
-        }
-        
-        .btn-danger {
-            background: #d32f2f;
-        }
-        
-        .btn-danger:hover {
-            background: #b71c1c;
-        }
-        
-        .alert {
-            padding: 12px 16px;
-            border-radius: 4px;
-            margin-bottom: 20px;
-        }
-        
-        .alert-success {
-            background: var(--success-bg);
-            color: var(--success-text);
-            border: 1px solid var(--success-text);
-        }
-        
-        .alert-error {
-            background: var(--error-bg);
-            color: var(--error-text);
-            border: 1px solid var(--error-text);
-        }
-        
-        .card {
-            background: var(--bg-secondary);
-            border-radius: 8px;
-            padding: 24px;
-            margin-bottom: 20px;
-            border: 1px solid var(--border-color);
-            transition: background 0.3s, border-color 0.3s;
-        }
-        
-        .form-group {
-            margin-bottom: 20px;
-        }
-        
-        .form-label {
-            display: block;
-            margin-bottom: 8px;
-            color: var(--text-primary);
-            font-weight: 500;
-        }
-        
-        .form-control {
-            width: 100%;
-            padding: 10px 12px;
-            background: var(--bg-primary);
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            color: var(--text-primary);
-            font-size: 14px;
-            transition: background 0.3s, border-color 0.3s, color 0.3s;
-        }
-        
-        .form-control:focus {
-            outline: none;
-            border-color: var(--accent-color);
-        }
-        
-        .form-select {
-            padding: 8px 12px;
-            background: var(--bg-primary);
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            color: var(--text-primary);
-            font-size: 14px;
-            width: 100%;
-            transition: background 0.3s, border-color 0.3s, color 0.3s;
-        }
-        
-        .checkbox-group {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .checkbox-group input[type="checkbox"] {
-            width: auto;
-        }
-        
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        
-        th, td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid var(--border-color);
-        }
-        
-        th {
-            color: var(--accent-color);
-            font-weight: 600;
-        }
-    </style>
+    <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="any">
+    <link rel="apple-touch-icon" href="{{ asset('images/sunu-mark.png') }}">
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=sora:600,700|public-sans:400,500,600,700|jetbrains-mono:400,500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v=2">
     @stack('styles')
 </head>
 <body>
@@ -433,7 +30,10 @@
                         <div class="logo" style="font-size: 18px; text-align: center;">{{ $businessUnit->name }}</div>
                     </div>
                 @else
-                    <div class="logo">{{ config('app.name', 'Agency') }}</div>
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
+                        <img src="{{ asset('images/sunu-logo-sm.png') }}" alt="{{ config('app.name', 'Agency') }}" class="business-logo">
+                        <div class="logo" style="font-size: 18px; text-align: center;">{{ config('app.name', 'Agency') }}</div>
+                    </div>
                 @endif
             </div>
             
@@ -446,29 +46,34 @@
                 
                 @if($isSuperAdmin && !$hasBusinessUnit)
                     {{-- Super Admin Menu (when not switched to a business unit) --}}
+                    <div class="nav-section">{{ __('common.overview') }}</div>
                     <a href="{{ route('superadmin.dashboard') }}" class="menu-item {{ request()->routeIs('superadmin.dashboard') ? 'active' : '' }}">
-                        <span class="menu-icon">🏠</span>
+                        <span class="menu-icon"><x-icon name="home" /></span>
                         <span>{{ __('common.dashboard') }}</span>
                     </a>
-                    
+
+                    <div class="nav-section">{{ __('common.organizations') }}</div>
                     <a href="{{ route('superadmin.business-units.index') }}" class="menu-item {{ request()->routeIs('superadmin.business-units.*') ? 'active' : '' }}">
-                        <span class="menu-icon">🏢</span>
+                        <span class="menu-icon"><x-icon name="building" /></span>
                         <span>{{ __('common.business_units') }}</span>
                     </a>
-                    
+
+                    @if(config('sunu.core_banking'))
+                    <div class="nav-section">{{ __('common.global_config') }}</div>
                     <a href="{{ route('superadmin.core-banking-systems.index') }}" class="menu-item {{ request()->routeIs('superadmin.core-banking-systems.*') ? 'active' : '' }}">
-                        <span class="menu-icon">🏦</span>
+                        <span class="menu-icon"><x-icon name="bank" /></span>
                         <span>{{ __('common.core_banking_systems') }}</span>
                     </a>
-                    
                     <a href="{{ route('superadmin.transaction-types.index') }}" class="menu-item {{ request()->routeIs('superadmin.transaction-types.*') ? 'active' : '' }}">
-                        <span class="menu-icon">💳</span>
+                        <span class="menu-icon"><x-icon name="card" /></span>
                         <span>{{ __('common.transaction_types') }}</span>
                     </a>
-                    
-                    <div class="menu-group">
+                    @endif
+
+                    <div class="nav-section">{{ __('common.access_control') }}</div>
+                    <div class="menu-group" data-group="sa-users">
                         <div class="menu-group-title" onclick="toggleSubmenu(this)">
-                            <span class="menu-icon">👥</span>
+                            <span class="menu-icon"><x-icon name="users" /></span>
                             <span>{{ __('common.user_management') }}</span>
                             <span class="menu-toggle">▼</span>
                         </div>
@@ -484,10 +89,11 @@
                             </a>
                         </div>
                     </div>
-                    
-                    <div class="menu-group">
+
+                    <div class="nav-section">{{ __('common.communications') }}</div>
+                    <div class="menu-group" data-group="sa-sms">
                         <div class="menu-group-title {{ request()->routeIs('superadmin.sms.*') ? 'active' : '' }}" onclick="toggleSubmenu(this)">
-                            <span class="menu-icon">📱</span>
+                            <span class="menu-icon"><x-icon name="message" /></span>
                             <span>{{ __('common.sms_management') }}</span>
                             <span class="menu-toggle {{ request()->routeIs('superadmin.sms.*') ? '' : 'collapsed' }}">▼</span>
                         </div>
@@ -505,21 +111,23 @@
                     </div>
                 @else
                     {{-- Business Menu (for regular users or super admins who switched to a business unit) --}}
+                    <div class="nav-section">{{ __('common.overview') }}</div>
                     <a href="{{ route('business.dashboard') }}" class="menu-item {{ request()->routeIs('business.dashboard') ? 'active' : '' }}">
-                        <span class="menu-icon">🏠</span>
+                        <span class="menu-icon"><x-icon name="home" /></span>
                         <span>{{ __('common.dashboard') }}</span>
                     </a>
-                    
+
                     @if($user->isSuperAdmin())
                         <a href="{{ route('superadmin.business-units.index') }}" class="menu-item {{ request()->routeIs('superadmin.business-units.*') ? 'active' : '' }}">
-                            <span class="menu-icon">🏢</span>
+                            <span class="menu-icon"><x-icon name="building" /></span>
                             <span>{{ __('common.business_units') }}</span>
                         </a>
                     @endif
-                    
-                    <div class="menu-group">
+
+                    <div class="nav-section">{{ __('common.access_control') }}</div>
+                    <div class="menu-group" data-group="biz-users">
                         <div class="menu-group-title" onclick="toggleSubmenu(this)">
-                            <span class="menu-icon">👥</span>
+                            <span class="menu-icon"><x-icon name="users" /></span>
                             <span>{{ __('common.user_management') }}</span>
                             <span class="menu-toggle">▼</span>
                         </div>
@@ -543,10 +151,11 @@
                         $canViewSms = $user->isSuperAdmin() || ($businessUnit && $user->hasPermission('view-sms', $businessUnit->id));
                     @endphp
                     
+                    <div class="nav-section">{{ __('common.operations') }}</div>
                     @if($canViewClients)
-                        <div class="menu-group">
+                        <div class="menu-group" data-group="biz-clients">
                             <div class="menu-group-title {{ request()->routeIs('clients.*') ? 'active' : '' }}" onclick="toggleSubmenu(this)">
-                                <span class="menu-icon">👤</span>
+                                <span class="menu-icon"><x-icon name="user" /></span>
                                 <span>{{ __('common.clients') }}</span>
                                 <span class="menu-toggle {{ request()->routeIs('clients.*') ? '' : 'collapsed' }}">▼</span>
                             </div>
@@ -563,30 +172,30 @@
                     
                     @if($canViewAgents)
                         <a href="{{ route('agents.index') }}" class="menu-item {{ request()->routeIs('agents.*') ? 'active' : '' }}">
-                            <span class="menu-icon">🤝</span>
+                            <span class="menu-icon"><x-icon name="handshake" /></span>
                             <span>{{ __('common.agents') }}</span>
                         </a>
                     @endif
-                    
+
                     @if($canViewTerminals)
                         <a href="{{ route('terminals.index') }}" class="menu-item {{ request()->routeIs('terminals.*') ? 'active' : '' }}">
-                            <span class="menu-icon">💻</span>
+                            <span class="menu-icon"><x-icon name="monitor" /></span>
                             <span>{{ __('common.terminals') }}</span>
                         </a>
                     @endif
-                    @if($canViewAccounts)
+                    @if($canViewAccounts && config('sunu.core_banking'))
                         <a href="{{ route('accounts.index') }}" class="menu-item {{ request()->routeIs('accounts.*') ? 'active' : '' }}">
-                            <span class="menu-icon">💰</span>
+                            <span class="menu-icon"><x-icon name="wallet" /></span>
                             <span>{{ __('common.accounts') }}</span>
                         </a>
                     @endif
-                    
+
                     @php
                         $canViewTransactions = $user->isSuperAdmin() || ($businessUnit && $user->hasPermission('view-transactions', $businessUnit->id));
                     @endphp
-                    @if($canViewTransactions)
+                    @if($canViewTransactions && config('sunu.core_banking'))
                         <a href="{{ route('transactions.index') }}" class="menu-item {{ request()->routeIs('transactions.*') ? 'active' : '' }}">
-                            <span class="menu-icon">💳</span>
+                            <span class="menu-icon"><x-icon name="card" /></span>
                             <span>{{ __('common.transactions') }}</span>
                         </a>
                     @endif
@@ -594,10 +203,11 @@
                     @php
                         $canViewCnssMembers = $user->isSuperAdmin() || ($businessUnit && $user->hasPermission('view-cnss-members', $businessUnit->id));
                     @endphp
-                    @if($canViewCnssMembers)
-                        <div class="menu-group">
-                            <div class="menu-group-title {{ request()->routeIs('business.cnss.*') ? '' : '' }}" onclick="toggleSubmenu(this)">
-                                <span class="menu-icon">🧾</span>
+                    @if($canViewCnssMembers && $businessUnit?->cnss_enabled)
+                        <div class="nav-section">{{ __('common.services') }}</div>
+                        <div class="menu-group" data-group="biz-cnss">
+                            <div class="menu-group-title {{ request()->routeIs('business.cnss.*') ? 'active' : '' }}" onclick="toggleSubmenu(this)">
+                                <span class="menu-icon"><x-icon name="receipt" /></span>
                                 <span>{{ __('common.cnss_menu_title') }}</span>
                                 <span class="menu-toggle {{ request()->routeIs('business.cnss.*') ? '' : 'collapsed' }}">▼</span>
                             </div>
@@ -614,24 +224,79 @@
                             </div>
                         </div>
                     @endif
-                    
+
+                    @php
+                        $sunuCan = fn ($slug) => $user->isSuperAdmin() || ($businessUnit && $user->hasPermission($slug, $businessUnit->id));
+                        $sunuLinks = collect([
+                            ['view-sunu-proposals', 'business.sunu.proposals.index', 'business.sunu.proposals.*', 'sunu_proposals'],
+                            ['view-sunu-policies', 'business.sunu.policies.index', 'business.sunu.policies.*', 'sunu_policies'],
+                            ['view-sunu-premiums', 'business.sunu.premiums.index', 'business.sunu.premiums.*', 'sunu_premiums'],
+                            ['view-sunu-payins', 'business.sunu.payins.index', 'business.sunu.payins.*', 'sunu_payins'],
+                            ['view-sunu-corrections', 'business.sunu.corrections.index', 'business.sunu.corrections.*', 'sunu_corrections'],
+                            ['view-sunu-products', 'business.sunu.products.index', 'business.sunu.products.*', 'sunu_products'],
+                            ['import-sunu-policies', 'business.sunu.import', 'business.sunu.import*', 'sunu_import'],
+                        ])->filter(fn ($l) => $sunuCan($l[0]));
+                        $sunuReportLinks = collect([
+                            ['view-sunu-report-premiums', 'business.sunu.reports.premiums', 'sunu_report_premiums'],
+                            ['view-sunu-report-reconciliation', 'business.sunu.reports.reconciliation', 'sunu_report_reconciliation'],
+                            ['view-sunu-report-subscriptions', 'business.sunu.reports.subscriptions', 'sunu_report_subscriptions'],
+                            ['view-sunu-report-cards', 'business.sunu.reports.cards', 'sunu_report_cards'],
+                        ])->filter(fn ($l) => $sunuCan($l[0]));
+                    @endphp
+                    @if($sunuLinks->isNotEmpty())
+                    <div class="nav-section">{{ __('common.sunu_section') }}</div>
+                    <div class="menu-group" data-group="biz-sunu">
+                        <div class="menu-group-title {{ request()->routeIs('business.sunu.*') ? 'active' : '' }}" onclick="toggleSubmenu(this)">
+                            <span class="menu-icon"><x-icon name="receipt" /></span>
+                            <span>{{ __('common.sunu_menu_title') }}</span>
+                            <span class="menu-toggle {{ request()->routeIs('business.sunu.*') ? '' : 'collapsed' }}">▼</span>
+                        </div>
+                        <div class="submenu {{ request()->routeIs('business.sunu.*') ? 'expanded' : 'collapsed' }}">
+                            @php
+                                $sunuPendingCorrections = ($businessUnit && $sunuCan('view-sunu-corrections'))
+                                    ? \App\Models\SunuCorrectionRequest::where('business_unit_id', $businessUnit->id)->where('status', 'pending')->count()
+                                    : 0;
+                            @endphp
+                            @foreach($sunuLinks as [$slug, $routeName, $activePattern, $label])
+                                <a href="{{ route($routeName) }}" class="submenu-item {{ request()->routeIs($activePattern) ? 'active' : '' }}">{{ __('common.'.$label) }}@if($label === 'sunu_corrections' && $sunuPendingCorrections > 0) <span class="badge" style="background:#e67e22;color:#fff;">{{ $sunuPendingCorrections }}</span>@endif</a>
+                            @endforeach
+                        </div>
+                    </div>
+                    @endif
+
                     @php
                         $canViewAuditTrail = $user->isSuperAdmin() || ($businessUnit && $user->hasPermission('view-audit-trail', $businessUnit->id));
+                        $canViewReports = $user->isSuperAdmin() || ($businessUnit && $user->hasPermission('view-reports', $businessUnit->id));
                     @endphp
+                    @if($canViewAuditTrail || $sunuReportLinks->isNotEmpty())
+                        <div class="nav-section">{{ __('common.insights') }}</div>
+                    @endif
                     @if($canViewAuditTrail)
                         <a href="{{ route('audit-trail.index') }}" class="menu-item {{ request()->routeIs('audit-trail.*') ? 'active' : '' }}">
-                            <span class="menu-icon">📋</span>
+                            <span class="menu-icon"><x-icon name="clipboard" /></span>
                             <span>{{ __('common.audit_trail') }}</span>
                         </a>
                     @endif
-                    
-                    @php
-                        $canViewReports = $user->isSuperAdmin() || ($businessUnit && $user->hasPermission('view-reports', $businessUnit->id));
-                    @endphp
-                    @if($canViewReports)
-                        <div class="menu-group">
-                            <div class="menu-group-title {{ request()->routeIs('business.reports.*') ? '' : '' }}" onclick="toggleSubmenu(this)">
-                                <span class="menu-icon">📊</span>
+
+                    @if($sunuReportLinks->isNotEmpty())
+                        <div class="menu-group" data-group="biz-sunu-reports">
+                            <div class="menu-group-title {{ request()->routeIs('business.sunu.reports.*') ? 'active' : '' }}" onclick="toggleSubmenu(this)">
+                                <span class="menu-icon"><x-icon name="chart" /></span>
+                                <span>{{ __('common.sunu_reports_menu') }}</span>
+                                <span class="menu-toggle {{ request()->routeIs('business.sunu.reports.*') ? '' : 'collapsed' }}">▼</span>
+                            </div>
+                            <div class="submenu {{ request()->routeIs('business.sunu.reports.*') ? 'expanded' : 'collapsed' }}">
+                                @foreach($sunuReportLinks as [$slug, $routeName, $label])
+                                    <a href="{{ route($routeName) }}" class="submenu-item {{ request()->routeIs($routeName) ? 'active' : '' }}">{{ __('common.'.$label) }}</a>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+
+                    @if($canViewReports && config('sunu.core_banking'))
+                        <div class="menu-group" data-group="biz-reports">
+                            <div class="menu-group-title {{ request()->routeIs('business.reports.*') ? 'active' : '' }}" onclick="toggleSubmenu(this)">
+                                <span class="menu-icon"><x-icon name="chart" /></span>
                                 <span>{{ __('common.reports') }}</span>
                                 <span class="menu-toggle {{ request()->routeIs('business.reports.*') ? '' : 'collapsed' }}">▼</span>
                             </div>
@@ -659,9 +324,10 @@
                     @endif
                     
                     @if($canViewSms)
-                        <div class="menu-group">
-                            <div class="menu-group-title {{ request()->routeIs('business.sms.*') ? '' : '' }}" onclick="toggleSubmenu(this)">
-                                <span class="menu-icon">📱</span>
+                        <div class="nav-section">{{ __('common.communications') }}</div>
+                        <div class="menu-group" data-group="biz-sms">
+                            <div class="menu-group-title {{ request()->routeIs('business.sms.*') ? 'active' : '' }}" onclick="toggleSubmenu(this)">
+                                <span class="menu-icon"><x-icon name="message" /></span>
                                 <span>{{ __('common.sms_management') }}</span>
                                 <span class="menu-toggle {{ request()->routeIs('business.sms.*') ? '' : 'collapsed' }}">▼</span>
                             </div>
@@ -707,24 +373,14 @@
                         </div>
                     @endif
                     
-                    @if($user->isSuperAdmin())
-                        {{-- Super Admin Only Menu Items (visible even when viewing a business unit) --}}
-                        <div style="margin-top: 20px; padding-top: 20px; border-top: 2px solid var(--border-color);">
-                            <div style="color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 15px; padding-left: 20px;">{{ __('common.superadmin') }}</div>
-                            <a href="{{ route('superadmin.core-banking-systems.index') }}" class="menu-item {{ request()->routeIs('superadmin.core-banking-systems.*') ? 'active' : '' }}">
-                                <span class="menu-icon">🏦</span>
-                                <span>{{ __('common.core_banking_systems') }}</span>
-                            </a>
-                        </div>
-                    @endif
-                    
                     @php
                         $canViewCards = $user->isSuperAdmin() || ($businessUnit && $user->hasPermission('view-cards', $businessUnit->id));
                     @endphp
                     @if($canViewCards)
-                        <div class="menu-group">
-                            <div class="menu-group-title {{ request()->routeIs('cards.*') ? '' : '' }}" onclick="toggleSubmenu(this)">
-                                <span class="menu-icon">💳</span>
+                        <div class="nav-section">{{ __('common.cards') }}</div>
+                        <div class="menu-group" data-group="biz-cards">
+                            <div class="menu-group-title {{ request()->routeIs('cards.*') ? 'active' : '' }}" onclick="toggleSubmenu(this)">
+                                <span class="menu-icon"><x-icon name="card" /></span>
                                 <span>{{ __('common.cards') }}</span>
                                 <span class="menu-toggle {{ request()->routeIs('cards.*') ? '' : 'collapsed' }}">▼</span>
                             </div>
@@ -752,9 +408,18 @@
                         </div>
                     @endif
                     
-                    <div class="menu-group">
+                    @if(config('sunu.core_banking'))
+                    <div class="nav-section">{{ __('common.configuration') }}</div>
+                    @if($user->isSuperAdmin())
+                        {{-- Super Admin Only Menu Items (visible even when viewing a business unit) --}}
+                        <a href="{{ route('superadmin.core-banking-systems.index') }}" class="menu-item {{ request()->routeIs('superadmin.core-banking-systems.*') ? 'active' : '' }}">
+                            <span class="menu-icon"><x-icon name="bank" /></span>
+                            <span>{{ __('common.core_banking_systems') }}</span>
+                        </a>
+                    @endif
+                    <div class="menu-group" data-group="biz-config">
                         <div class="menu-group-title" onclick="toggleSubmenu(this)">
-                            <span class="menu-icon">⚙️</span>
+                            <span class="menu-icon"><x-icon name="settings" /></span>
                             <span>{{ __('common.configuration') }}</span>
                             <span class="menu-toggle">▼</span>
                         </div>
@@ -770,21 +435,29 @@
                             </a>
                         </div>
                     </div>
+                    @endif
                 @endif
             </nav>
         </div>
         
+        <div class="sidebar-backdrop" onclick="toggleSidebar()"></div>
+
         <!-- Main Content -->
         <div class="main-content">
             <div class="top-header">
-                <div style="display: flex; align-items: center; gap: 15px;">
+                <div style="display: flex; align-items: center; gap: 14px;">
+                    <button type="button" class="theme-toggle-btn sidebar-toggle" onclick="toggleSidebar()" aria-label="Menu">
+                        <x-icon name="menu" :size="18" />
+                    </button>
                     @php
                         $businessUnit = auth()->user()->currentBusinessUnit;
                     @endphp
                     @if($businessUnit && $businessUnit->logo)
                         <img src="{{ asset('storage/' . $businessUnit->logo) }}" alt="{{ $businessUnit->name }}" class="business-logo-header">
+                    @else
+                        <img src="{{ asset('images/sunu-logo-sm.png') }}" alt="{{ config('app.name', 'Agency') }}" class="business-logo-header">
                     @endif
-                    <h2 style="color: var(--accent-color); font-size: 18px;">@yield('page-title', __('common.dashboard'))</h2>
+                    <h2>@yield('page-title', __('common.dashboard'))</h2>
                 </div>
                 <div class="user-info">
                     @include('components.theme-switcher')
@@ -798,10 +471,12 @@
                     @if($isSuperAdmin && $hasBusinessUnit)
                         <form action="{{ route('superadmin.switch-back') }}" method="POST" style="display: inline;">
                             @csrf
-                            <button type="submit" class="btn" style="padding: 8px 16px; font-size: 12px; background: #4a9eff;">{{ __('common.switch_to_superadmin') }}</button>
+                            <button type="submit" class="btn btn-sm">{{ __('common.switch_to_superadmin') }}</button>
                         </form>
                     @endif
-                    <a href="{{ route('logout') }}" onclick="event.preventDefault(); document.getElementById('logout-form').submit();" class="btn btn-secondary" style="padding: 8px 16px; font-size: 12px;">{{ __('common.logout') }}</a>
+                    <a href="{{ route('logout') }}" onclick="event.preventDefault(); document.getElementById('logout-form').submit();" class="btn btn-secondary btn-sm">
+                        <x-icon name="log-out" :size="15" /> <span>{{ __('common.logout') }}</span>
+                    </a>
                     <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
                         @csrf
                     </form>
@@ -843,35 +518,57 @@
 
     @stack('scripts')
     <script>
-        function toggleSubmenu(element) {
-            const submenu = element.nextElementSibling;
-            const toggle = element.querySelector('.menu-toggle');
-            
-            if (submenu.classList.contains('collapsed')) {
-                submenu.classList.remove('collapsed');
-                submenu.classList.add('expanded');
-                toggle.classList.remove('collapsed');
-            } else {
-                submenu.classList.remove('expanded');
-                submenu.classList.add('collapsed');
-                toggle.classList.add('collapsed');
-            }
+        const NAV_STATE_KEY = 'agency.nav.collapsed';
+
+        function getCollapsedGroups() {
+            try { return JSON.parse(localStorage.getItem(NAV_STATE_KEY)) || {}; }
+            catch (e) { return {}; }
         }
-        
-        // Auto-expand submenu if active item is inside
+        function setGroupState(key, collapsed) {
+            if (!key) return;
+            const state = getCollapsedGroups();
+            if (collapsed) { state[key] = 1; } else { delete state[key]; }
+            localStorage.setItem(NAV_STATE_KEY, JSON.stringify(state));
+        }
+
+        function applyGroup(menuGroup, collapsed) {
+            const submenu = menuGroup.querySelector('.submenu');
+            const toggle = menuGroup.querySelector('.menu-toggle');
+            if (!submenu) return;
+            submenu.classList.toggle('collapsed', collapsed);
+            submenu.classList.toggle('expanded', !collapsed);
+            if (toggle) toggle.classList.toggle('collapsed', collapsed);
+        }
+
+        function toggleSubmenu(element) {
+            const menuGroup = element.closest('.menu-group');
+            const submenu = element.nextElementSibling;
+            const collapsed = !submenu.classList.contains('collapsed'); // becomes collapsed if currently expanded
+            applyGroup(menuGroup, collapsed);
+            setGroupState(menuGroup && menuGroup.dataset.group, collapsed);
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            const backdrop = document.querySelector('.sidebar-backdrop');
+            if (!sidebar) return;
+            const open = sidebar.classList.toggle('open');
+            if (backdrop) backdrop.classList.toggle('show', open);
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
-            const activeSubmenuItems = document.querySelectorAll('.submenu-item.active');
-            activeSubmenuItems.forEach(function(item) {
-                const submenu = item.closest('.submenu');
-                const menuGroup = item.closest('.menu-group');
-                if (submenu && menuGroup) {
-                    submenu.classList.remove('collapsed');
-                    submenu.classList.add('expanded');
-                    const toggle = menuGroup.querySelector('.menu-toggle');
-                    if (toggle) {
-                        toggle.classList.remove('collapsed');
-                    }
-                }
+            const saved = getCollapsedGroups();
+
+            // 1) Restore each group's saved state (user's last choice wins).
+            document.querySelectorAll('.menu-group[data-group]').forEach(function(group) {
+                const key = group.dataset.group;
+                if (key in saved) applyGroup(group, true);
+            });
+
+            // 2) Always auto-expand a group that contains the active item (overrides saved collapse).
+            document.querySelectorAll('.submenu-item.active').forEach(function(item) {
+                const group = item.closest('.menu-group');
+                if (group) applyGroup(group, false);
             });
         });
     </script>

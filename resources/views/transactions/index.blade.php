@@ -20,7 +20,7 @@
 @else
 <div class="card">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 15px;">
-        <h1 style="color: var(--accent-color);">{{ __('common.transactions') }}</h1>
+        <h1 class="text-accent">{{ __('common.transactions') }}</h1>
         <div style="display: flex; gap: 10px; align-items: center;">
             <div style="position: relative;">
                 <button onclick="toggleExportDropdown()" class="btn" style="display: flex; align-items: center; gap: 5px;">
@@ -98,7 +98,7 @@
                 </select>
             </div>
         </div>
-        <div style="display: flex; gap: 10px;">
+        <div class="btn-row">
             <input type="text" name="search" class="form-control" placeholder="{{ __('common.search') }}..." value="{{ request('search') }}" style="flex: 1;">
             <button type="submit" class="btn">{{ __('common.filter') }}</button>
             <a href="{{ route('transactions.index') }}" class="btn btn-secondary">{{ __('common.clear') }}</a>
@@ -106,29 +106,29 @@
     </form>
 
     @if($transactions->count() > 0)
-        <div style="overflow-x: auto;">
-            <table style="width: 100%; border-collapse: collapse;">
+        <div class="data-table">
+            <table>
                 <thead>
                     <tr style="border-bottom: 2px solid var(--border-color);">
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.transaction_date') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.transaction_type') }}</th>
+                        <th>{{ __('common.transaction_date') }}</th>
+                        <th>{{ __('common.transaction_type') }}</th>
                         <th style="padding: 12px; text-align: right; color: var(--accent-color);">{{ __('common.transaction_amount') }}</th>
                         <th style="padding: 12px; text-align: right; color: var(--accent-color);">{{ __('common.transaction_cost') }}</th>
                         <th style="padding: 12px; text-align: right; color: var(--accent-color);">{{ __('common.transaction_commission') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.agent') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.terminal_serial') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.client') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.status') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.actions') }}</th>
+                        <th>{{ __('common.agent') }}</th>
+                        <th>{{ __('common.terminal_serial') }}</th>
+                        <th>{{ __('common.client') }}</th>
+                        <th>{{ __('common.status') }}</th>
+                        <th>{{ __('common.actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach($transactions as $transaction)
                         <tr style="border-bottom: 1px solid var(--border-color);">
-                            <td style="padding: 12px;">
+                            <td>
                                 {{ $transaction->transaction_date->format('Y-m-d H:i') }}
                             </td>
-                            <td style="padding: 12px;">
+                            <td>
                                 <strong>{{ $transaction->transactionType->name }}</strong>
                                 <br>
                                 <code style="background: var(--bg-tertiary); padding: 2px 6px; border-radius: 4px; font-size: 11px;">{{ $transaction->transactionType->code }}</code>
@@ -142,28 +142,28 @@
                             <td style="padding: 12px; text-align: right; color: var(--success-text);">
                                 {{ number_format($transaction->commission, 2) }}
                             </td>
-                            <td style="padding: 12px;">
+                            <td>
                                 {{ $transaction->agent ? $transaction->agent->full_name : '-' }}
                             </td>
-                            <td style="padding: 12px;">
+                            <td>
                                 {{ $transaction->terminal ? $transaction->terminal->serial_number : '-' }}
                             </td>
-                            <td style="padding: 12px;">
+                            <td>
                                 {{ $transaction->client ? $transaction->client->name : '-' }}
                             </td>
-                            <td style="padding: 12px;">
+                            <td>
                                 @if($transaction->status === 'completed')
-                                    <span style="color: var(--success-text);">{{ __('common.completed') }}</span>
+                                    <span class="badge badge-success">{{ __('common.completed') }}</span>
                                 @elseif($transaction->status === 'pending')
-                                    <span style="color: var(--warning-text);">{{ __('common.pending') }}</span>
+                                    <span class="badge badge-warning">{{ __('common.pending') }}</span>
                                 @elseif($transaction->status === 'failed')
-                                    <span style="color: var(--error-text);">{{ __('common.failed') }}</span>
+                                    <span class="text-error">{{ __('common.failed') }}</span>
                                 @else
-                                    <span style="color: var(--text-muted);">{{ __('common.cancelled') }}</span>
+                                    <span class="muted">{{ __('common.cancelled') }}</span>
                                 @endif
                             </td>
-                            <td style="padding: 12px;">
-                                <a href="{{ route('transactions.show', $transaction->id) }}" class="btn" style="padding: 6px 12px; font-size: 12px;">{{ __('common.view') }}</a>
+                            <td>
+                                <a href="{{ route('transactions.show', $transaction->id) }}" class="btn btn-sm">{{ __('common.view') }}</a>
                             </td>
                         </tr>
                     @endforeach
@@ -171,12 +171,12 @@
             </table>
         </div>
 
-        <div style="margin-top: 20px;">
+        <div class="mt-20">
             {{ $transactions->links() }}
         </div>
     @else
-        <div style="text-align: center; padding: 40px; color: var(--text-muted);">
-            <p style="margin-bottom: 20px;">{{ __('common.no_transactions') }}</p>
+        <div class="muted-center">
+            <p class="mb-20">{{ __('common.no_transactions') }}</p>
         </div>
     @endif
 </div>

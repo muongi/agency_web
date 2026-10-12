@@ -5,9 +5,9 @@
 
 @section('content')
 <div class="card">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-        <h1 style="color: var(--accent-color);">{{ __('common.transaction_cost_details') }}</h1>
-        <div style="display: flex; gap: 10px;">
+    <div class="toolbar">
+        <h1 class="text-accent">{{ __('common.transaction_cost_details') }}</h1>
+        <div class="btn-row">
             <a href="{{ route('business.config.transaction-costs.edit', $costConfig->id) }}" class="btn btn-secondary">{{ __('common.edit') }}</a>
             <a href="{{ route('business.config.transaction-costs.index') }}" class="btn">{{ __('common.back') }}</a>
         </div>
@@ -15,8 +15,8 @@
 
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px;">
         <div>
-            <label style="color: var(--text-muted); font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">{{ __('common.transaction_type') }}</label>
-            <p style="color: var(--text-primary); font-size: 16px; margin-top: 5px;">
+            <label class="section-label">{{ __('common.transaction_type') }}</label>
+            <p class="detail-value">
                 <strong>{{ $costConfig->transactionType->name }}</strong>
                 <br>
                 <code style="background: var(--bg-tertiary); padding: 4px 8px; border-radius: 4px;">{{ $costConfig->transactionType->code }}</code>
@@ -24,30 +24,30 @@
         </div>
 
         <div>
-            <label style="color: var(--text-muted); font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">{{ __('common.cost_type') }}</label>
+            <label class="section-label">{{ __('common.cost_type') }}</label>
             <p style="color: var(--text-primary); font-size: 16px; margin-top: 5px; text-transform: capitalize;">{{ str_replace('_', ' ', $costConfig->cost_type) }}</p>
         </div>
 
         <div>
-            <label style="color: var(--text-muted); font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">{{ __('common.status') }}</label>
-            <p style="color: var(--text-primary); font-size: 16px; margin-top: 5px;">
+            <label class="section-label">{{ __('common.status') }}</label>
+            <p class="detail-value">
                 @if($costConfig->is_active)
-                    <span style="color: var(--success-text);">{{ __('common.active') }}</span>
+                    <span class="badge badge-success">{{ __('common.active') }}</span>
                 @else
-                    <span style="color: var(--error-text);">{{ __('common.inactive') }}</span>
+                    <span class="text-error">{{ __('common.inactive') }}</span>
                 @endif
             </p>
         </div>
 
         @if($costConfig->cost_type === 'fixed')
         <div>
-            <label style="color: var(--text-muted); font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">{{ __('common.fixed_amount') }}</label>
-            <p style="color: var(--text-primary); font-size: 16px; margin-top: 5px;">{{ number_format($costConfig->fixed_amount, 2) }}</p>
+            <label class="section-label">{{ __('common.fixed_amount') }}</label>
+            <p class="detail-value">{{ number_format($costConfig->fixed_amount, 2) }}</p>
         </div>
         @elseif($costConfig->cost_type === 'percentage')
         <div>
-            <label style="color: var(--text-muted); font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">{{ __('common.percentage_rate') }}</label>
-            <p style="color: var(--text-primary); font-size: 16px; margin-top: 5px;">{{ number_format($costConfig->percentage_rate, 2) }}%</p>
+            <label class="section-label">{{ __('common.percentage_rate') }}</label>
+            <p class="detail-value">{{ number_format($costConfig->percentage_rate, 2) }}%</p>
         </div>
         @endif
     </div>
@@ -57,32 +57,32 @@
         <h2 style="color: var(--accent-color); margin-bottom: 20px;">{{ __('common.cost_tiers') }}</h2>
         
         @if($costConfig->tiers->count() > 0)
-            <div style="overflow-x: auto;">
-                <table style="width: 100%; border-collapse: collapse;">
+            <div class="data-table">
+                <table>
                     <thead>
                         <tr style="border-bottom: 2px solid var(--border-color);">
-                            <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.tier') }}</th>
-                            <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.min_amount') }}</th>
-                            <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.max_amount') }}</th>
-                            <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.rate') }} (%)</th>
-                            <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.amount') }}</th>
+                            <th>{{ __('common.tier') }}</th>
+                            <th>{{ __('common.min_amount') }}</th>
+                            <th>{{ __('common.max_amount') }}</th>
+                            <th>{{ __('common.rate') }} (%)</th>
+                            <th>{{ __('common.amount') }}</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach($costConfig->tiers->sortBy('order') as $index => $tier)
                             <tr style="border-bottom: 1px solid var(--border-color);">
-                                <td style="padding: 12px;">{{ $index + 1 }}</td>
-                                <td style="padding: 12px;">{{ $tier->min_amount ? number_format($tier->min_amount, 2) : '-' }}</td>
-                                <td style="padding: 12px;">{{ $tier->max_amount ? number_format($tier->max_amount, 2) : __('common.unlimited') }}</td>
-                                <td style="padding: 12px;">{{ $tier->rate ? number_format($tier->rate, 2) : '-' }}</td>
-                                <td style="padding: 12px;">{{ $tier->amount ? number_format($tier->amount, 2) : '-' }}</td>
+                                <td>{{ $index + 1 }}</td>
+                                <td>{{ $tier->min_amount ? number_format($tier->min_amount, 2) : '-' }}</td>
+                                <td>{{ $tier->max_amount ? number_format($tier->max_amount, 2) : __('common.unlimited') }}</td>
+                                <td>{{ $tier->rate ? number_format($tier->rate, 2) : '-' }}</td>
+                                <td>{{ $tier->amount ? number_format($tier->amount, 2) : '-' }}</td>
                             </tr>
                         @endforeach
                     </tbody>
                 </table>
             </div>
         @else
-            <p style="color: var(--text-muted);">{{ __('common.no_tiers_configured') }}</p>
+            <p class="muted">{{ __('common.no_tiers_configured') }}</p>
         @endif
     </div>
     @endif

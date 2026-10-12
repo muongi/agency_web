@@ -20,7 +20,7 @@ class SetLocale
     public function handle(Request $request, Closure $next)
     {
         $availableLocales = ['en', 'fr', 'pt'];
-        $locale = 'en'; // Default
+        $locale = config('app.locale', 'fr'); // Default: French (SUNU Burkina Faso)
 
         // Priority 1: Check if locale is in URL parameter
         if ($request->has('lang') && in_array($request->lang, $availableLocales)) {

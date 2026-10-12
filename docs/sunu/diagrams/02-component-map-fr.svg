@@ -1,0 +1,127 @@
+<svg viewBox="0 0 820 654" role="img" aria-label="Cartographie des composants : l’essentiel de la plateforme est réutilisé ou étendu ; le développement neuf se concentre sur le modèle d’assurance, les plafonds et versements, le QR, le Mobile Money et le hub SUNULIFE." xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto">
+<defs>
+<marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+<marker id="ahT" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#0E8B80"/></marker>
+<marker id="ahs" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M10,0 L0,5 L10,10 z" fill="currentColor"/></marker>
+</defs>
+<rect x="16" y="62" width="380" height="272" rx="8" fill="currentColor" fill-opacity="0.03" stroke="currentColor" stroke-opacity="0.85" stroke-width="1.4"/>
+<text x="30" y="84" font-size="13" font-weight="700" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="1">APPLICATION TPE  (Android)</text>
+<text x="382" y="84" font-size="9.5" font-weight="400" text-anchor="end" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.65">12 composants</text>
+<rect x="28" y="98" width="176" height="30" rx="5" fill="#0E8B80" fill-opacity="0.12" stroke="#0E8B80" stroke-opacity="0.75" stroke-width="1.2"/>
+<rect x="28" y="98" width="4" height="30" rx="2" fill="#0E8B80"/>
+<text x="40" y="117" font-size="10" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.92">Connexion et session</text>
+<rect x="212" y="98" width="176" height="30" rx="5" fill="#B8801C" fill-opacity="0.12" stroke="#B8801C" stroke-opacity="0.75" stroke-width="1.2"/>
+<rect x="212" y="98" width="4" height="30" rx="2" fill="#B8801C"/>
+<text x="224" y="117" font-size="10" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.92">Accueil et navigation</text>
+<rect x="28" y="136" width="176" height="30" rx="5" fill="#B8801C" fill-opacity="0.12" stroke="#B8801C" stroke-opacity="0.75" stroke-width="1.2"/>
+<rect x="28" y="136" width="4" height="30" rx="2" fill="#B8801C"/>
+<text x="40" y="155" font-size="10" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.92">Saisie proposition et CNIB</text>
+<rect x="212" y="136" width="176" height="30" rx="5" fill="#B8801C" fill-opacity="0.12" stroke="#B8801C" stroke-opacity="0.75" stroke-width="1.2"/>
+<rect x="212" y="136" width="4" height="30" rx="2" fill="#B8801C"/>
+<text x="224" y="155" font-size="10" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.92">Géolocalisation</text>
+<rect x="28" y="174" width="176" height="30" rx="5" fill="#B8801C" fill-opacity="0.12" stroke="#B8801C" stroke-opacity="0.75" stroke-width="1.2"/>
+<rect x="28" y="174" width="4" height="30" rx="2" fill="#B8801C"/>
+<text x="40" y="193" font-size="10" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.92">Lecture / écriture carte (NFC)</text>
+<rect x="212" y="174" width="176" height="30" rx="5" fill="#B8801C" fill-opacity="0.12" stroke="#B8801C" stroke-opacity="0.75" stroke-width="1.2"/>
+<rect x="212" y="174" width="4" height="30" rx="2" fill="#B8801C"/>
+<text x="224" y="193" font-size="10" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.92">Impression des reçus</text>
+<rect x="28" y="212" width="176" height="30" rx="5" fill="#B8801C" fill-opacity="0.12" stroke="#B8801C" stroke-opacity="0.75" stroke-width="1.2"/>
+<rect x="28" y="212" width="4" height="30" rx="2" fill="#B8801C"/>
+<text x="40" y="231" font-size="10" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.92">File hors ligne et synchro</text>
+<rect x="212" y="212" width="176" height="30" rx="5" fill="#B8801C" fill-opacity="0.12" stroke="#B8801C" stroke-opacity="0.75" stroke-width="1.2"/>
+<rect x="212" y="212" width="4" height="30" rx="2" fill="#B8801C"/>
+<text x="224" y="231" font-size="10" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.92">Journée de l’agent</text>
+<rect x="28" y="250" width="176" height="30" rx="5" fill="#BE5548" fill-opacity="0.12" stroke="#BE5548" stroke-opacity="0.75" stroke-width="1.2"/>
+<rect x="28" y="250" width="4" height="30" rx="2" fill="#BE5548"/>
+<text x="40" y="269" font-size="10" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.92">Lecture et contrôle QR</text>
+<rect x="212" y="250" width="176" height="30" rx="5" fill="#BE5548" fill-opacity="0.12" stroke="#BE5548" stroke-opacity="0.75" stroke-width="1.2"/>
+<rect x="212" y="250" width="4" height="30" rx="2" fill="#BE5548"/>
+<text x="224" y="269" font-size="10" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.92">Sélection de la police</text>
+<rect x="28" y="288" width="176" height="30" rx="5" fill="#BE5548" fill-opacity="0.12" stroke="#BE5548" stroke-opacity="0.75" stroke-width="1.2"/>
+<rect x="28" y="288" width="4" height="30" rx="2" fill="#BE5548"/>
+<text x="40" y="307" font-size="10" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.92">Encaissement Mobile Money</text>
+<rect x="212" y="288" width="176" height="30" rx="5" fill="#BE5548" fill-opacity="0.12" stroke="#BE5548" stroke-opacity="0.75" stroke-width="1.2"/>
+<rect x="212" y="288" width="4" height="30" rx="2" fill="#BE5548"/>
+<text x="224" y="307" font-size="10" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.92">Écran plafond et versement</text>
+<rect x="424" y="62" width="380" height="462" rx="8" fill="currentColor" fill-opacity="0.03" stroke="currentColor" stroke-opacity="0.85" stroke-width="1.4"/>
+<text x="438" y="84" font-size="13" font-weight="700" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="1">PLATEFORME BACK-OFFICE  (web + API)</text>
+<text x="790" y="84" font-size="9.5" font-weight="400" text-anchor="end" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.65">21 composants</text>
+<rect x="436" y="98" width="176" height="30" rx="5" fill="#0E8B80" fill-opacity="0.12" stroke="#0E8B80" stroke-opacity="0.75" stroke-width="1.2"/>
+<rect x="436" y="98" width="4" height="30" rx="2" fill="#0E8B80"/>
+<text x="448" y="117" font-size="10" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.92">Authentification</text>
+<rect x="620" y="98" width="176" height="30" rx="5" fill="#0E8B80" fill-opacity="0.12" stroke="#0E8B80" stroke-opacity="0.75" stroke-width="1.2"/>
+<rect x="620" y="98" width="4" height="30" rx="2" fill="#0E8B80"/>
+<text x="632" y="117" font-size="10" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.92">Unités d’exploitation</text>
+<rect x="436" y="136" width="176" height="30" rx="5" fill="#0E8B80" fill-opacity="0.12" stroke="#0E8B80" stroke-opacity="0.75" stroke-width="1.2"/>
+<rect x="436" y="136" width="4" height="30" rx="2" fill="#0E8B80"/>
+<text x="448" y="155" font-size="10" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.92">Rôles et habilitations</text>
+<rect x="620" y="136" width="176" height="30" rx="5" fill="#0E8B80" fill-opacity="0.12" stroke="#0E8B80" stroke-opacity="0.75" stroke-width="1.2"/>
+<rect x="620" y="136" width="4" height="30" rx="2" fill="#0E8B80"/>
+<text x="632" y="155" font-size="10" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.92">Parc de terminaux</text>
+<rect x="436" y="174" width="176" height="30" rx="5" fill="#0E8B80" fill-opacity="0.12" stroke="#0E8B80" stroke-opacity="0.75" stroke-width="1.2"/>
+<rect x="436" y="174" width="4" height="30" rx="2" fill="#0E8B80"/>
+<text x="448" y="193" font-size="10" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.92">Socle transactionnel</text>
+<rect x="620" y="174" width="176" height="30" rx="5" fill="#0E8B80" fill-opacity="0.12" stroke="#0E8B80" stroke-opacity="0.75" stroke-width="1.2"/>
+<rect x="620" y="174" width="4" height="30" rx="2" fill="#0E8B80"/>
+<text x="632" y="193" font-size="10" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.92">Piste d’audit</text>
+<rect x="436" y="212" width="176" height="30" rx="5" fill="#0E8B80" fill-opacity="0.12" stroke="#0E8B80" stroke-opacity="0.75" stroke-width="1.2"/>
+<rect x="436" y="212" width="4" height="30" rx="2" fill="#0E8B80"/>
+<text x="448" y="231" font-size="10" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.92">Journalisation des API</text>
+<rect x="620" y="212" width="176" height="30" rx="5" fill="#0E8B80" fill-opacity="0.12" stroke="#0E8B80" stroke-opacity="0.75" stroke-width="1.2"/>
+<rect x="620" y="212" width="4" height="30" rx="2" fill="#0E8B80"/>
+<text x="632" y="231" font-size="10" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.92">Notifications SMS</text>
+<rect x="436" y="250" width="176" height="30" rx="5" fill="#0E8B80" fill-opacity="0.12" stroke="#0E8B80" stroke-opacity="0.75" stroke-width="1.2"/>
+<rect x="436" y="250" width="4" height="30" rx="2" fill="#0E8B80"/>
+<text x="448" y="269" font-size="10" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.92">Bilingue FR / EN</text>
+<rect x="620" y="250" width="176" height="30" rx="5" fill="#B8801C" fill-opacity="0.12" stroke="#B8801C" stroke-opacity="0.75" stroke-width="1.2"/>
+<rect x="620" y="250" width="4" height="30" rx="2" fill="#B8801C"/>
+<text x="632" y="269" font-size="10" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.92">Agents collecteurs</text>
+<rect x="436" y="288" width="176" height="30" rx="5" fill="#B8801C" fill-opacity="0.12" stroke="#B8801C" stroke-opacity="0.75" stroke-width="1.2"/>
+<rect x="436" y="288" width="4" height="30" rx="2" fill="#B8801C"/>
+<text x="448" y="307" font-size="10" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.92">Référentiel des assurés</text>
+<rect x="620" y="288" width="176" height="30" rx="5" fill="#B8801C" fill-opacity="0.12" stroke="#B8801C" stroke-opacity="0.75" stroke-width="1.2"/>
+<rect x="620" y="288" width="4" height="30" rx="2" fill="#B8801C"/>
+<text x="632" y="307" font-size="10" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.92">Proposition (souscription)</text>
+<rect x="436" y="326" width="176" height="30" rx="5" fill="#B8801C" fill-opacity="0.12" stroke="#B8801C" stroke-opacity="0.75" stroke-width="1.2"/>
+<rect x="436" y="326" width="4" height="30" rx="2" fill="#B8801C"/>
+<text x="448" y="345" font-size="10" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.92">Encaissement des primes</text>
+<rect x="620" y="326" width="176" height="30" rx="5" fill="#B8801C" fill-opacity="0.12" stroke="#B8801C" stroke-opacity="0.75" stroke-width="1.2"/>
+<rect x="620" y="326" width="4" height="30" rx="2" fill="#B8801C"/>
+<text x="632" y="345" font-size="10" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.92">Gestion des cartes</text>
+<rect x="436" y="364" width="176" height="30" rx="5" fill="#B8801C" fill-opacity="0.12" stroke="#B8801C" stroke-opacity="0.75" stroke-width="1.2"/>
+<rect x="436" y="364" width="4" height="30" rx="2" fill="#B8801C"/>
+<text x="448" y="383" font-size="10" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.92">Restitutions et export Excel</text>
+<rect x="620" y="364" width="176" height="30" rx="5" fill="#B8801C" fill-opacity="0.12" stroke="#B8801C" stroke-opacity="0.75" stroke-width="1.2"/>
+<rect x="620" y="364" width="4" height="30" rx="2" fill="#B8801C"/>
+<text x="632" y="383" font-size="10" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.92">Tableaux de bord</text>
+<rect x="436" y="402" width="176" height="30" rx="5" fill="#BE5548" fill-opacity="0.12" stroke="#BE5548" stroke-opacity="0.75" stroke-width="1.2"/>
+<rect x="436" y="402" width="4" height="30" rx="2" fill="#BE5548"/>
+<text x="448" y="421" font-size="10" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.92">Modèle produit et police</text>
+<rect x="620" y="402" width="176" height="30" rx="5" fill="#BE5548" fill-opacity="0.12" stroke="#BE5548" stroke-opacity="0.75" stroke-width="1.2"/>
+<rect x="620" y="402" width="4" height="30" rx="2" fill="#BE5548"/>
+<text x="632" y="421" font-size="10" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.92">Plafonds et rapprochement</text>
+<rect x="436" y="440" width="176" height="30" rx="5" fill="#BE5548" fill-opacity="0.12" stroke="#BE5548" stroke-opacity="0.75" stroke-width="1.2"/>
+<rect x="436" y="440" width="4" height="30" rx="2" fill="#BE5548"/>
+<text x="448" y="459" font-size="10" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.92">Carte virtuelle (QR)</text>
+<rect x="620" y="440" width="176" height="30" rx="5" fill="#BE5548" fill-opacity="0.12" stroke="#BE5548" stroke-opacity="0.75" stroke-width="1.2"/>
+<rect x="620" y="440" width="4" height="30" rx="2" fill="#BE5548"/>
+<text x="632" y="459" font-size="10" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.92">Passerelle Mobile Money</text>
+<rect x="436" y="478" width="176" height="30" rx="5" fill="#BE5548" fill-opacity="0.12" stroke="#BE5548" stroke-opacity="0.75" stroke-width="1.2"/>
+<rect x="436" y="478" width="4" height="30" rx="2" fill="#BE5548"/>
+<text x="448" y="497" font-size="10" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.92">Hub d’intégration SUNULIFE</text>
+<text x="30" y="364" font-size="11" font-weight="700" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.95">Pourquoi l’échéance de septembre tient</text>
+<text x="30" y="384" font-size="9.5" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.82">Rien dans les colonnes turquoise et ambre n’est inventé.</text>
+<text x="30" y="398" font-size="9.5" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.82">La plateforme exploite déjà un module d’affiliation</text>
+<text x="30" y="412" font-size="9.5" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.82">volontaire et de cotisations périodiques dont le modèle</text>
+<text x="30" y="426" font-size="9.5" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.82">correspond à proposition → police → prime.</text>
+<text x="30" y="450" font-size="9.5" font-weight="600" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.9">Le pilote est une adaptation métier de code éprouvé,</text>
+<text x="30" y="464" font-size="9.5" font-weight="600" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.9">et non une construction nouvelle.</text>
+<rect x="16" y="540" width="12" height="12" rx="3" fill="#0E8B80" fill-opacity="0.18" stroke="#0E8B80" stroke-width="1.3"/>
+<text x="34" y="550" font-size="9.5" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.8">réutilisé tel quel — 10</text>
+<rect x="200" y="540" width="12" height="12" rx="3" fill="#B8801C" fill-opacity="0.18" stroke="#B8801C" stroke-width="1.3"/>
+<text x="218" y="550" font-size="9.5" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.8">étendu — 14</text>
+<rect x="360" y="540" width="12" height="12" rx="3" fill="#BE5548" fill-opacity="0.18" stroke="#BE5548" stroke-width="1.3"/>
+<text x="378" y="550" font-size="9.5" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.8">développement neuf — 9</text>
+<text x="16" y="576" font-size="9.5" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.85">Le neuf représente 9 composants sur 33 et se concentre en cinq points : le modèle produit/police, les plafonds et</text>
+<text x="16" y="590" font-size="9.5" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.85">versements, la carte virtuelle QR, le Mobile Money et le hub SUNULIFE. Le reste est l’adaptation de code déjà en production.</text>
+</svg>

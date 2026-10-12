@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Client;
 use App\Models\Account;
+use App\Models\Agent;
 use App\Models\BusinessUnit;
 use App\Services\ExportService;
 use App\Services\KatoService;
@@ -56,7 +57,11 @@ class ClientController extends Controller
             },
         ])->latest()->paginate(15);
 
-        return view('clients.index', compact('clients', 'businessUnit'));
+        $katoAgents = $businessUnit->isKatoEnabled()
+            ? $this->katoRegistrationAgents($businessUnit)
+            : collect();
+
+        return view('clients.index', compact('clients', 'businessUnit', 'katoAgents'));
     }
 
     /**
@@ -72,8 +77,9 @@ class ClientController extends Controller
         }
 
         $isKato = $businessUnit->isKatoEnabled();
+        $katoAgents = $isKato ? $this->katoRegistrationAgents($businessUnit) : collect();
 
-        return view('clients.create', compact('businessUnit', 'isKato'));
+        return view('clients.create', compact('businessUnit', 'isKato', 'katoAgents'));
     }
 
     /**
@@ -93,7 +99,20 @@ class ClientController extends Controller
             $this->clientValidationMessages($businessUnit)
         );
 
+        $agent = null;
+        if ($businessUnit->isKatoEnabled()) {
+            $agent = $this->resolveKatoRegistrationAgent($businessUnit, (int) $request->input('agent_id'));
+            if (! $agent) {
+                return redirect()->back()
+                    ->withInput()
+                    ->withErrors([
+                        'agent_id' => __('common.kato_registration_agent_required'),
+                    ]);
+            }
+        }
+
         $validated['business_unit_id'] = $businessUnit->id;
+        unset($validated['agent_id']);
 
         // Handle photo upload
         if ($request->hasFile('photo')) {
@@ -106,7 +125,7 @@ class ClientController extends Controller
         $client = Client::create($validated);
 
         if ($businessUnit->isKatoEnabled()) {
-            $result = $this->syncClientWithKato($client, $businessUnit);
+            $result = $this->syncClientWithKato($client, $businessUnit, $agent);
 
             if ($result['success'] && empty($result['already_synced'])) {
                 $message = __('common.created_successfully').'. '.__('common.kato_member_registration_success');
@@ -168,8 +187,9 @@ class ClientController extends Controller
         }
 
         $isKato = $businessUnit->isKatoEnabled();
+        $katoAgents = $isKato ? $this->katoRegistrationAgents($businessUnit) : collect();
 
-        return view('clients.show', compact('client', 'businessUnit', 'transactions', 'activeTab', 'isKato'));
+        return view('clients.show', compact('client', 'businessUnit', 'transactions', 'activeTab', 'isKato', 'katoAgents'));
     }
 
     /**
@@ -367,28 +387,28 @@ class ClientController extends Controller
         // Transform data for export
         $data = $clients->map(function ($client) {
             return [
-                'Name' => $client->full_name,
-                'Email' => $client->email ?? '-',
-                'Phone Number' => $client->phone_number ?? '-',
-                'ID/Passport' => $client->id_passport ?? '-',
-                'Gender' => $client->gender ?? '-',
-                'Year of Birth' => $client->year_of_birth ?? '-',
-                'Region' => $client->region ?? '-',
-                'Home Town' => $client->home_town ?? '-',
-                'Nationality' => $client->nationality ?? '-',
-                'Created At' => $client->created_at->format('Y-m-d H:i'),
+                __('common.export_col_name') => $client->full_name,
+                __('common.export_col_email') => $client->email ?? '-',
+                __('common.export_col_phone') => $client->phone_number ?? '-',
+                __('common.export_col_id_passport') => $client->id_passport ?? '-',
+                __('common.export_col_gender') => $this->exportService->valueLabel($client->gender, 'gender_') ?: '-',
+                __('common.export_col_year_of_birth') => $client->year_of_birth ?? '-',
+                __('common.export_col_region') => $client->region ?? '-',
+                __('common.export_col_home_town') => $client->home_town ?? '-',
+                __('common.export_col_nationality') => $client->nationality ?? '-',
+                __('common.export_col_created_at') => $client->created_at->format('Y-m-d H:i'),
             ];
         });
 
-        $headers = ['Name', 'Email', 'Phone Number', 'ID/Passport', 'Gender', 'Year of Birth', 'Region', 'Home Town', 'Nationality', 'Created At'];
+        $headers = array_map(fn ($k) => __('common.export_col_'.$k), ['name', 'email', 'phone', 'id_passport', 'gender', 'year_of_birth', 'region', 'home_town', 'nationality', 'created_at']);
         $filters = $request->only(['search']);
         $filename = $this->exportService->generateFilename('clients', $filters);
 
         switch ($format) {
             case 'excel':
-                return $this->exportService->exportExcel($data, $headers, $filename, 'Clients');
+                return $this->exportService->exportExcel($data, $headers, $filename, __('common.clients'));
             case 'pdf':
-                return $this->exportService->exportPdf($data, $headers, $filename, 'Clients Export', $filters);
+                return $this->exportService->exportPdf($data, $headers, $filename, __('common.clients'), $filters);
             case 'csv':
             default:
                 return $this->exportService->exportCsv($data, $headers, $filename);
@@ -398,7 +418,7 @@ class ClientController extends Controller
     /**
      * Sync a single client with KATO (member register).
      */
-    public function syncWithKato($id)
+    public function syncWithKato($id, Request $request)
     {
         $businessUnit = auth()->user()->currentBusinessUnit;
 
@@ -415,8 +435,18 @@ class ClientController extends Controller
             return redirect()->back()->with('error', __('common.kato_company_not_registered'));
         }
 
+        $validated = $request->validate([
+            'agent_id' => 'required|integer|exists:agents,id',
+        ]);
+
+        $agent = $this->resolveKatoRegistrationAgent($businessUnit, (int) $validated['agent_id']);
+        if (! $agent) {
+            return redirect()->back()
+                ->with('error', __('common.kato_registration_agent_required'));
+        }
+
         $client = $businessUnit->clients()->findOrFail($id);
-        $result = $this->syncClientWithKato($client, $businessUnit);
+        $result = $this->syncClientWithKato($client, $businessUnit, $agent);
 
         if (! empty($result['already_synced'])) {
             return redirect()->back()->with('info', __('common.kato_member_already_synced'));
@@ -456,9 +486,16 @@ class ClientController extends Controller
         }
 
         $validated = $request->validate([
+            'agent_id' => 'required|integer|exists:agents,id',
             'client_ids' => 'required|array|min:1',
             'client_ids.*' => 'integer',
         ]);
+
+        $agent = $this->resolveKatoRegistrationAgent($businessUnit, (int) $validated['agent_id']);
+        if (! $agent) {
+            return redirect()->back()
+                ->with('error', __('common.kato_registration_agent_required'));
+        }
 
         $synced = 0;
         $failed = 0;
@@ -470,7 +507,7 @@ class ClientController extends Controller
             ->get();
 
         foreach ($clients as $client) {
-            $result = $this->syncClientWithKato($client, $businessUnit);
+            $result = $this->syncClientWithKato($client, $businessUnit, $agent);
 
             if (! empty($result['already_synced'])) {
                 $skipped++;
@@ -502,7 +539,7 @@ class ClientController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function syncClientWithKato(Client $client, BusinessUnit $businessUnit): array
+    private function syncClientWithKato(Client $client, BusinessUnit $businessUnit, Agent $agent): array
     {
         if ($client->kato_member_no) {
             return [
@@ -513,7 +550,7 @@ class ClientController extends Controller
         }
 
         $katoService = new KatoService();
-        $result = $katoService->registerMember($client, $businessUnit);
+        $result = $katoService->registerMember($client, $businessUnit, $agent);
 
         $accountSyncSummary = null;
         if ($result['success']) {
@@ -593,6 +630,7 @@ class ClientController extends Controller
             $rules['id_passport'] = 'required|string|max:255';
             $rules['phone_number'] = 'required|string|max:50';
             $rules['year_of_birth'] = 'required|string|max:10';
+            $rules['agent_id'] = 'required|integer|exists:agents,id';
         } else {
             $rules['gender'] = 'nullable|in:Male,Female,Other';
             $rules['id_passport'] = 'nullable|string|max:255';
@@ -618,6 +656,36 @@ class ClientController extends Controller
             'id_passport.required' => __('common.kato_member_id_required'),
             'phone_number.required' => __('common.kato_member_phone_required'),
             'year_of_birth.required' => __('common.kato_member_dob_required'),
+            'agent_id.required' => __('common.kato_registration_agent_required'),
         ];
+    }
+
+    /**
+     * @return \Illuminate\Support\Collection<int, Agent>
+     */
+    private function katoRegistrationAgents(BusinessUnit $businessUnit)
+    {
+        return Agent::query()
+            ->where('business_unit_id', $businessUnit->id)
+            ->whereNotNull('kato_agent_id')
+            ->with(['accounts' => function ($query) {
+                $query->where('account_type', 'float');
+            }])
+            ->orderBy('first_name')
+            ->orderBy('second_name')
+            ->get()
+            ->filter(fn (Agent $agent) => $agent->hasKatoCbsAccounts())
+            ->values();
+    }
+
+    private function resolveKatoRegistrationAgent(BusinessUnit $businessUnit, int $agentId): ?Agent
+    {
+        $agent = Agent::where('business_unit_id', $businessUnit->id)->find($agentId);
+
+        if (! $agent || ! $agent->hasKatoCbsAccounts()) {
+            return null;
+        }
+
+        return $agent;
     }
 }

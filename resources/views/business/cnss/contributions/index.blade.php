@@ -76,47 +76,47 @@
     </form>
 
     @if($contributions->count() > 0)
-        <div style="overflow-x: auto;">
-            <table style="width: 100%; border-collapse: collapse;">
+        <div class="data-table">
+            <table>
                 <thead>
                     <tr style="border-bottom: 2px solid var(--border-color);">
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.cnss_voluntary_insured_number') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.cnss_affiliation_number') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.cnss_mode') }}</th>
+                        <th>{{ __('common.cnss_voluntary_insured_number') }}</th>
+                        <th>{{ __('common.cnss_affiliation_number') }}</th>
+                        <th>{{ __('common.cnss_mode') }}</th>
                         <th style="padding: 12px; text-align: right; color: var(--accent-color);">{{ __('common.cnss_amount') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.cnss_reference_period') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.agent') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.transaction_reference') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.created_at') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.actions') }}</th>
+                        <th>{{ __('common.cnss_reference_period') }}</th>
+                        <th>{{ __('common.agent') }}</th>
+                        <th>{{ __('common.transaction_reference') }}</th>
+                        <th>{{ __('common.created_at') }}</th>
+                        <th>{{ __('common.actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach($contributions as $c)
                         <tr style="border-bottom: 1px solid var(--border-color);">
-                            <td style="padding: 12px;">
+                            <td>
                                 <code style="background: var(--bg-tertiary); padding: 2px 6px; border-radius: 4px;">{{ $c->voluntary_insured_number ?? '—' }}</code>
                             </td>
-                            <td style="padding: 12px;">
+                            <td>
                                 @if($c->affiliation_number)
                                     <code style="background: var(--bg-tertiary); padding: 2px 6px; border-radius: 4px;">{{ $c->affiliation_number }}</code>
                                 @else
                                     —
                                 @endif
                             </td>
-                            <td style="padding: 12px;">{{ $c->mode }}</td>
+                            <td>{{ $c->mode }}</td>
                             <td style="padding: 12px; text-align: right; font-weight: bold;">{{ number_format((float) $c->amount, 2) }} {{ $currency }}</td>
-                            <td style="padding: 12px;">{{ $c->reference_period }}</td>
-                            <td style="padding: 12px;">{{ $c->agent?->full_name ?? '—' }}</td>
-                            <td style="padding: 12px;">{{ $c->reference ?? '—' }}</td>
-                            <td style="padding: 12px;">{{ $c->created_at?->format('Y-m-d H:i') }}</td>
-                            <td style="padding: 12px;">
+                            <td>{{ $c->reference_period }}</td>
+                            <td>{{ $c->agent?->full_name ?? '—' }}</td>
+                            <td>{{ $c->reference ?? '—' }}</td>
+                            <td>{{ $c->created_at?->format('Y-m-d H:i') }}</td>
+                            <td>
                                 <div style="display: flex; flex-wrap: wrap; gap: 6px;">
                                     @if($c->enrollment && ($user->isSuperAdmin() || ($bu && $user->hasPermission('view-cnss-member', $bu->id))))
-                                        <a href="{{ route('business.cnss.members.show', $c->enrollment->id) }}" class="btn" style="padding: 6px 12px; font-size: 12px;">{{ __('common.cnss_member_detail') }}</a>
+                                        <a href="{{ route('business.cnss.members.show', $c->enrollment->id) }}" class="btn btn-sm">{{ __('common.cnss_member_detail') }}</a>
                                     @endif
                                     @if($canViewTransactions && $c->transaction_id)
-                                        <a href="{{ route('transactions.show', $c->transaction_id) }}" class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">{{ __('common.view_transaction') }}</a>
+                                        <a href="{{ route('transactions.show', $c->transaction_id) }}" class="btn btn-secondary btn-sm">{{ __('common.view_transaction') }}</a>
                                     @endif
                                 </div>
                             </td>
@@ -125,11 +125,11 @@
                 </tbody>
             </table>
         </div>
-        <div style="margin-top: 20px;">
+        <div class="mt-20">
             {{ $contributions->links() }}
         </div>
     @else
-        <div style="text-align: center; padding: 40px; color: var(--text-muted);">
+        <div class="muted-center">
             <p>{{ __('common.cnss_no_contributions_bu') }}</p>
         </div>
     @endif

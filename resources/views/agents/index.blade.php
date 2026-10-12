@@ -6,7 +6,7 @@
 @section('content')
 <div class="card">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 15px;">
-        <h1 style="color: var(--accent-color);">{{ __('common.agents') }}</h1>
+        <h1 class="text-accent">{{ __('common.agents') }}</h1>
         <div style="display: flex; gap: 10px; align-items: center;">
             <div style="position: relative;">
                 <button onclick="toggleExportDropdown()" class="btn" style="display: flex; align-items: center; gap: 5px;">
@@ -38,8 +38,8 @@
     </div>
 
     <!-- Search Form -->
-    <form method="GET" action="{{ route('agents.index') }}" style="margin-bottom: 20px;">
-        <div style="display: flex; gap: 10px;">
+    <form method="GET" action="{{ route('agents.index') }}" class="mb-20">
+        <div class="btn-row">
             <input 
                 type="text" 
                 name="search" 
@@ -56,59 +56,59 @@
     </form>
 
     @if($agents->count() > 0)
-        <div style="overflow-x: auto;">
-            <table style="width: 100%; border-collapse: collapse;">
+        <div class="data-table">
+            <table>
                 <thead>
                     <tr style="border-bottom: 2px solid var(--border-color);">
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">#</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.name') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.username') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.email') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.phone') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.kato_agent_id') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.terminals') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.actions') }}</th>
+                        <th>#</th>
+                        <th>{{ __('common.name') }}</th>
+                        <th>{{ __('common.username') }}</th>
+                        <th>{{ __('common.email') }}</th>
+                        <th>{{ __('common.phone') }}</th>
+                        <th>{{ __('common.kato_agent_id') }}</th>
+                        <th>{{ __('common.terminals') }}</th>
+                        <th>{{ __('common.actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach($agents as $index => $agent)
                         <tr style="border-bottom: 1px solid var(--border-color);">
-                            <td style="padding: 12px;">{{ ($agents->currentPage() - 1) * $agents->perPage() + $index + 1 }}</td>
-                            <td style="padding: 12px;">{{ $agent->full_name }}</td>
-                            <td style="padding: 12px;">{{ $agent->username }}</td>
-                            <td style="padding: 12px;">{{ $agent->email }}</td>
-                            <td style="padding: 12px;">{{ $agent->phone_number ?? '-' }}</td>
-                            <td style="padding: 12px;">
+                            <td>{{ ($agents->currentPage() - 1) * $agents->perPage() + $index + 1 }}</td>
+                            <td>{{ $agent->full_name }}</td>
+                            <td>{{ $agent->username }}</td>
+                            <td>{{ $agent->email }}</td>
+                            <td>{{ $agent->phone_number ?? '-' }}</td>
+                            <td>
                                 @if($agent->kato_agent_id)
-                                    <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; background: #2d5a2d; color: #90ee90;" title="{{ __('common.kato_registered') }}">
+                                    <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; background: var(--success-bg); color: var(--success-text);" title="{{ __('common.kato_registered') }}">
                                         {{ $agent->kato_agent_id }}
                                     </span>
                                 @elseif($agent->kato_registration_error)
-                                    <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; background: #5a2d2d; color: #ee9090;" title="{{ $agent->kato_registration_error }}">
+                                    <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; background: var(--error-bg); color: var(--error-text);" title="{{ $agent->kato_registration_error }}">
                                         {{ __('common.failed') }}
                                     </span>
                                 @else
-                                    <span style="color: var(--text-muted);">-</span>
+                                    <span class="muted">-</span>
                                 @endif
                             </td>
-                            <td style="padding: 12px;">
+                            <td>
                                 <span style="color: var(--accent-color); font-weight: bold;">{{ $agent->terminals_count }}</span>
                             </td>
-                            <td style="padding: 12px;">
+                            <td>
                                 @php
                                     $canEdit = $user->isSuperAdmin() || ($businessUnit && $user->hasPermission('edit-agent', $businessUnit->id));
                                     $canDelete = $user->isSuperAdmin() || ($businessUnit && $user->hasPermission('delete-agent', $businessUnit->id));
                                 @endphp
                                 <div style="display: flex; gap: 5px;">
-                                    <a href="{{ route('agents.show', $agent->id) }}" class="btn" style="padding: 6px 12px; font-size: 12px;">{{ __('common.show') }}</a>
+                                    <a href="{{ route('agents.show', $agent->id) }}" class="btn btn-sm">{{ __('common.show') }}</a>
                                     @if($canEdit)
-                                        <a href="{{ route('agents.edit', $agent->id) }}" class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">{{ __('common.edit') }}</a>
+                                        <a href="{{ route('agents.edit', $agent->id) }}" class="btn btn-secondary btn-sm">{{ __('common.edit') }}</a>
                                     @endif
                                     @if($canDelete)
                                         <form action="{{ route('agents.destroy', $agent->id) }}" method="POST" style="display: inline;" onsubmit="return confirm('{{ __('common.confirm_delete') }}');">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="btn btn-danger" style="padding: 6px 12px; font-size: 12px;">{{ __('common.delete') }}</button>
+                                            <button type="submit" class="btn btn-danger btn-sm">{{ __('common.delete') }}</button>
                                         </form>
                                     @endif
                                 </div>
@@ -119,12 +119,12 @@
             </table>
         </div>
 
-        <div style="margin-top: 20px;">
+        <div class="mt-20">
             {{ $agents->links() }}
         </div>
     @else
-        <div style="text-align: center; padding: 40px; color: var(--text-muted);">
-            <p style="margin-bottom: 20px;">{{ __('common.no_agents') }}</p>
+        <div class="muted-center">
+            <p class="mb-20">{{ __('common.no_agents') }}</p>
             @if($canCreate)
                 <a href="{{ route('agents.create') }}" class="btn">{{ __('common.add_agent') }}</a>
             @endif

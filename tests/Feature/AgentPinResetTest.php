@@ -82,7 +82,7 @@ class AgentPinResetTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_reset_pin_requires_phone_number(): void
+    public function test_reset_pin_without_phone_shows_pin_on_screen(): void
     {
         $bu = BusinessUnit::create([
             'name' => 'PIN BU 2',
@@ -97,10 +97,12 @@ class AgentPinResetTest extends TestCase
             ->from(route('agents.show', $agent->id))
             ->post(route('agents.reset-pin-otp', $agent->id))
             ->assertRedirect(route('agents.show', $agent->id))
-            ->assertSessionHas('error');
+            ->assertSessionHas('pin_reveal');
+
+        $this->assertSame('ok', $agent->fresh()->checkCollectionPin(session('pin_reveal')));
     }
 
-    public function test_reset_pin_updates_password_sends_sms_and_logs_pin(): void
+    public function test_reset_pin_sets_collection_pin_sends_sms_and_keeps_password(): void
     {
         $bu = BusinessUnit::create([
             'name' => 'PIN BU 3',
@@ -111,30 +113,21 @@ class AgentPinResetTest extends TestCase
 
         $user = $this->userWithEditAgent($bu);
         $agent = $this->createAgent($bu);
-
         $oldHash = $agent->password;
+        $sentPin = null;
 
-        $loggedPin = null;
-
-        Log::shouldReceive('info')
-            ->once()
-            ->withArgs(function ($message, $context) use (&$loggedPin) {
-                if ($message === 'Agent PIN reset (web)') {
-                    $loggedPin = $context['generated_pin'] ?? null;
-
-                    return $loggedPin !== null;
-                }
-
-                return false;
-            });
-
-        $this->mock(SmsService::class, function ($mock) use ($bu, $agent) {
+        $this->mock(SmsService::class, function ($mock) use ($bu, $agent, &$sentPin) {
             $mock->shouldReceive('sendSms')
                 ->once()
                 ->with(
                     $bu->id,
                     $agent->phone_number,
-                    \Mockery::on(fn (string $msg) => str_contains($msg, 'PIN') || str_contains($msg, 'PIN provisoire')),
+                    \Mockery::on(function (string $msg) use (&$sentPin) {
+                        preg_match('/\b(\d{4})\b/', $msg, $m);
+                        $sentPin = $m[1] ?? null;
+
+                        return $sentPin !== null;
+                    }),
                     null,
                     'AGENT-PIN-RESET-'.$agent->id
                 )
@@ -145,18 +138,16 @@ class AgentPinResetTest extends TestCase
             ->from(route('agents.show', $agent->id))
             ->post(route('agents.reset-pin-otp', $agent->id))
             ->assertRedirect(route('agents.show', $agent->id))
-            ->assertSessionHas('success');
+            ->assertSessionHas('success')
+            ->assertSessionMissing('pin_reveal');
 
         $agent->refresh();
-
-        $this->assertTrue($agent->is_first_time_pin);
-        $this->assertNotSame($oldHash, $agent->password);
-        $this->assertNotNull($loggedPin);
-        $this->assertMatchesRegularExpression('/^\d{4}$/', $loggedPin);
-        $this->assertTrue(Hash::check($loggedPin, $agent->password));
+        $this->assertSame($oldHash, $agent->password); // login password untouched
+        $this->assertTrue($agent->pin_must_change);
+        $this->assertSame('ok', $agent->checkCollectionPin($sentPin));
     }
 
-    public function test_reset_pin_succeeds_with_warning_when_sms_fails(): void
+    public function test_reset_pin_shows_pin_with_warning_when_sms_fails(): void
     {
         $bu = BusinessUnit::create([
             'name' => 'PIN BU 4',
@@ -167,14 +158,6 @@ class AgentPinResetTest extends TestCase
         $user = $this->userWithEditAgent($bu);
         $agent = $this->createAgent($bu);
 
-        Log::shouldReceive('info')
-            ->once()
-            ->with('Agent PIN reset (web)', \Mockery::type('array'));
-
-        Log::shouldReceive('warning')
-            ->once()
-            ->with('Agent PIN reset SMS failed', \Mockery::type('array'));
-
         $this->mock(SmsService::class, function ($mock) {
             $mock->shouldReceive('sendSms')
                 ->once()
@@ -184,9 +167,11 @@ class AgentPinResetTest extends TestCase
         $this->actingAs($user)
             ->post(route('agents.reset-pin-otp', $agent->id))
             ->assertRedirect()
-            ->assertSessionHas('warning');
+            ->assertSessionHas('warning')
+            ->assertSessionHas('pin_reveal');
 
         $agent->refresh();
-        $this->assertTrue($agent->is_first_time_pin);
+        $this->assertTrue(Hash::check('old-password', $agent->password));
+        $this->assertSame('ok', $agent->checkCollectionPin(session('pin_reveal')));
     }
 }

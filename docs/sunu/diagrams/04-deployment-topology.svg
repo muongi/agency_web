@@ -1,0 +1,71 @@
+<svg viewBox="0 0 820 590" role="img" aria-label="Deployment topology: the hosted environment behind one TLS and rate-limiting boundary, with the database reachable only from inside it." xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto">
+<defs>
+<marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+<marker id="ahT" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#0E8B80"/></marker>
+<marker id="ahs" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M10,0 L0,5 L10,10 z" fill="currentColor"/></marker>
+</defs>
+<rect x="188" y="60" width="616" height="360" rx="10" fill="currentColor" fill-opacity="0.03" stroke="currentColor" stroke-opacity="0.45" stroke-width="1.4" stroke-dasharray="7 5"/>
+<text x="200" y="80" font-size="9.5" font-weight="700" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.7">HOSTED ENVIRONMENT — trust boundary</text>
+<rect x="16" y="96" width="150" height="62" rx="6" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-opacity="0.85" stroke-width="1.4"/>
+<text x="91" y="124" font-size="13" font-weight="600" text-anchor="middle" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="1">POS fleet</text>
+<text x="91" y="140" font-size="9.5" font-weight="400" text-anchor="middle" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.72">15 terminals · 4G</text>
+<rect x="16" y="190" width="150" height="62" rx="6" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-opacity="0.85" stroke-width="1.4"/>
+<text x="91" y="218" font-size="13" font-weight="600" text-anchor="middle" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="1">SUNU office</text>
+<text x="91" y="234" font-size="9.5" font-weight="400" text-anchor="middle" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.72">back-office users</text>
+<rect x="16" y="300" width="150" height="62" rx="6" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-opacity="0.85" stroke-width="1.4"/>
+<text x="91" y="328" font-size="13" font-weight="600" text-anchor="middle" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="1">MoMo callbacks</text>
+<text x="91" y="344" font-size="9.5" font-weight="400" text-anchor="middle" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.72">signed · IP allow-listed</text>
+<rect x="210" y="96" width="152" height="266" rx="8" fill="#0E8B80" fill-opacity="0.07" stroke="#0E8B80" stroke-opacity="0.85" stroke-width="1.6"/>
+<text x="286" y="118" font-size="13" font-weight="700" text-anchor="middle" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="1">TLS TERMINATION</text>
+<text x="226" y="152" font-size="9.5" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.8">HTTPS only</text>
+<text x="226" y="168" font-size="9.5" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.8">TLS 1.2+ · HSTS</text>
+<text x="226" y="184" font-size="9.5" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.8">certificate pinning</text>
+<text x="226" y="200" font-size="9.5" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.8">WAF</text>
+<text x="226" y="216" font-size="9.5" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.8">rate limiting</text>
+<text x="226" y="232" font-size="9.5" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.8">per key · agent · IP</text>
+<line x1="166" y1="127" x2="210" y2="127" stroke="currentColor" stroke-opacity="0.85" stroke-width="1.4" marker-end="url(#ah)"/>
+<line x1="166" y1="221" x2="210" y2="221" stroke="currentColor" stroke-opacity="0.85" stroke-width="1.4" marker-end="url(#ah)"/>
+<line x1="166" y1="331" x2="210" y2="331" stroke="currentColor" stroke-opacity="0.85" stroke-width="1.4" marker-end="url(#ah)"/>
+<rect x="400" y="96" width="124" height="74" rx="6" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-opacity="0.85" stroke-width="1.4"/>
+<text x="462" y="130" font-size="13" font-weight="600" text-anchor="middle" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="1">Web / API</text>
+<text x="462" y="146" font-size="9.5" font-weight="400" text-anchor="middle" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.72">Nginx + PHP-FPM</text>
+<rect x="400" y="186" width="124" height="74" rx="6" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-opacity="0.85" stroke-width="1.4"/>
+<text x="462" y="220" font-size="13" font-weight="600" text-anchor="middle" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="1">Queue workers</text>
+<text x="462" y="236" font-size="9.5" font-weight="400" text-anchor="middle" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.72">sync · SMS · exports</text>
+<rect x="400" y="276" width="124" height="74" rx="6" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-opacity="0.85" stroke-width="1.4"/>
+<text x="462" y="310" font-size="13" font-weight="600" text-anchor="middle" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="1">Scheduler</text>
+<text x="462" y="326" font-size="9.5" font-weight="400" text-anchor="middle" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.72">delta sync · recon · backup</text>
+<line x1="362" y1="133" x2="400" y2="133" stroke="currentColor" stroke-opacity="0.85" stroke-width="1.4" marker-end="url(#ah)"/>
+<line x1="362" y1="223" x2="400" y2="223" stroke="currentColor" stroke-opacity="0.85" stroke-width="1.4" marker-end="url(#ah)"/>
+<line x1="362" y1="313" x2="400" y2="313" stroke="currentColor" stroke-opacity="0.85" stroke-width="1.4" marker-end="url(#ah)"/>
+<rect x="576" y="108" width="148" height="74" rx="6" fill="#0E8B80" fill-opacity="0.05" stroke="#0E8B80" stroke-opacity="0.85" stroke-width="1.4"/>
+<text x="650" y="142" font-size="13" font-weight="600" text-anchor="middle" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="1">MySQL 8</text>
+<text x="650" y="158" font-size="9.5" font-weight="400" text-anchor="middle" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.72">no public route</text>
+<rect x="576" y="214" width="148" height="74" rx="6" fill="#0E8B80" fill-opacity="0.05" stroke="#0E8B80" stroke-opacity="0.85" stroke-width="1.4"/>
+<text x="650" y="248" font-size="13" font-weight="600" text-anchor="middle" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="1">Object store</text>
+<text x="650" y="264" font-size="9.5" font-weight="400" text-anchor="middle" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.72">proposal &amp; ID images</text>
+<line x1="524" y1="133" x2="550" y2="133" stroke="currentColor" stroke-opacity="0.7" stroke-width="1.4"/>
+<line x1="524" y1="223" x2="550" y2="223" stroke="currentColor" stroke-opacity="0.7" stroke-width="1.4"/>
+<line x1="524" y1="313" x2="550" y2="313" stroke="currentColor" stroke-opacity="0.7" stroke-width="1.4"/>
+<line x1="550" y1="133" x2="550" y2="313" stroke="currentColor" stroke-opacity="0.7" stroke-width="1.4"/>
+<line x1="550" y1="145" x2="576" y2="145" stroke="currentColor" stroke-opacity="0.7" stroke-width="1.4" marker-end="url(#ah)" marker-start="url(#ahs)"/>
+<line x1="550" y1="251" x2="576" y2="251" stroke="currentColor" stroke-opacity="0.7" stroke-width="1.4" marker-end="url(#ah)" marker-start="url(#ahs)"/>
+<text x="556" y="202" font-size="9.5" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.7">reads / writes</text>
+<rect x="576" y="320" width="148" height="56" rx="6" fill="#0E8B80" fill-opacity="0.05" stroke="#0E8B80" stroke-opacity="0.85" stroke-width="1.4"/>
+<text x="650" y="345" font-size="13" font-weight="600" text-anchor="middle" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="1">Backup</text>
+<text x="650" y="361" font-size="9.5" font-weight="400" text-anchor="middle" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.72">daily + binlog · PITR</text>
+<line x1="650" y1="288" x2="650" y2="320" stroke="currentColor" stroke-opacity="0.85" stroke-width="1.4" marker-end="url(#ah)"/>
+<text x="658" y="308" font-size="9.5" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.75">RPO 15 min</text>
+<text x="650" y="394" font-size="9.5" font-weight="600" text-anchor="middle" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="#0E8B80" fill-opacity="0.9">encrypted at rest</text>
+<rect x="210" y="442" width="594" height="56" rx="6" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-opacity="0.85" stroke-width="1.4"/>
+<text x="507" y="474" font-size="13" font-weight="600" text-anchor="middle" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="1">Outbound, allow-listed: SUNULIFE · Mobile Money providers · SMS gateway</text>
+<line x1="462" y1="350" x2="462" y2="442" stroke="currentColor" stroke-opacity="0.85" stroke-width="1.4" marker-end="url(#ah)" stroke-dasharray="6 5"/>
+<text x="470" y="400" font-size="9.5" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.75">queued, retried, logged</text>
+<text x="16" y="442" font-size="9.5" font-weight="700" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.8">Inbound</text>
+<text x="16" y="458" font-size="9.5" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.75">allow-listed:</text>
+<text x="16" y="474" font-size="9.5" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.75">POS fleet,</text>
+<text x="16" y="488" font-size="9.5" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.75">office network,</text>
+<text x="16" y="502" font-size="9.5" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.75">MoMo callbacks</text>
+<text x="210" y="542" font-size="9.5" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.82">Pilot sizing: one application server (4 vCPU / 8 GB) and one database server (4 vCPU / 16 GB). The tier scales</text>
+<text x="210" y="558" font-size="9.5" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.82">by adding application and worker nodes behind the same boundary — no architectural change.</text>
+</svg>

@@ -51,10 +51,12 @@ class SuperAdminController extends Controller
             'sms_sender_number' => 'nullable|string|max:50|regex:/^tel:\+\d+$/',
             'core_banking_system_id' => 'nullable|exists:core_banking_systems,id',
             'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'cnss_enabled' => 'sometimes|boolean',
         ], $this->katoCredentialValidationRules()));
 
         $validated['slug'] = Str::slug($validated['name']);
         $validated['is_active'] = true;
+        $validated['cnss_enabled'] = $request->boolean('cnss_enabled');
         if ($this->isKatoCbsId($validated['core_banking_system_id'] ?? null)) {
             $validated = array_merge($validated, $this->katoCredentialFieldsFromRequest($request));
         }
@@ -118,7 +120,10 @@ class SuperAdminController extends Controller
             'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             'transaction_types' => 'nullable|array',
             'transaction_types.*' => 'exists:transaction_types,id',
+            'cnss_enabled' => 'sometimes|boolean',
         ], $this->katoCredentialValidationRules(), $this->cbsCredentialValidationRules()));
+
+        $validated['cnss_enabled'] = $request->boolean('cnss_enabled');
 
         // Handle logo upload
         if ($request->hasFile('logo')) {
@@ -561,7 +566,7 @@ class SuperAdminController extends Controller
             'kato_token' => $registrationData['token'] ?? null,
             'kato_token_expires_at' => ! empty($registrationData['expiresIn'])
                 ? now()->addSeconds((int) $registrationData['expiresIn'])
-                : null,
+                : BusinessUnit::defaultKatoTokenExpiresAt(),
             'kato_admin_username' => $registrationData['adminUsername'] ?? null,
             'kato_admin_password' => $registrationData['adminPassword'] ?? null,
             'kato_admin_name' => $registrationData['adminName'] ?? $businessUnit->kato_admin_name,

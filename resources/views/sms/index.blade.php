@@ -6,8 +6,8 @@
 @section('content')
 <div class="card">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 15px;">
-        <h1 style="color: var(--accent-color);">{{ __('common.sms_management') }}</h1>
-        <div style="display: flex; gap: 10px;">
+        <h1 class="text-accent">{{ __('common.sms_management') }}</h1>
+        <div class="btn-row">
             @if(auth()->user()->isSuperAdmin())
                 <a href="{{ route('superadmin.sms.config.index') }}" class="btn" style="background: var(--success-bg); color: var(--success-text); border: 1px solid var(--success-text);">{{ __('common.sms_configuration') }}</a>
                 <a href="{{ route('superadmin.sms.load_credits') }}" class="btn">{{ __('common.load_sms_credits') }}</a>
@@ -26,7 +26,7 @@
             <div style="color: var(--text-muted); font-size: 12px; margin-top: 5px;">{{ __('common.sms_credits') }}</div>
         </div>
         
-        <div style="padding: 20px; background: var(--bg-secondary); border-radius: 8px; border-left: 4px solid #4a9eff;">
+        <div style="padding: 20px; background: var(--bg-secondary); border-radius: 8px; border-left: 4px solid var(--accent);">
             <div style="color: var(--text-muted); font-size: 14px; margin-bottom: 8px;">{{ __('common.total_used') }}</div>
             <div style="font-size: 32px; font-weight: bold; color: var(--text-primary);">
                 {{ number_format($smsUsed, 2) }}
@@ -34,7 +34,7 @@
             <div style="color: var(--text-muted); font-size: 12px; margin-top: 5px;">{{ __('common.sms_credits') }}</div>
         </div>
         
-        <div style="padding: 20px; background: var(--bg-secondary); border-radius: 8px; border-left: 4px solid #90ee90;">
+        <div style="padding: 20px; background: var(--bg-secondary); border-radius: 8px; border-left: 4px solid var(--success-text);">
             <div style="color: var(--text-muted); font-size: 14px; margin-bottom: 8px;">{{ __('common.total_credited') }}</div>
             <div style="font-size: 32px; font-weight: bold; color: var(--text-primary);">
                 {{ number_format($smsCredited, 2) }}
@@ -70,11 +70,11 @@
                 @endif
             </div>
         @else
-            <div style="padding: 20px; background: var(--warning-bg, rgba(255, 193, 7, 0.2)); border-radius: 8px; border-left: 4px solid var(--warning-text, #ffc107);">
+            <div style="padding: 20px; background: var(--warning-bg, rgba(255, 193, 7, 0.2)); border-radius: 8px; border-left: 4px solid var(--warning-text, var(--warning-text));">
                 <p style="color: var(--text-primary); margin: 0; font-size: 16px;">
                     {{ __('common.no_send_sms_permission') }}
                     @if(!$user->isSuperAdmin() && $businessUnit)
-                        <br><small style="color: var(--text-muted);">{{ __('common.contact_admin_for_permissions') }}</small>
+                        <br><small class="muted">{{ __('common.contact_admin_for_permissions') }}</small>
                     @endif
                 </p>
             </div>
@@ -90,7 +90,7 @@
     <!-- Transaction History -->
     <div>
         <h2 style="color: var(--text-primary); margin-bottom: 20px; font-size: 20px;">{{ __('common.transaction_history') }}</h2>
-        <div style="overflow-x: auto;">
+        <div class="data-table">
             <table id="sms-transactions-table" style="width: 100%; border-collapse: collapse;">
                 <thead>
                     <tr style="background: var(--bg-tertiary); border-bottom: 2px solid var(--border-color);">
@@ -125,7 +125,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     row.style.borderBottom = '1px solid var(--border-color)';
                     row.innerHTML = `
                         <td style="padding: 12px; color: var(--text-secondary);">${transaction.date}</td>
-                        <td style="padding: 12px;">
+                        <td>
                             <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; 
                                 ${transaction.transaction_type === 'Credit' ? 'background: var(--success-bg); color: var(--success-text);' : 'background: var(--error-bg); color: var(--error-text);'}">
                                 ${transaction.transaction_type}

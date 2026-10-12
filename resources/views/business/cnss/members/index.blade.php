@@ -20,7 +20,7 @@
 @else
 <div class="card">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 15px;">
-        <h1 style="color: var(--accent-color);">{{ __('common.cnss_members') }}</h1>
+        <h1 class="text-accent">{{ __('common.cnss_members') }}</h1>
         <div style="position: relative;">
             <button type="button" onclick="toggleExportDropdown()" class="btn" style="display: flex; align-items: center; gap: 5px;">
                 <span>📥</span>
@@ -53,7 +53,7 @@
                 </select>
             </div>
         </div>
-        <div style="display: flex; gap: 10px;">
+        <div class="btn-row">
             <input type="text" name="search" class="form-control" placeholder="{{ __('common.cnss_search_members_placeholder') }}" value="{{ request('search') }}" style="flex: 1;">
             <button type="submit" class="btn">{{ __('common.filter') }}</button>
             <a href="{{ route('business.cnss.members.index') }}" class="btn btn-secondary">{{ __('common.clear') }}</a>
@@ -61,29 +61,29 @@
     </form>
 
     @if($enrollments->count() > 0)
-        <div style="overflow-x: auto;">
-            <table style="width: 100%; border-collapse: collapse;">
+        <div class="data-table">
+            <table>
                 <thead>
                     <tr style="border-bottom: 2px solid var(--border-color);">
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.cnss_voluntary_insured_number') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.cnss_affiliation_number') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.last_name') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.first_names') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.phone') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.status') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.actions') }}</th>
+                        <th>{{ __('common.cnss_voluntary_insured_number') }}</th>
+                        <th>{{ __('common.cnss_affiliation_number') }}</th>
+                        <th>{{ __('common.last_name') }}</th>
+                        <th>{{ __('common.first_names') }}</th>
+                        <th>{{ __('common.phone') }}</th>
+                        <th>{{ __('common.status') }}</th>
+                        <th>{{ __('common.actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach($enrollments as $row)
                         <tr style="border-bottom: 1px solid var(--border-color);">
-                            <td style="padding: 12px;"><code style="background: var(--bg-tertiary); padding: 2px 6px; border-radius: 4px;">{{ $row->voluntary_insured_number }}</code></td>
-                            <td style="padding: 12px;"><code style="background: var(--bg-tertiary); padding: 2px 6px; border-radius: 4px;">{{ $row->cnss_registration_affiliation_number }}</code></td>
-                            <td style="padding: 12px;">{{ $row->last_name ?? '—' }}</td>
-                            <td style="padding: 12px;">{{ $row->first_names ?? '—' }}</td>
-                            <td style="padding: 12px;">{{ $row->phone ?? '—' }}</td>
-                            <td style="padding: 12px;">{{ $row->status }}</td>
-                            <td style="padding: 12px;">
+                            <td><code style="background: var(--bg-tertiary); padding: 2px 6px; border-radius: 4px;">{{ $row->voluntary_insured_number }}</code></td>
+                            <td><code style="background: var(--bg-tertiary); padding: 2px 6px; border-radius: 4px;">{{ $row->cnss_registration_affiliation_number }}</code></td>
+                            <td>{{ $row->last_name ?? '—' }}</td>
+                            <td>{{ $row->first_names ?? '—' }}</td>
+                            <td>{{ $row->phone ?? '—' }}</td>
+                            <td>{{ $row->status }}</td>
+                            <td>
                                 @php
                                     $canViewDetail = $user->isSuperAdmin() || ($businessUnit && $user->hasPermission('view-cnss-member', $businessUnit->id));
                                     $canEdit = $user->isSuperAdmin() || ($businessUnit && $user->hasPermission('edit-cnss-member', $businessUnit->id));
@@ -91,16 +91,16 @@
                                 @endphp
                                 <div style="display: flex; gap: 5px; flex-wrap: wrap;">
                                     @if($canViewDetail)
-                                        <a href="{{ route('business.cnss.members.show', $row->id) }}" class="btn" style="padding: 6px 12px; font-size: 12px;">{{ __('common.view') }}</a>
+                                        <a href="{{ route('business.cnss.members.show', $row->id) }}" class="btn btn-sm">{{ __('common.view') }}</a>
                                     @endif
                                     @if($canEdit)
-                                        <a href="{{ route('business.cnss.members.edit', $row->id) }}" class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">{{ __('common.edit') }}</a>
+                                        <a href="{{ route('business.cnss.members.edit', $row->id) }}" class="btn btn-secondary btn-sm">{{ __('common.edit') }}</a>
                                     @endif
                                     @if($canDelete)
                                         <form action="{{ route('business.cnss.members.destroy', $row->id) }}" method="POST" style="display: inline;" onsubmit="return confirm('{{ __('common.confirm_delete') }}');">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="btn btn-danger" style="padding: 6px 12px; font-size: 12px;">{{ __('common.delete') }}</button>
+                                            <button type="submit" class="btn btn-danger btn-sm">{{ __('common.delete') }}</button>
                                         </form>
                                     @endif
                                 </div>
@@ -110,11 +110,11 @@
                 </tbody>
             </table>
         </div>
-        <div style="margin-top: 20px;">
+        <div class="mt-20">
             {{ $enrollments->links() }}
         </div>
     @else
-        <div style="text-align: center; padding: 40px; color: var(--text-muted);">
+        <div class="muted-center">
             <p>{{ __('common.cnss_no_members') }}</p>
         </div>
     @endif

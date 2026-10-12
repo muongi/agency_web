@@ -1,0 +1,69 @@
+<svg viewBox="0 0 820 560" role="img" aria-label="System context: the POS terminal and back office carry field collection; SUNULIFE, Mobile Money, SMS and the card station are non-blocking dependencies." xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto">
+<defs>
+<marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+<marker id="ahT" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#0E8B80"/></marker>
+<marker id="ahs" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M10,0 L0,5 L10,10 z" fill="currentColor"/></marker>
+</defs>
+<rect x="16" y="118" width="122" height="60" rx="6" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-opacity="0.85" stroke-width="1.4"/>
+<text x="77" y="145" font-size="13" font-weight="600" text-anchor="middle" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="1">Insured</text>
+<text x="77" y="161" font-size="9.5" font-weight="400" text-anchor="middle" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.72">prospect / policyholder</text>
+<rect x="16" y="212" width="122" height="60" rx="6" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-opacity="0.85" stroke-width="1.4"/>
+<text x="77" y="239" font-size="12" font-weight="600" text-anchor="middle" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="1">Collection agent</text>
+<text x="77" y="255" font-size="9.5" font-weight="400" text-anchor="middle" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.72">assigned to one terminal</text>
+<rect x="228" y="92" width="164" height="214" rx="8" fill="#0E8B80" fill-opacity="0.07" stroke="#0E8B80" stroke-opacity="0.85" stroke-width="1.6"/>
+<text x="310" y="114" font-size="13" font-weight="700" text-anchor="middle" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="1">POS TERMINAL</text>
+<text x="310" y="130" font-size="9.5" font-weight="400" text-anchor="middle" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.72">15 units</text>
+<text x="244" y="158" font-size="9.5" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.8">• subscription capture</text>
+<text x="244" y="173" font-size="9.5" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.8">• premium collection</text>
+<text x="244" y="188" font-size="9.5" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.8">• card read / QR scan</text>
+<text x="244" y="203" font-size="9.5" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.8">• receipt printing</text>
+<text x="244" y="218" font-size="9.5" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.8">• camera · GPS</text>
+<text x="244" y="233" font-size="9.5" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.8">• offline queue</text>
+<rect x="470" y="72" width="334" height="196" rx="8" fill="#0E8B80" fill-opacity="0.07" stroke="#0E8B80" stroke-opacity="0.85" stroke-width="1.6"/>
+<text x="637" y="94" font-size="13" font-weight="700" text-anchor="middle" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="1">BACK-OFFICE PLATFORM</text>
+<text x="492" y="140" font-size="9.5" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.8">• insured &amp; policy repository</text>
+<text x="492" y="155" font-size="9.5" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.8">• collections, receipts, exports</text>
+<text x="492" y="170" font-size="9.5" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.8">• collector caps &amp; pay-ins</text>
+<text x="660" y="140" font-size="9.5" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.8">• profiles &amp; permissions</text>
+<text x="660" y="155" font-size="9.5" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.8">• card issuance</text>
+<text x="660" y="170" font-size="9.5" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.8">• integration hub</text>
+<text x="637" y="250" font-size="9.5" font-weight="600" text-anchor="middle" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="#0E8B80" fill-opacity="0.95">system of record for COLLECTION</text>
+<rect x="228" y="372" width="164" height="66" rx="6" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-opacity="0.85" stroke-width="1.4"/>
+<text x="310" y="402" font-size="13" font-weight="600" text-anchor="middle" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="1">SUNU back office</text>
+<text x="310" y="418" font-size="9.5" font-weight="400" text-anchor="middle" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.72">users (5 profiles)</text>
+<rect x="470" y="400" width="76" height="72" rx="6" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-opacity="0.85" stroke-width="1.4"/>
+<text x="508" y="433" font-size="10.5" font-weight="600" text-anchor="middle" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="1">SUNULIFE</text>
+<text x="508" y="449" font-size="9.5" font-weight="400" text-anchor="middle" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.72">core business</text>
+<line x1="508" y1="268" x2="508" y2="400" stroke="currentColor" stroke-opacity="0.85" stroke-width="1.4" marker-end="url(#ah)" stroke-dasharray="6 5"/>
+<text x="515" y="306" font-size="9.5" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.75">customer &amp;</text>
+<text x="515" y="318" font-size="9.5" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.75">policy sync</text>
+<rect x="556" y="400" width="76" height="72" rx="6" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-opacity="0.85" stroke-width="1.4"/>
+<text x="594" y="433" font-size="10.5" font-weight="600" text-anchor="middle" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="1">Mobile Money</text>
+<text x="594" y="449" font-size="9.5" font-weight="400" text-anchor="middle" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.72">Orange · Moov</text>
+<line x1="594" y1="268" x2="594" y2="400" stroke="currentColor" stroke-opacity="0.85" stroke-width="1.4" marker-end="url(#ah)" stroke-dasharray="6 5"/>
+<text x="601" y="336" font-size="9.5" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.75">collect</text>
+<text x="601" y="348" font-size="9.5" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.75">premium</text>
+<rect x="642" y="400" width="76" height="72" rx="6" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-opacity="0.85" stroke-width="1.4"/>
+<text x="680" y="440" font-size="10.5" font-weight="600" text-anchor="middle" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="1">SMS gateway</text>
+<line x1="680" y1="268" x2="680" y2="400" stroke="currentColor" stroke-opacity="0.85" stroke-width="1.4" marker-end="url(#ah)" stroke-dasharray="6 5"/>
+<text x="687" y="306" font-size="9.5" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.75">receipt</text>
+<text x="687" y="318" font-size="9.5" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.75">confirmation</text>
+<rect x="728" y="400" width="76" height="72" rx="6" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-opacity="0.85" stroke-width="1.4"/>
+<text x="766" y="433" font-size="10.5" font-weight="600" text-anchor="middle" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="1">Card station</text>
+<text x="766" y="449" font-size="9.5" font-weight="400" text-anchor="middle" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.72">personalisation</text>
+<line x1="766" y1="268" x2="766" y2="400" stroke="currentColor" stroke-opacity="0.85" stroke-width="1.4" marker-end="url(#ah)" stroke-dasharray="6 5"/>
+<text x="773" y="336" font-size="9.5" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.75">card data</text>
+<line x1="138" y1="148" x2="228" y2="148" stroke="currentColor" stroke-opacity="0.85" stroke-width="1.4" marker-end="url(#ah)"/>
+<text x="183" y="140" font-size="9.5" font-weight="400" text-anchor="middle" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.8">pays premium</text>
+<line x1="138" y1="242" x2="228" y2="242" stroke="currentColor" stroke-opacity="0.85" stroke-width="1.4" marker-end="url(#ah)"/>
+<text x="183" y="234" font-size="9.5" font-weight="400" text-anchor="middle" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.8">operates</text>
+<line x1="392" y1="170" x2="470" y2="170" stroke="#0E8B80" stroke-opacity="0.85" stroke-width="1.4" marker-end="url(#ahT)" marker-start="url(#ahs)"/>
+<text x="431" y="162" font-size="9.5" font-weight="400" text-anchor="middle" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="#0E8B80" fill-opacity="0.85">HTTPS · JSON</text>
+<text x="431" y="190" font-size="9.5" font-weight="400" text-anchor="middle" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.75">queued offline</text>
+<polyline points="392,400 431,400 431,230 470,230" fill="none" stroke="currentColor" stroke-opacity="0.85" stroke-width="1.4" marker-end="url(#ah)"/>
+<text x="437" y="392" font-size="9.5" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.75">browser · HTTPS</text>
+<line x1="16" y1="500" x2="52" y2="500" stroke="currentColor" stroke-width="1.6" marker-end="url(#ah)"/>
+<text x="60" y="504" font-size="9.5" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.85">required for field collection</text>
+<line x1="270" y1="500" x2="306" y2="500" stroke="currentColor" stroke-width="1.6" stroke-dasharray="6 5" marker-end="url(#ah)"/>
+<text x="314" y="504" font-size="9.5" font-weight="400" text-anchor="start" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" fill="currentColor" fill-opacity="0.85">non-blocking — if unavailable that channel stops, cash collection continues</text>
+</svg>

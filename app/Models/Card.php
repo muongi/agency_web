@@ -67,6 +67,26 @@ class Card extends Model
         return $this->belongsTo(Account::class);
     }
 
+    /** SUNU proposals this card is linked to (sunu_proposals.card_id). */
+    public function sunuProposals()
+    {
+        return $this->hasMany(SunuProposal::class, 'card_id');
+    }
+
+    /** SUNU policies this card is linked to (mirror of SunuPolicy::cards()). */
+    public function sunuPolicies()
+    {
+        return $this->belongsToMany(SunuPolicy::class, 'card_policy_links', 'card_id', 'policy_id')
+            ->withPivot('slot_index')
+            ->withTimestamps();
+    }
+
+    /** SUNU customer behind the card: first linked policy's client, else first proposal's. */
+    public function sunuClient(): ?Client
+    {
+        return $this->sunuPolicies->first()?->client ?? $this->sunuProposals->first()?->client;
+    }
+
     public function replacedByCard()
     {
         return $this->belongsTo(Card::class, 'replaced_by_card_id');

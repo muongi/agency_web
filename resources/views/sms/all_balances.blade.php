@@ -5,13 +5,13 @@
 
 @section('content')
 <div class="card">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-        <h1 style="color: var(--accent-color);">{{ __('common.all_businesses_sms_balance') }}</h1>
+    <div class="toolbar">
+        <h1 class="text-accent">{{ __('common.all_businesses_sms_balance') }}</h1>
         <a href="{{ route('superadmin.sms.load_credits') }}" class="btn">{{ __('common.load_sms_credits') }}</a>
     </div>
 
-    <div style="overflow-x: auto;">
-        <table style="width: 100%; border-collapse: collapse;">
+    <div class="data-table">
+        <table>
             <thead>
                 <tr style="background: var(--bg-tertiary); border-bottom: 2px solid var(--border-color);">
                     <th style="padding: 12px; text-align: left; color: var(--text-primary); font-weight: 600;">{{ __('common.business_unit') }}</th>
@@ -31,7 +31,7 @@
                         <td style="padding: 12px; text-align: right; color: var(--text-secondary);">{{ number_format($businessUnit->sms_used, 2) }}</td>
                         <td style="padding: 12px; text-align: right; color: var(--text-secondary);">{{ number_format($businessUnit->sms_credited, 2) }}</td>
                         <td style="padding: 12px; text-align: center;">
-                            <a href="{{ route('superadmin.sms.load_credits') }}?business_unit={{ $businessUnit->id }}" class="btn" style="padding: 6px 12px; font-size: 12px;">{{ __('common.load_credits') }}</a>
+                            <a href="{{ route('superadmin.sms.load_credits') }}?business_unit={{ $businessUnit->id }}" class="btn btn-sm">{{ __('common.load_credits') }}</a>
                         </td>
                     </tr>
                 @empty

@@ -5,9 +5,9 @@
 
 @section('content')
 <div class="card">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-        <h1 style="color: var(--accent-color);">{{ __('common.client_details') }}</h1>
-        <div style="display: flex; gap: 10px;">
+    <div class="toolbar">
+        <h1 class="text-accent">{{ __('common.client_details') }}</h1>
+        <div class="btn-row">
             @php
                 $user = auth()->user();
                 $businessUnit = $user->currentBusinessUnit;
@@ -42,11 +42,11 @@
             @endif
             @if(!empty($isKato))
                 <div style="margin-top: 12px; padding: 12px; background: var(--bg-primary); border-radius: 6px; border: 1px solid var(--border-color);">
-                    <strong style="color: var(--accent-color);">{{ __('common.kato_member_status') }}</strong>
+                    <strong class="text-accent">{{ __('common.kato_member_status') }}</strong>
                     @if($client->kato_member_no)
-                        <p style="margin: 8px 0 0 0; color: #90ee90;">{{ __('common.kato_member_no') }}: {{ $client->kato_member_no }}</p>
+                        <p style="margin: 8px 0 0 0; color: var(--success-text);">{{ __('common.kato_member_no') }}: {{ $client->kato_member_no }}</p>
                     @elseif($client->kato_registration_error)
-                        <p style="margin: 8px 0 0 0; color: #ee9090;">{{ __('common.error') }}: {{ $client->kato_registration_error }}</p>
+                        <p style="margin: 8px 0 0 0; color: var(--error-text);">{{ __('common.error') }}: {{ $client->kato_registration_error }}</p>
                     @else
                         <p style="margin: 8px 0 0 0; color: var(--text-muted);">{{ __('common.not_synced_with_kato') }}</p>
                     @endif
@@ -56,7 +56,22 @@
                     @if($canSyncKato && !$client->kato_member_no)
                         <form method="POST" action="{{ route('clients.sync-kato', $client->id) }}" style="margin-top: 10px;">
                             @csrf
-                            <button type="submit" class="btn" style="padding: 6px 12px; font-size: 12px;">
+                            @if(($katoAgents ?? collect())->isNotEmpty())
+                                <div class="form-group" style="margin-bottom: 10px;">
+                                    <label class="form-label" for="sync_agent_id">{{ __('common.kato_registration_agent') }}</label>
+                                    <select id="sync_agent_id" name="agent_id" class="form-select" required>
+                                        <option value="">— {{ __('common.agent') }} —</option>
+                                        @foreach($katoAgents as $katoAgent)
+                                            <option value="{{ $katoAgent->id }}" {{ (string) old('agent_id') === (string) $katoAgent->id ? 'selected' : '' }}>
+                                                {{ $katoAgent->full_name }} ({{ $katoAgent->katoFloatAccountNumber() }})
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            @else
+                                <p style="color: var(--error-text); margin-bottom: 10px;">{{ __('common.kato_registration_agent_required') }}</p>
+                            @endif
+                            <button type="submit" class="btn btn-sm" @if(($katoAgents ?? collect())->isEmpty()) disabled @endif>
                                 {{ __('common.sync_with_kato') }}
                             </button>
                         </form>
@@ -74,16 +89,20 @@
                style="padding: 12px 24px; text-decoration: none; color: var(--text-secondary); border-bottom: 3px solid transparent; transition: all 0.3s; font-weight: 500;">
                 {{ __('common.information') }}
             </a>
+            @if(config('sunu.core_banking'))
             <a href="{{ route('clients.show', ['client' => $client->id, 'tab' => 'accounts']) }}" 
                class="tab-link {{ ($activeTab ?? 'information') == 'accounts' ? 'active' : '' }}" 
                style="padding: 12px 24px; text-decoration: none; color: var(--text-secondary); border-bottom: 3px solid transparent; transition: all 0.3s; font-weight: 500;">
                 {{ __('common.accounts') }} ({{ $client->accounts->count() }})
             </a>
+            @endif
+            @if(config('sunu.core_banking'))
             <a href="{{ route('clients.show', ['client' => $client->id, 'tab' => 'transactions']) }}" 
                class="tab-link {{ ($activeTab ?? 'information') == 'transactions' ? 'active' : '' }}" 
                style="padding: 12px 24px; text-decoration: none; color: var(--text-secondary); border-bottom: 3px solid transparent; transition: all 0.3s; font-weight: 500;">
                 {{ __('common.transaction_history') }}
             </a>
+            @endif
         </div>
     </div>
 
@@ -96,89 +115,89 @@
                 
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 30px;">
                     <div>
-                        <strong style="color: var(--accent-color); display: block; margin-bottom: 5px;">{{ __('common.name') }}:</strong>
+                        <strong class="detail-label">{{ __('common.name') }}:</strong>
                         <p style="color: var(--text-primary); margin: 0 0 15px 0;">{{ $client->full_name }}</p>
                     </div>
                     
                     @if($client->salutation)
                     <div>
-                        <strong style="color: var(--accent-color); display: block; margin-bottom: 5px;">{{ __('common.salutation') }}:</strong>
+                        <strong class="detail-label">{{ __('common.salutation') }}:</strong>
                         <p style="color: var(--text-primary); margin: 0 0 15px 0;">{{ $client->salutation }}</p>
                     </div>
                     @endif
 
                     @if($client->email)
                     <div>
-                        <strong style="color: var(--accent-color); display: block; margin-bottom: 5px;">{{ __('common.email') }}:</strong>
+                        <strong class="detail-label">{{ __('common.email') }}:</strong>
                         <p style="color: var(--text-primary); margin: 0 0 15px 0;">{{ $client->email }}</p>
                     </div>
                     @endif
 
                     @if($client->phone_number)
                     <div>
-                        <strong style="color: var(--accent-color); display: block; margin-bottom: 5px;">{{ __('common.phone_number') }}:</strong>
+                        <strong class="detail-label">{{ __('common.phone_number') }}:</strong>
                         <p style="color: var(--text-primary); margin: 0 0 15px 0;">{{ $client->phone_number }}</p>
                     </div>
                     @endif
 
                     @if($client->id_passport)
                     <div>
-                        <strong style="color: var(--accent-color); display: block; margin-bottom: 5px;">{{ __('common.id_passport') }}:</strong>
+                        <strong class="detail-label">{{ __('common.id_passport') }}:</strong>
                         <p style="color: var(--text-primary); margin: 0 0 15px 0;">{{ $client->id_passport }}</p>
                     </div>
                     @endif
 
                     @if($client->home_address)
                     <div>
-                        <strong style="color: var(--accent-color); display: block; margin-bottom: 5px;">{{ __('common.home_address') }}:</strong>
+                        <strong class="detail-label">{{ __('common.home_address') }}:</strong>
                         <p style="color: var(--text-primary); margin: 0 0 15px 0;">{{ $client->home_address }}</p>
                     </div>
                     @endif
 
                     @if($client->gender)
                     <div>
-                        <strong style="color: var(--accent-color); display: block; margin-bottom: 5px;">{{ __('common.gender') }}:</strong>
+                        <strong class="detail-label">{{ __('common.gender') }}:</strong>
                         <p style="color: var(--text-primary); margin: 0 0 15px 0;">{{ $client->gender }}</p>
                     </div>
                     @endif
 
                     @if($client->marital_status)
                     <div>
-                        <strong style="color: var(--accent-color); display: block; margin-bottom: 5px;">{{ __('common.marital_status') }}:</strong>
+                        <strong class="detail-label">{{ __('common.marital_status') }}:</strong>
                         <p style="color: var(--text-primary); margin: 0 0 15px 0;">{{ $client->marital_status }}</p>
                     </div>
                     @endif
 
                     @if($client->year_of_birth)
                     <div>
-                        <strong style="color: var(--accent-color); display: block; margin-bottom: 5px;">{{ __('common.year_of_birth') }}:</strong>
+                        <strong class="detail-label">{{ __('common.year_of_birth') }}:</strong>
                         <p style="color: var(--text-primary); margin: 0 0 15px 0;">{{ $client->year_of_birth }}</p>
                     </div>
                     @endif
 
                     @if($client->region)
                     <div>
-                        <strong style="color: var(--accent-color); display: block; margin-bottom: 5px;">{{ __('common.region') }}:</strong>
+                        <strong class="detail-label">{{ __('common.region') }}:</strong>
                         <p style="color: var(--text-primary); margin: 0 0 15px 0;">{{ $client->region }}</p>
                     </div>
                     @endif
 
                     @if($client->home_town)
                     <div>
-                        <strong style="color: var(--accent-color); display: block; margin-bottom: 5px;">{{ __('common.home_town') }}:</strong>
+                        <strong class="detail-label">{{ __('common.home_town') }}:</strong>
                         <p style="color: var(--text-primary); margin: 0 0 15px 0;">{{ $client->home_town }}</p>
                     </div>
                     @endif
 
                     @if($client->nationality)
                     <div>
-                        <strong style="color: var(--accent-color); display: block; margin-bottom: 5px;">{{ __('common.nationality') }}:</strong>
+                        <strong class="detail-label">{{ __('common.nationality') }}:</strong>
                         <p style="color: var(--text-primary); margin: 0 0 15px 0;">{{ $client->nationality }}</p>
                     </div>
                     @endif
 
                     <div>
-                        <strong style="color: var(--accent-color); display: block; margin-bottom: 5px;">{{ __('common.biometrics_status') }}:</strong>
+                        <strong class="detail-label">{{ __('common.biometrics_status') }}:</strong>
                         <p style="color: var(--text-primary); margin: 0 0 15px 0;">
                             <span style="text-transform: capitalize; padding: 4px 8px; border-radius: 4px; font-size: 12px; 
                                 @if($client->biometrics_status) background: var(--success-bg); color: var(--success-text);
@@ -195,31 +214,31 @@
                 <div style="margin-top: 30px;">
                     <h2 style="color: var(--accent-color); margin-bottom: 20px;">{{ __('common.next_of_kin_information') }}</h2>
                     
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                    <div class="detail-grid">
                         @if($client->next_of_kin_full_name)
                         <div>
-                            <strong style="color: var(--accent-color); display: block; margin-bottom: 5px;">{{ __('common.name') }}:</strong>
+                            <strong class="detail-label">{{ __('common.name') }}:</strong>
                             <p style="color: var(--text-primary); margin: 0 0 15px 0;">{{ $client->next_of_kin_full_name }}</p>
                         </div>
                         @endif
 
                         @if($client->next_of_kin_phone_number)
                         <div>
-                            <strong style="color: var(--accent-color); display: block; margin-bottom: 5px;">{{ __('common.phone_number') }}:</strong>
+                            <strong class="detail-label">{{ __('common.phone_number') }}:</strong>
                             <p style="color: var(--text-primary); margin: 0 0 15px 0;">{{ $client->next_of_kin_phone_number }}</p>
                         </div>
                         @endif
 
                         @if($client->next_of_kin_address)
                         <div>
-                            <strong style="color: var(--accent-color); display: block; margin-bottom: 5px;">{{ __('common.address') }}:</strong>
+                            <strong class="detail-label">{{ __('common.address') }}:</strong>
                             <p style="color: var(--text-primary); margin: 0 0 15px 0;">{{ $client->next_of_kin_address }}</p>
                         </div>
                         @endif
 
                         @if($client->next_of_kin_gender)
                         <div>
-                            <strong style="color: var(--accent-color); display: block; margin-bottom: 5px;">{{ __('common.gender') }}:</strong>
+                            <strong class="detail-label">{{ __('common.gender') }}:</strong>
                             <p style="color: var(--text-primary); margin: 0 0 15px 0;">{{ $client->next_of_kin_gender }}</p>
                         </div>
                         @endif
@@ -228,50 +247,50 @@
                 @endif
             </div>
 
-        @elseif(($activeTab ?? 'information') == 'accounts')
+        @elseif(($activeTab ?? 'information') == 'accounts' && config('sunu.core_banking'))
             <!-- Accounts Tab -->
             <div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h2 style="color: var(--accent-color);">{{ __('common.accounts') }} ({{ $client->accounts->count() }})</h2>
+                    <h2 class="text-accent">{{ __('common.accounts') }} ({{ $client->accounts->count() }})</h2>
                     <a href="{{ route('accounts.create', ['accountable_type' => 'client', 'accountable_id' => $client->id]) }}" class="btn">+ {{ __('common.add_account') }}</a>
                 </div>
 
                 @if($client->accounts->count() > 0)
-                    <div style="overflow-x: auto;">
-                        <table style="width: 100%; border-collapse: collapse;">
+                    <div class="data-table">
+                        <table>
                             <thead>
                                 <tr style="border-bottom: 2px solid var(--border-color);">
-                                    <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.account_number') }}</th>
-                                    <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.account_type') }}</th>
+                                    <th>{{ __('common.account_number') }}</th>
+                                    <th>{{ __('common.account_type') }}</th>
                                     <th style="padding: 12px; text-align: right; color: var(--accent-color);">{{ __('common.balance') }}</th>
-                                    <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.currency') }}</th>
-                                    <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.status') }}</th>
-                                    <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.opening_date') }}</th>
-                                    <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.actions') }}</th>
+                                    <th>{{ __('common.currency') }}</th>
+                                    <th>{{ __('common.status') }}</th>
+                                    <th>{{ __('common.opening_date') }}</th>
+                                    <th>{{ __('common.actions') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach($client->accounts as $account)
                                     <tr style="border-bottom: 1px solid var(--border-color);">
-                                        <td style="padding: 12px;"><code style="background: var(--bg-tertiary); padding: 4px 8px; border-radius: 4px;">{{ $account->account_number }}</code></td>
+                                        <td><code style="background: var(--bg-tertiary); padding: 4px 8px; border-radius: 4px;">{{ $account->account_number }}</code></td>
                                         <td style="padding: 12px; text-transform: capitalize;">{{ $account->account_type }}</td>
                                         <td style="padding: 12px; text-align: right; font-weight: bold;">{{ number_format($account->balance, 2) }}</td>
-                                        <td style="padding: 12px;">{{ $account->currency }}</td>
-                                        <td style="padding: 12px;">
+                                        <td>{{ $account->currency }}</td>
+                                        <td>
                                             <span style="text-transform: capitalize; padding: 4px 8px; border-radius: 4px; font-size: 12px; 
                                                 @if($account->status === 'active') background: var(--success-bg); color: var(--success-text);
                                                 @elseif($account->status === 'inactive') background: var(--bg-tertiary); color: var(--text-muted);
-                                                @elseif($account->status === 'suspended') background: #ff9800; color: white;
+                                                @elseif($account->status === 'suspended') background: var(--warning-bg); color: var(--warning-text);
                                                 @else background: var(--error-bg); color: var(--error-text);
                                                 @endif">
                                                 {{ $account->status }}
                                             </span>
                                         </td>
-                                        <td style="padding: 12px;">{{ $account->opening_date->format('Y-m-d') }}</td>
-                                        <td style="padding: 12px;">
+                                        <td>{{ $account->opening_date->format('Y-m-d') }}</td>
+                                        <td>
                                             <div style="display: flex; gap: 5px;">
-                                                <a href="{{ route('accounts.show', $account->id) }}" class="btn" style="padding: 6px 12px; font-size: 12px;">{{ __('common.view') }}</a>
-                                                <a href="{{ route('accounts.edit', $account->id) }}" class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">{{ __('common.edit') }}</a>
+                                                <a href="{{ route('accounts.show', $account->id) }}" class="btn btn-sm">{{ __('common.view') }}</a>
+                                                <a href="{{ route('accounts.edit', $account->id) }}" class="btn btn-secondary btn-sm">{{ __('common.edit') }}</a>
                                             </div>
                                         </td>
                                     </tr>
@@ -280,20 +299,20 @@
                         </table>
                     </div>
                     <div style="margin-top: 15px; padding: 15px; background: var(--bg-tertiary); border-radius: 4px;">
-                        <strong style="color: var(--accent-color);">{{ __('common.total_balance') }}:</strong>
+                        <strong class="text-accent">{{ __('common.total_balance') }}:</strong>
                         <span style="color: var(--text-primary); font-size: 18px; font-weight: bold; margin-left: 10px;">
                             {{ number_format($client->total_account_balance, 2) }} {{ $client->accounts->first()->currency ?? config('currency.default', 'CFA') }}
                         </span>
                     </div>
                 @else
-                    <div style="text-align: center; padding: 40px; color: var(--text-muted);">
-                        <p style="margin-bottom: 20px;">{{ __('common.no_accounts') }}</p>
+                    <div class="muted-center">
+                        <p class="mb-20">{{ __('common.no_accounts') }}</p>
                         <a href="{{ route('accounts.create', ['accountable_type' => 'client', 'accountable_id' => $client->id]) }}" class="btn">{{ __('common.add_account') }}</a>
                     </div>
                 @endif
             </div>
 
-        @elseif(($activeTab ?? 'information') == 'transactions')
+        @elseif(($activeTab ?? 'information') == 'transactions' && config('sunu.core_banking'))
             <!-- Transaction History Tab -->
             <div>
                 <h2 style="color: var(--accent-color); margin-bottom: 20px;">{{ __('common.transaction_history') }}</h2>
@@ -320,33 +339,33 @@
                             </select>
                         </div>
                     </div>
-                    <div style="display: flex; gap: 10px;">
+                    <div class="btn-row">
                         <button type="submit" class="btn">{{ __('common.filter') }}</button>
                         <a href="{{ route('clients.show', ['client' => $client->id, 'tab' => 'transactions']) }}" class="btn btn-secondary">{{ __('common.clear') }}</a>
                     </div>
                 </form>
 
                 @if($transactions->count() > 0)
-                    <div style="overflow-x: auto;">
-                        <table style="width: 100%; border-collapse: collapse;">
+                    <div class="data-table">
+                        <table>
                             <thead>
                                 <tr style="border-bottom: 2px solid var(--border-color);">
-                                    <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.transaction_date') }}</th>
-                                    <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.transaction_type') }}</th>
+                                    <th>{{ __('common.transaction_date') }}</th>
+                                    <th>{{ __('common.transaction_type') }}</th>
                                     <th style="padding: 12px; text-align: right; color: var(--accent-color);">{{ __('common.transaction_amount') }}</th>
-                                    <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.agent') }}</th>
-                                    <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.terminal_serial') }}</th>
-                                    <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.status') }}</th>
-                                    <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.actions') }}</th>
+                                    <th>{{ __('common.agent') }}</th>
+                                    <th>{{ __('common.terminal_serial') }}</th>
+                                    <th>{{ __('common.status') }}</th>
+                                    <th>{{ __('common.actions') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach($transactions as $transaction)
                                     <tr style="border-bottom: 1px solid var(--border-color);">
-                                        <td style="padding: 12px;">
+                                        <td>
                                             {{ $transaction->transaction_date->format('Y-m-d H:i') }}
                                         </td>
-                                        <td style="padding: 12px;">
+                                        <td>
                                             <strong>{{ $transaction->transactionType->name }}</strong>
                                             <br>
                                             <code style="background: var(--bg-tertiary); padding: 2px 6px; border-radius: 4px; font-size: 11px;">{{ $transaction->transactionType->code }}</code>
@@ -354,25 +373,25 @@
                                         <td style="padding: 12px; text-align: right; font-weight: bold;">
                                             {{ number_format($transaction->transaction_amount, 2) }}
                                         </td>
-                                        <td style="padding: 12px;">
+                                        <td>
                                             {{ $transaction->agent ? $transaction->agent->full_name : '-' }}
                                         </td>
-                                        <td style="padding: 12px;">
+                                        <td>
                                             {{ $transaction->terminal ? $transaction->terminal->serial_number : '-' }}
                                         </td>
-                                        <td style="padding: 12px;">
+                                        <td>
                                             @if($transaction->status === 'completed')
-                                                <span style="color: var(--success-text);">{{ __('common.completed') }}</span>
+                                                <span class="badge badge-success">{{ __('common.completed') }}</span>
                                             @elseif($transaction->status === 'pending')
-                                                <span style="color: #ffa500;">{{ __('common.pending') }}</span>
+                                                <span class="badge badge-warning">{{ __('common.pending') }}</span>
                                             @elseif($transaction->status === 'failed')
-                                                <span style="color: var(--error-text);">{{ __('common.failed') }}</span>
+                                                <span class="text-error">{{ __('common.failed') }}</span>
                                             @else
-                                                <span style="color: var(--text-muted);">{{ __('common.cancelled') }}</span>
+                                                <span class="muted">{{ __('common.cancelled') }}</span>
                                             @endif
                                         </td>
-                                        <td style="padding: 12px;">
-                                            <a href="{{ route('transactions.show', $transaction->id) }}" class="btn" style="padding: 6px 12px; font-size: 12px;">{{ __('common.view') }}</a>
+                                        <td>
+                                            <a href="{{ route('transactions.show', $transaction->id) }}" class="btn btn-sm">{{ __('common.view') }}</a>
                                         </td>
                                     </tr>
                                 @endforeach
@@ -380,12 +399,12 @@
                         </table>
                     </div>
 
-                    <div style="margin-top: 20px;">
+                    <div class="mt-20">
                         {{ $transactions->links() }}
                     </div>
                 @else
-                    <div style="text-align: center; padding: 40px; color: var(--text-muted);">
-                        <p style="margin-bottom: 20px;">{{ __('common.no_transactions') }}</p>
+                    <div class="muted-center">
+                        <p class="mb-20">{{ __('common.no_transactions') }}</p>
                     </div>
                 @endif
             </div>

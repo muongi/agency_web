@@ -182,15 +182,19 @@ class ApiTransactionController extends Controller
         Agent $agent,
         Account $customerAccount,
         float $amount,
-        string $memberPin,
+        ?string $memberPin,
         array $calculation
     ): array {
         $base = [
             'agentAccountNumber' => (string) $agent->katoFloatAccountNumber(),
             'accountNumber' => $customerAccount->account_number,
             'amount' => $amount,
-            'memberPin' => $memberPin,
         ];
+
+        // Biometric withdraw may omit PIN; card/PIN flows still pass memberPin.
+        if ($memberPin !== null && $memberPin !== '') {
+            $base['memberPin'] = $memberPin;
+        }
 
         return $this->katoFeePayloadBuilder->build(
             KatoFeePayloadBuilder::OPERATION_WITHDRAW,
@@ -244,13 +248,34 @@ class ApiTransactionController extends Controller
 
     protected function resolveTerminalOrFail(int $businessUnitId, string $deviceSerial): Terminal
     {
-        $terminal = Terminal::where('serial_number', $deviceSerial)
-            ->where('business_unit_id', $businessUnitId)
+        $serial = trim($deviceSerial);
+        $registered = Terminal::where('business_unit_id', $businessUnitId)
+            ->orderBy('id')
+            ->pluck('serial_number')
+            ->all();
+
+        Log::info('TX_TERMINAL_LOOKUP', [
+            'received_serial' => $serial,
+            'business_unit_id' => $businessUnitId,
+            'registered_serials' => $registered,
+        ]);
+
+        $terminal = Terminal::where('business_unit_id', $businessUnitId)
+            ->where(function ($q) use ($serial) {
+                $q->where('serial_number', $serial)
+                    ->orWhereRaw('LOWER(serial_number) = ?', [strtolower($serial)]);
+            })
             ->first();
 
         if (! $terminal) {
+            Log::warning('TX_TERMINAL_NOT_FOUND', [
+                'received_serial' => $serial,
+                'business_unit_id' => $businessUnitId,
+                'registered_serials' => $registered,
+            ]);
+
             throw new \InvalidArgumentException(
-                "Terminal with device_serial '{$deviceSerial}' not found for business unit {$businessUnitId}"
+                "Terminal with device_serial '{$serial}' not found for business unit {$businessUnitId}"
             );
         }
 
@@ -491,31 +516,25 @@ class ApiTransactionController extends Controller
                     ], 422);
                 }
 
-                if (! $memberPin) {
-                    Log::info('Transaction API biometricWithdraw member_pin_missing');
+                // Optional PIN: if provided, verify against active card; biometric path may omit PIN.
+                if ($memberPin) {
+                    $card = Card::query()
+                        ->where('business_unit_id', $businessUnitId)
+                        ->where('account_id', $customerAccount->id)
+                        ->active()
+                        ->first();
 
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Member PIN is required for KATO withdrawal',
-                    ], 422);
-                }
+                    if (! $card || ! $card->verifyPin($memberPin)) {
+                        Log::info('Transaction API biometricWithdraw invalid_member_pin', [
+                            'card_id' => $card?->id,
+                            'has_card' => (bool) $card,
+                        ]);
 
-                $card = Card::query()
-                    ->where('business_unit_id', $businessUnitId)
-                    ->where('account_id', $customerAccount->id)
-                    ->active()
-                    ->first();
-
-                if (! $card || ! $card->verifyPin($memberPin)) {
-                    Log::info('Transaction API biometricWithdraw invalid_member_pin', [
-                        'card_id' => $card?->id,
-                        'has_card' => (bool) $card,
-                    ]);
-
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Invalid member PIN',
-                    ], 422);
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Invalid member PIN',
+                        ], 422);
+                    }
                 }
 
                 if ($agentError = $this->resolveKatoAgentAccountNumberOrFail($agent)) {
@@ -530,7 +549,9 @@ class ApiTransactionController extends Controller
                     $calculation
                 );
                 $katoRequestLog = $katoPayload;
-                $katoRequestLog['memberPin'] = '[REDACTED]';
+                if (array_key_exists('memberPin', $katoRequestLog)) {
+                    $katoRequestLog['memberPin'] = '[REDACTED]';
+                }
 
                 Log::info('Transaction API biometricWithdraw kato_calling', [
                     'business_unit_id' => $businessUnitId,
@@ -1090,6 +1111,17 @@ class ApiTransactionController extends Controller
             $metadata['kato_api_response'] = $katoResult['full_response'] ?? null;
             $metadata['kato_payload'] = $katoPayload;
 
+            // Keep requested account first so Android (which often reads balances[0])
+            // shows the enquired account balance instead of another product (e.g. Savings=0).
+            $orderedBalances = $this->prioritizeRequestedAccountBalance(
+                is_array($katoData['balances'] ?? null) ? $katoData['balances'] : [],
+                $customerAccount->account_number,
+                $customerAccount->kato_account_code
+            );
+            $primaryBalance = isset($orderedBalances[0]['balance'])
+                ? (float) $orderedBalances[0]['balance']
+                : 0.0;
+
             $transactionId = null;
             DB::transaction(function () use (
                 &$transactionId,
@@ -1101,7 +1133,9 @@ class ApiTransactionController extends Controller
                 $calculation,
                 $reference,
                 $metadata,
-                $katoTransactionId
+                $katoTransactionId,
+                $operation,
+                $primaryBalance
             ) {
                 $transaction = Transaction::create([
                     'business_unit_id' => $businessUnitId,
@@ -1110,7 +1144,7 @@ class ApiTransactionController extends Controller
                     'terminal_id' => $terminal->id,
                     'client_id' => $customerAccount->accountable_id,
                     'account_number' => $customerAccount->account_number,
-                    'transaction_amount' => 0,
+                    'transaction_amount' => $operation === 'balance-enquiry' ? $primaryBalance : 0,
                     'transaction_cost' => $calculation['transaction_cost'],
                     'commission' => $calculation['commission'],
                     'business_share' => $calculation['business_share'],
@@ -1141,7 +1175,9 @@ class ApiTransactionController extends Controller
                 $responseData['transactions'] = $katoData['transactions'] ?? [];
                 $responseData['count'] = $katoData['count'] ?? count($responseData['transactions']);
             } else {
-                $responseData['balances'] = $katoData['balances'] ?? [];
+                $responseData['balances'] = $orderedBalances;
+                $responseData['balance'] = $primaryBalance;
+                $responseData['amount'] = $primaryBalance;
             }
 
             if (array_key_exists('enquiryCommission', $katoData)) {
@@ -1656,5 +1692,46 @@ class ApiTransactionController extends Controller
                 'reference' => $transaction->reference,
             ],
         ], 201);
+    }
+
+    /**
+     * Put the enquired account first in the KATO balances list.
+     *
+     * @param  array<int, array<string, mixed>>  $balances
+     * @return array<int, array<string, mixed>>
+     */
+    protected function prioritizeRequestedAccountBalance(
+        array $balances,
+        string $accountNumber,
+        ?string $accountCode = null
+    ): array {
+        if ($balances === []) {
+            return [];
+        }
+
+        $matchIndex = null;
+        foreach ($balances as $index => $row) {
+            $rowAccountNumber = isset($row['accountNumber']) ? (string) $row['accountNumber'] : '';
+            $rowAccountCode = isset($row['accountCode']) ? (string) $row['accountCode'] : '';
+
+            if ($rowAccountNumber !== '' && $rowAccountNumber === $accountNumber) {
+                $matchIndex = $index;
+                break;
+            }
+
+            if ($accountCode && $rowAccountCode !== '' && $rowAccountCode === (string) $accountCode) {
+                $matchIndex = $index;
+                break;
+            }
+        }
+
+        if ($matchIndex === null || $matchIndex === 0) {
+            return array_values($balances);
+        }
+
+        $matched = $balances[$matchIndex];
+        unset($balances[$matchIndex]);
+
+        return array_values(array_merge([$matched], $balances));
     }
 }

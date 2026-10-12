@@ -4,14 +4,14 @@
 
 @section('content')
 <div class="card">
-    <h1 style="margin-bottom: 24px; color: #4a9eff;">{{ __('common.edit_cbs') }}</h1>
+    <h1 style="margin-bottom: 24px; color: var(--accent);">{{ __('common.edit_cbs') }}</h1>
     
     <form method="POST" action="{{ route('superadmin.core-banking-systems.update', $cbs->id) }}">
         @csrf
         @method('PUT')
 
         <div class="form-group">
-            <label class="form-label" for="name">{{ __('common.cbs_name') }} <span style="color: #ff6b6b;">*</span></label>
+            <label class="form-label" for="name">{{ __('common.cbs_name') }} <span class="text-error">*</span></label>
             <input 
                 type="text" 
                 id="name" 
@@ -22,7 +22,7 @@
                 autofocus
             >
             @error('name')
-                <div style="color: #ff6b6b; margin-top: 5px; font-size: 14px;">{{ $message }}</div>
+                <div class="field-error">{{ $message }}</div>
             @enderror
         </div>
 
@@ -39,7 +39,7 @@
             >
             <small style="color: var(--text-muted); font-size: 12px; margin-top: 5px; display: block;">{{ __('common.cbs_code_help') }}</small>
             @error('code')
-                <div style="color: #ff6b6b; margin-top: 5px; font-size: 14px;">{{ $message }}</div>
+                <div class="field-error">{{ $message }}</div>
             @enderror
         </div>
 
@@ -52,7 +52,7 @@
                 rows="4"
             >{{ old('description', $cbs->description) }}</textarea>
             @error('description')
-                <div style="color: #ff6b6b; margin-top: 5px; font-size: 14px;">{{ $message }}</div>
+                <div class="field-error">{{ $message }}</div>
             @enderror
         </div>
 
@@ -68,7 +68,7 @@
             >
             <small style="color: var(--text-muted); font-size: 12px; margin-top: 5px; display: block;">{{ __('common.kato_base_url_help') }}</small>
             @error('base_url')
-                <div style="color: #ff6b6b; margin-top: 5px; font-size: 14px;">{{ $message }}</div>
+                <div class="field-error">{{ $message }}</div>
             @enderror
         </div>
 
@@ -86,11 +86,11 @@
                 {{ __('common.is_active') }}
             </label>
             @error('is_active')
-                <div style="color: #ff6b6b; margin-top: 5px; font-size: 14px;">{{ $message }}</div>
+                <div class="field-error">{{ $message }}</div>
             @enderror
         </div>
 
-        <div style="display: flex; gap: 10px; margin-top: 24px;">
+        <div class="btn-row mt-24">
             <button type="submit" class="btn">{{ __('common.update') }}</button>
             <a href="{{ route('superadmin.core-banking-systems.index') }}" class="btn btn-secondary">{{ __('common.cancel') }}</a>
         </div>

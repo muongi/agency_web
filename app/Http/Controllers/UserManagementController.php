@@ -129,7 +129,7 @@ class UserManagementController extends Controller
     public function createRole()
     {
         $businessUnits = BusinessUnit::all();
-        $permissions = Permission::all()->groupBy('group');
+        $permissions = Permission::assignable(true)->orderBy('group')->orderBy('name')->get()->groupBy('group');
         return view('user-management.roles.create', compact('businessUnits', 'permissions'));
     }
 
@@ -146,9 +146,7 @@ class UserManagementController extends Controller
         $validated['slug'] = Str::slug($validated['name']);
         $role = Role::create($validated);
 
-        if ($request->has('permissions')) {
-            $role->permissions()->sync($request->permissions);
-        }
+        $role->permissions()->sync(Permission::syncIdsForRole(null, $request->input('permissions', []), true));
 
         return redirect()->route('superadmin.user-management.roles.index')
             ->with('success', __('common.created_successfully'));
@@ -158,7 +156,7 @@ class UserManagementController extends Controller
     {
         $role = Role::with('permissions')->findOrFail($id);
         $businessUnits = BusinessUnit::all();
-        $permissions = Permission::all()->groupBy('group');
+        $permissions = Permission::assignable(true)->orderBy('group')->orderBy('name')->get()->groupBy('group');
         return view('user-management.roles.edit', compact('role', 'businessUnits', 'permissions'));
     }
 
@@ -176,11 +174,8 @@ class UserManagementController extends Controller
 
         $role->update($validated);
 
-        if ($request->has('permissions')) {
-            $role->permissions()->sync($request->permissions);
-        } else {
-            $role->permissions()->detach();
-        }
+        // Hidden (banking / CNSS) permissions the role already has are kept
+        $role->permissions()->sync(Permission::syncIdsForRole($role, $request->input('permissions', []), true));
 
         return redirect()->route('superadmin.user-management.roles.index')
             ->with('success', __('common.updated_successfully'));

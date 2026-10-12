@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\KatoTokenRefreshException;
 use App\Models\Account;
 use App\Models\Agent;
 use App\Models\BusinessUnit;
@@ -102,6 +103,48 @@ class KatoService
     }
 
     /**
+     * Refresh KATO JWT when expired or expiry is unknown, before an API call.
+     *
+     * @return array{success: bool, error?: string|null, refreshed?: bool}
+     */
+    public function ensureFreshKatoToken(BusinessUnit $businessUnit): array
+    {
+        if (! $businessUnit->shouldRefreshKatoTokenBeforeRequest()) {
+            return [
+                'success' => true,
+                'refreshed' => false,
+                'error' => null,
+            ];
+        }
+
+        $refresh = $this->refreshKatoToken($businessUnit);
+        if ($refresh['success']) {
+            Log::info('KATO token proactive refresh', [
+                'business_unit_id' => $businessUnit->id,
+            ]);
+
+            return [
+                'success' => true,
+                'refreshed' => true,
+                'error' => null,
+            ];
+        }
+
+        $error = $refresh['error'] ?? 'KATO token refresh failed';
+        $this->lastTokenRefreshError = $error;
+        Log::warning('KATO token proactive refresh failed', [
+            'business_unit_id' => $businessUnit->id,
+            'error' => $error,
+        ]);
+
+        return [
+            'success' => false,
+            'refreshed' => false,
+            'error' => $error,
+        ];
+    }
+
+    /**
      * Perform an authenticated request to the KATO agency API.
      *
      * Auth requirements (from API spec):
@@ -121,26 +164,16 @@ class KatoService
             throw new \RuntimeException('KATO companyId is missing.');
         }
 
-        $token = $this->resolveKatoToken($businessUnit);
-
-        if ($businessUnit->isKatoTokenExpired()) {
-            $refresh = $this->refreshKatoToken($businessUnit);
-            if ($refresh['success']) {
-                Log::info('KATO token proactive refresh', [
-                    'business_unit_id' => $businessUnit->id,
-                    'path' => $path,
-                ]);
-                $businessUnit->refresh();
-                $token = $this->resolveKatoToken($businessUnit);
-            } else {
-                $this->lastTokenRefreshError = $refresh['error'] ?? 'KATO token refresh failed';
-                Log::warning('KATO token proactive refresh failed', [
-                    'business_unit_id' => $businessUnit->id,
-                    'path' => $path,
-                    'error' => $this->lastTokenRefreshError,
-                ]);
-            }
+        $ensure = $this->ensureFreshKatoToken($businessUnit);
+        if (! $ensure['success']) {
+            throw new KatoTokenRefreshException($ensure['error'] ?? 'KATO token refresh failed');
         }
+
+        if ($ensure['refreshed'] ?? false) {
+            $businessUnit->refresh();
+        }
+
+        $token = $this->resolveKatoToken($businessUnit);
 
         $response = $this->sendAuthenticatedRequest($businessUnit, $cbs, $method, $path, $body, $token);
 
@@ -213,7 +246,7 @@ class KatoService
             'kato_token' => $token,
             'kato_token_expires_at' => ! empty($loginResult['data']['expiresIn'])
                 ? now()->addSeconds((int) $loginResult['data']['expiresIn'])
-                : null,
+                : BusinessUnit::defaultKatoTokenExpiresAt(),
             'kato_registration_error' => null,
         ]);
 
@@ -249,6 +282,22 @@ class KatoService
         }
 
         return 'HTTP Error: '.$status;
+    }
+
+    /**
+     * @return array{success: false, error: string, http_status: int}
+     */
+    private function tokenRefreshFailureResult(KatoTokenRefreshException $e, string $operation): array
+    {
+        Log::error('KATO '.$operation.' aborted: token refresh required', [
+            'error' => $e->getMessage(),
+        ]);
+
+        return [
+            'success' => false,
+            'error' => $e->getMessage(),
+            'http_status' => 401,
+        ];
     }
 
     private function resolveKatoToken(BusinessUnit $businessUnit): string
@@ -379,12 +428,14 @@ class KatoService
             $adminPassword = $businessUnit->kato_admin_password
                 ?: Str::random(12);
 
-            $town = $businessUnit->address ?: ($businessUnit->mailing_address ?: 'Nairobi');
+            $town = $this->formatKatoLocationText(
+                $businessUnit->address ?: $businessUnit->mailing_address
+            ) ?: 'Nairobi';
 
             // Build API request payload
             $payload = [
                 'companyName' => $businessUnit->name,
-                'phoneNumber' => $businessUnit->phone,
+                'phoneNumber' => $this->formatKatoPhoneNumber($businessUnit->phone),
                 'email' => $businessUnit->email,
                 'town' => $town,
                 'currencyCode' => config('kato.default_currency'),
@@ -591,8 +642,8 @@ class KatoService
                 'businessName' => $businessName,
                 'directorName' => $directorName,
                 'idNo' => $agent->id_passport,
-                'phoneNumber' => $agent->phone_number,
-                'location' => $agent->physical_address ?: 'Nairobi',
+                'phoneNumber' => $this->formatKatoPhoneNumber($agent->phone_number),
+                'location' => $this->formatKatoLocationText($agent->physical_address) ?: 'Nairobi',
             ];
 
             // Make API request
@@ -678,7 +729,7 @@ class KatoService
      *
      * API endpoint: POST /members/register
      */
-    public function registerMember(Client $client, BusinessUnit $businessUnit): array
+    public function registerMember(Client $client, BusinessUnit $businessUnit, Agent $agent): array
     {
         try {
             $cbs = $businessUnit->coreBankingSystem;
@@ -696,6 +747,13 @@ class KatoService
                 ];
             }
 
+            if (! $agent->hasKatoCbsAccounts()) {
+                return [
+                    'success' => false,
+                    'error' => 'Agent KATO float account is not synced. Re-register the agent with KATO or run kato:backfill-agent-accounts.',
+                ];
+            }
+
             $validationError = $this->validateClientForKatoMember($client);
             if ($validationError !== null) {
                 return [
@@ -704,23 +762,15 @@ class KatoService
                 ];
             }
 
-            $town = $client->home_town ?: ($client->region ?: ($businessUnit->address ?: 'Nairobi'));
-
-            // API expects yyyy-MM-dd. We currently only store year_of_birth in this app.
-            $dob = null;
-            if ($client->year_of_birth) {
-                if (preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $client->year_of_birth) === 1) {
-                    $dob = (string) $client->year_of_birth;
-                } elseif (preg_match('/^\d{4}$/', (string) $client->year_of_birth) === 1) {
-                    $dob = (string) $client->year_of_birth . '-01-01';
-                }
-            }
+            $town = $this->resolveKatoMemberTown($client, $businessUnit);
+            $dob = $this->resolveKatoMemberDob($client);
 
             $payload = array_filter([
+                'agentAccountNumber' => (string) $agent->katoFloatAccountNumber(),
                 'firstName' => $client->first_name,
                 'lastName' => $client->last_name,
                 'idNo' => $client->id_passport,
-                'phoneNumber' => $client->phone_number,
+                'phoneNumber' => $this->formatKatoPhoneNumber($client->phone_number),
                 'gender' => $client->gender,
                 'dob' => $dob,
                 'town' => $town,
@@ -963,6 +1013,73 @@ class KatoService
     }
 
     /**
+     * Fetch agent float/commission from KATO GET /float and persist to local accounts.
+     *
+     * @return array{success: bool, data?: array<string, mixed>, error?: string|null, sync?: array{updated: int, errors: array<int, string>}, full_response?: mixed}
+     */
+    public function syncAgentFloatBalancesFromKato(Agent $agent, BusinessUnit $businessUnit): array
+    {
+        if (! $businessUnit->isKatoEnabled()) {
+            return [
+                'success' => false,
+                'error' => 'Business unit is not configured for KATO',
+            ];
+        }
+
+        $floatAccountNumber = $agent->katoFloatAccountNumber();
+        if (! $floatAccountNumber && $agent->kato_agent_id) {
+            $floatAccountNumber = $agent->kato_agent_id.'FLOAT';
+        }
+
+        if (! $floatAccountNumber) {
+            return [
+                'success' => false,
+                'error' => 'Agent KATO float account is not synced. Re-register the agent with KATO or run kato:backfill-agent-accounts.',
+            ];
+        }
+
+        $result = $this->getAgentFloat($businessUnit, $floatAccountNumber);
+
+        if (! $result['success']) {
+            return [
+                'success' => false,
+                'error' => $result['error'] ?? 'Failed to fetch agent float from KATO',
+                'full_response' => $result['full_response'] ?? null,
+            ];
+        }
+
+        $floatData = $result['data'] ?? [];
+
+        $accounts = [
+            [
+                'accountNumber' => $floatData['floatAccountNumber'] ?? $floatAccountNumber,
+                'code' => 'FLOAT',
+                'description' => 'Agent Float Account',
+                'balance' => $floatData['floatAccountBalance'] ?? 0,
+            ],
+        ];
+
+        if (! empty($floatData['commissionAccountNumber'])) {
+            $accounts[] = [
+                'accountNumber' => $floatData['commissionAccountNumber'],
+                'code' => 'COMM',
+                'description' => 'Agent Commission Account',
+                'balance' => $floatData['commissionAccountBalance'] ?? 0,
+            ];
+        }
+
+        $sync = $this->syncAgentAccountsFromKato($agent, $businessUnit, $accounts);
+
+        return [
+            'success' => true,
+            'data' => $floatData,
+            'sync' => $sync,
+            'error' => ! empty($sync['errors']) ? implode('; ', $sync['errors']) : null,
+            'full_response' => $result['full_response'] ?? null,
+        ];
+    }
+
+    /**
      * GET /float?agentAccountNumber=...
      *
      * @return array{success: bool, data?: array<string, mixed>, error?: string|null, full_response?: mixed}
@@ -1049,6 +1166,8 @@ class KatoService
                 'full_response' => $json,
                 'http_status' => $response->status(),
             ];
+        } catch (KatoTokenRefreshException $e) {
+            return $this->tokenRefreshFailureResult($e, 'deposit');
         } catch (\Exception $e) {
             Log::error('KATO deposit exception', [
                 'business_unit_id' => $businessUnit->id,
@@ -1131,6 +1250,8 @@ class KatoService
                 'full_response' => $json,
                 'http_status' => $response->status(),
             ];
+        } catch (KatoTokenRefreshException $e) {
+            return $this->tokenRefreshFailureResult($e, 'withdraw');
         } catch (\Exception $e) {
             Log::error('KATO withdraw exception', [
                 'business_unit_id' => $businessUnit->id,
@@ -1174,6 +1295,8 @@ class KatoService
                 'full_response' => $data,
                 'http_status' => $response->status(),
             ];
+        } catch (KatoTokenRefreshException $e) {
+            return $this->tokenRefreshFailureResult($e, 'balance-enquiry');
         } catch (\Exception $e) {
             return [
                 'success' => false,
@@ -1213,6 +1336,8 @@ class KatoService
                 'full_response' => $data,
                 'http_status' => $response->status(),
             ];
+        } catch (KatoTokenRefreshException $e) {
+            return $this->tokenRefreshFailureResult($e, 'mini-statement');
         } catch (\Exception $e) {
             return [
                 'success' => false,
@@ -1327,6 +1452,94 @@ class KatoService
                 $account->update(['balance' => $balanceRow['balance']]);
             }
         }
+    }
+
+    /**
+     * Resolve town/location for KATO member registration (short CBS column).
+     */
+    private function resolveKatoMemberTown(Client $client, BusinessUnit $businessUnit): string
+    {
+        $source = $client->home_town
+            ?: $client->location
+            ?: $client->place_of_birth
+            ?: $client->region
+            ?: ($businessUnit->address ?: 'Nairobi');
+
+        $maxLength = max(1, (int) config('kato.member_town_max_length', 50));
+
+        return $this->formatKatoLocationText($source, $maxLength) ?: 'Nairobi';
+    }
+
+    /**
+     * Resolve yyyy-MM-dd date of birth for KATO member registration.
+     */
+    private function resolveKatoMemberDob(Client $client): ?string
+    {
+        if ($client->date_of_birth) {
+            $dob = $client->date_of_birth instanceof \DateTimeInterface
+                ? $client->date_of_birth->format('Y-m-d')
+                : (string) $client->date_of_birth;
+
+            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $dob) === 1) {
+                return $dob;
+            }
+        }
+
+        if ($client->year_of_birth) {
+            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $client->year_of_birth) === 1) {
+                return (string) $client->year_of_birth;
+            }
+
+            if (preg_match('/^\d{4}$/', (string) $client->year_of_birth) === 1) {
+                return (string) $client->year_of_birth.'-01-01';
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Normalize a phone number for KATO API payloads (strip whitespace and non-dial chars).
+     */
+    private function formatKatoPhoneNumber(?string $phone): ?string
+    {
+        if ($phone === null || trim($phone) === '') {
+            return null;
+        }
+
+        $trimmed = trim($phone);
+        $hasPlus = str_starts_with($trimmed, '+');
+        $digits = preg_replace('/\D/', '', $trimmed) ?? '';
+
+        if ($digits === '') {
+            return null;
+        }
+
+        return ($hasPlus ? '+' : '').$digits;
+    }
+
+    /**
+     * Normalize location/town text for KATO API payloads (single line, max length).
+     */
+    private function formatKatoLocationText(?string $text, int $maxLength = 100): ?string
+    {
+        if ($text === null || trim($text) === '') {
+            return null;
+        }
+
+        $normalized = preg_replace('/[\r\n\t]+/', ' ', $text);
+        $normalized = preg_replace('/\s+/', ' ', $normalized ?? '');
+        $normalized = trim($normalized);
+
+        if ($normalized === '') {
+            return null;
+        }
+
+        if (mb_strlen($normalized) > $maxLength) {
+            $normalized = mb_substr($normalized, 0, $maxLength);
+        }
+
+        return $normalized;
     }
 
     /**

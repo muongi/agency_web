@@ -15,11 +15,11 @@
             <div class="form-group">
                 <label class="form-label" for="transaction_type_id">{{ __('common.transaction_type') }}</label>
                 <input type="text" class="form-control" value="{{ $costConfig->transactionType->name }} ({{ $costConfig->transactionType->code }})" disabled>
-                <small style="color: var(--text-muted); font-size: 12px;">{{ __('common.transaction_type_cannot_be_changed') }}</small>
+                <small class="text-muted-sm">{{ __('common.transaction_type_cannot_be_changed') }}</small>
             </div>
 
             <div class="form-group">
-                <label class="form-label" for="cost_type">{{ __('common.cost_type') }} <span style="color: #ff6b6b;">*</span></label>
+                <label class="form-label" for="cost_type">{{ __('common.cost_type') }} <span class="text-error">*</span></label>
                 <select id="cost_type" name="cost_type" class="form-select" required>
                     <option value="">{{ __('common.select_cost_type') }}</option>
                     <option value="fixed" {{ old('cost_type', $costConfig->cost_type) == 'fixed' ? 'selected' : '' }}>{{ __('common.fixed') }}</option>
@@ -28,24 +28,24 @@
                     <option value="tiered_fixed" {{ old('cost_type', $costConfig->cost_type) == 'tiered_fixed' ? 'selected' : '' }}>{{ __('common.tiered_fixed') }}</option>
                 </select>
                 @error('cost_type')
-                    <div style="color: #ff6b6b; margin-top: 5px; font-size: 14px;">{{ $message }}</div>
+                    <div class="field-error">{{ $message }}</div>
                 @enderror
             </div>
 
             <div class="form-group" id="fixed_amount_group" style="display: none;">
-                <label class="form-label" for="fixed_amount">{{ __('common.fixed_amount') }} <span style="color: #ff6b6b;">*</span></label>
+                <label class="form-label" for="fixed_amount">{{ __('common.fixed_amount') }} <span class="text-error">*</span></label>
                 <input type="number" id="fixed_amount" name="fixed_amount" class="form-control" value="{{ old('fixed_amount', $costConfig->fixed_amount) }}" step="0.01" min="0">
                 @error('fixed_amount')
-                    <div style="color: #ff6b6b; margin-top: 5px; font-size: 14px;">{{ $message }}</div>
+                    <div class="field-error">{{ $message }}</div>
                 @enderror
             </div>
 
             <div class="form-group" id="percentage_rate_group" style="display: none;">
-                <label class="form-label" for="percentage_rate">{{ __('common.percentage_rate') }} <span style="color: #ff6b6b;">*</span></label>
+                <label class="form-label" for="percentage_rate">{{ __('common.percentage_rate') }} <span class="text-error">*</span></label>
                 <input type="number" id="percentage_rate" name="percentage_rate" class="form-control" value="{{ old('percentage_rate', $costConfig->percentage_rate) }}" step="0.01" min="0" max="100">
-                <small style="color: var(--text-muted); font-size: 12px;">{{ __('common.percentage_rate_help') }}</small>
+                <small class="text-muted-sm">{{ __('common.percentage_rate_help') }}</small>
                 @error('percentage_rate')
-                    <div style="color: #ff6b6b; margin-top: 5px; font-size: 14px;">{{ $message }}</div>
+                    <div class="field-error">{{ $message }}</div>
                 @enderror
             </div>
 
@@ -55,7 +55,7 @@
                     <label for="is_active">{{ __('common.is_active') }}</label>
                 </div>
                 @error('is_active')
-                    <div style="color: #ff6b6b; margin-top: 5px; font-size: 14px;">{{ $message }}</div>
+                    <div class="field-error">{{ $message }}</div>
                 @enderror
             </div>
         </div>
@@ -81,7 +81,7 @@
             </div>
         </div>
 
-        <div style="display: flex; gap: 10px; margin-top: 30px;">
+        <div class="btn-row mt-30">
             <button type="submit" class="btn">{{ __('common.update') }}</button>
             <a href="{{ route('business.config.transaction-costs.index') }}" class="btn btn-secondary">{{ __('common.cancel') }}</a>
         </div>
@@ -159,18 +159,18 @@
                 </div>
                 ${showRate || showBoth ? `
                 <div class="form-group">
-                    <label class="form-label">{{ __('common.rate') }} (%) <span style="color: #ff6b6b;">${showRate ? '*' : ''}</span></label>
+                    <label class="form-label">{{ __('common.rate') }} (%) <span class="text-error">${showRate ? '*' : ''}</span></label>
                     <input type="number" name="tiers[${tierIndex}][rate]" class="form-control tier-rate" value="${tier ? tier.rate : ''}" step="0.01" min="0" max="100" ${showRate ? 'required' : ''}>
                 </div>
                 ` : ''}
                 ${showAmount || showBoth ? `
                 <div class="form-group">
-                    <label class="form-label">{{ __('common.amount') }} <span style="color: #ff6b6b;">${showAmount ? '*' : ''}</span></label>
+                    <label class="form-label">{{ __('common.amount') }} <span class="text-error">${showAmount ? '*' : ''}</span></label>
                     <input type="number" name="tiers[${tierIndex}][amount]" class="form-control tier-amount" value="${tier ? tier.amount : ''}" step="0.01" min="0" ${showAmount ? 'required' : ''}>
                 </div>
                 ` : ''}
             </div>
-            <small style="color: var(--text-muted); font-size: 12px;">${showRate ? '{{ __('common.tier_percentage_help') }}' : showAmount ? '{{ __('common.tier_fixed_help') }}' : '{{ __('common.tier_help') }}'}</small>
+            <small class="text-muted-sm">${showRate ? '{{ __('common.tier_percentage_help') }}' : showAmount ? '{{ __('common.tier_fixed_help') }}' : '{{ __('common.tier_help') }}'}</small>
         `;
 
         container.appendChild(tierDiv);

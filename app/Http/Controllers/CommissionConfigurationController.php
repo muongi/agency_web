@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use App\Models\CommissionConfiguration;
 use App\Models\CommissionTier;
-use App\Models\TransactionType;
+use App\Models\TransactionCostConfiguration;
 use App\Models\BusinessUnit;
 
 class CommissionConfigurationController extends Controller
@@ -30,7 +32,6 @@ class CommissionConfigurationController extends Controller
         $query = CommissionConfiguration::where('business_unit_id', $businessUnit->id)
             ->with('transactionType');
 
-        // Search functionality
         if ($request->has('search') && $request->search) {
             $search = $request->search;
             $query->whereHas('transactionType', function($q) use ($search) {
@@ -40,9 +41,7 @@ class CommissionConfigurationController extends Controller
         }
 
         $commissions = $query->latest()->paginate(15);
-        $transactionTypes = TransactionType::where('business_unit_id', $businessUnit->id)
-            ->where('is_active', true)
-            ->get();
+        $transactionTypes = $businessUnit->availableTransactionTypes();
 
         return view('config.commissions.index', compact('commissions', 'transactionTypes', 'businessUnit'));
     }
@@ -59,11 +58,8 @@ class CommissionConfigurationController extends Controller
                 ->with('error', __('common.no_business_unit_assigned'));
         }
 
-        $transactionTypes = TransactionType::where('business_unit_id', $businessUnit->id)
-            ->where('is_active', true)
-            ->get();
+        $transactionTypes = $businessUnit->availableTransactionTypes();
 
-        // Get transaction types that already have commission configurations
         $configuredTypes = CommissionConfiguration::where('business_unit_id', $businessUnit->id)
             ->pluck('transaction_type_id')
             ->toArray();
@@ -72,7 +68,9 @@ class CommissionConfigurationController extends Controller
             return in_array($type->id, $configuredTypes);
         });
 
-        return view('config.commissions.create', compact('availableTypes', 'businessUnit'));
+        $costConfigsByType = $this->costConfigsByType($businessUnit);
+
+        return view('config.commissions.create', compact('availableTypes', 'businessUnit', 'costConfigsByType'));
     }
 
     /**
@@ -87,10 +85,13 @@ class CommissionConfigurationController extends Controller
                 ->with('error', __('common.no_business_unit_assigned'));
         }
 
+        $eligibleIds = $businessUnit->availableTransactionTypes()->pluck('id')->all();
+
         $validated = $request->validate([
             'transaction_type_id' => [
                 'required',
-                'exists:transaction_types,id',
+                'integer',
+                Rule::in($eligibleIds),
                 'unique:commission_configurations,transaction_type_id,NULL,id,business_unit_id,' . $businessUnit->id . ',deleted_at,NULL'
             ],
             'commission_type' => 'required|in:fixed,percentage,tiered,tiered_percentage,tiered_fixed',
@@ -98,20 +99,16 @@ class CommissionConfigurationController extends Controller
             'percentage_rate' => 'nullable|required_if:commission_type,percentage|numeric|min:0|max:100',
             'is_active' => 'boolean',
             'tiers' => 'nullable|array',
-            'tiers.*.min_amount' => 'nullable|numeric|min:0',
-            'tiers.*.max_amount' => 'nullable|numeric|min:0|gt:tiers.*.min_amount',
             'tiers.*.rate' => 'nullable|numeric|min:0|max:100',
             'tiers.*.amount' => 'nullable|numeric|min:0',
         ]);
 
-        // Verify transaction type belongs to this business unit
-        $transactionType = TransactionType::where('business_unit_id', $businessUnit->id)
-            ->findOrFail($validated['transaction_type_id']);
+        $costConfig = $this->getCostConfigForType($businessUnit, (int) $validated['transaction_type_id']);
+        $this->assertTieredCommissionAllowed($validated['commission_type'], $costConfig);
 
         $validated['business_unit_id'] = $businessUnit->id;
         $validated['is_active'] = $request->has('is_active') ? true : false;
 
-        // Remove tier-specific fields if not tiered
         if (!in_array($validated['commission_type'], ['tiered', 'tiered_percentage', 'tiered_fixed'])) {
             unset($validated['fixed_amount']);
             unset($validated['percentage_rate']);
@@ -121,8 +118,8 @@ class CommissionConfigurationController extends Controller
                 $validated['percentage_rate'] = $request->input('percentage_rate');
             }
         } else {
-            unset($validated['fixed_amount']);
-            unset($validated['percentage_rate']);
+            $validated['fixed_amount'] = null;
+            $validated['percentage_rate'] = null;
         }
 
         $tiers = $validated['tiers'] ?? [];
@@ -130,20 +127,8 @@ class CommissionConfigurationController extends Controller
 
         $commission = CommissionConfiguration::create($validated);
 
-        // Create tiers if commission type is tiered
-        if (in_array($request->input('commission_type'), ['tiered', 'tiered_percentage', 'tiered_fixed']) && !empty($tiers)) {
-            foreach ($tiers as $index => $tier) {
-                if (!empty($tier['min_amount']) || !empty($tier['max_amount']) || !empty($tier['rate']) || !empty($tier['amount'])) {
-                    CommissionTier::create([
-                        'commission_configuration_id' => $commission->id,
-                        'min_amount' => $tier['min_amount'] ?? null,
-                        'max_amount' => $tier['max_amount'] ?? null,
-                        'rate' => $tier['rate'] ?? null,
-                        'amount' => $tier['amount'] ?? null,
-                        'order' => $index,
-                    ]);
-                }
-            }
+        if (in_array($validated['commission_type'], ['tiered', 'tiered_percentage', 'tiered_fixed'], true)) {
+            $this->syncCommissionTiersFromCost($commission, $costConfig, $tiers, $validated['commission_type']);
         }
 
         return redirect()->route('business.config.commissions.index')
@@ -153,7 +138,7 @@ class CommissionConfigurationController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show($id)
+    public function show(Request $request, $id)
     {
         $businessUnit = auth()->user()->currentBusinessUnit;
         
@@ -166,7 +151,20 @@ class CommissionConfigurationController extends Controller
             ->with(['transactionType', 'tiers'])
             ->findOrFail($id);
 
-        return view('config.commissions.show', compact('commission', 'businessUnit'));
+        if ($request->has('amount')) {
+            $amount = (float) $request->query('amount');
+            $costConfig = $this->getCostConfigForType($businessUnit, $commission->transaction_type_id);
+
+            return response()->json([
+                'transaction_amount' => $amount,
+                'transaction_cost' => $costConfig ? $costConfig->calculateCost($amount) : 0,
+                'commission' => $commission->calculateFromTransactionAmount($amount),
+            ]);
+        }
+
+        $costConfig = $this->getCostConfigForType($businessUnit, $commission->transaction_type_id);
+
+        return view('config.commissions.show', compact('commission', 'businessUnit', 'costConfig'));
     }
 
     /**
@@ -185,7 +183,10 @@ class CommissionConfigurationController extends Controller
             ->with(['transactionType', 'tiers'])
             ->findOrFail($id);
 
-        return view('config.commissions.edit', compact('commission', 'businessUnit'));
+        $costConfig = $this->getCostConfigForType($businessUnit, $commission->transaction_type_id);
+        $costConfigsByType = $this->costConfigsByType($businessUnit);
+
+        return view('config.commissions.edit', compact('commission', 'businessUnit', 'costConfig', 'costConfigsByType'));
     }
 
     /**
@@ -209,15 +210,15 @@ class CommissionConfigurationController extends Controller
             'percentage_rate' => 'nullable|required_if:commission_type,percentage|numeric|min:0|max:100',
             'is_active' => 'boolean',
             'tiers' => 'nullable|array',
-            'tiers.*.min_amount' => 'nullable|numeric|min:0',
-            'tiers.*.max_amount' => 'nullable|numeric|min:0|gt:tiers.*.min_amount',
             'tiers.*.rate' => 'nullable|numeric|min:0|max:100',
             'tiers.*.amount' => 'nullable|numeric|min:0',
         ]);
 
+        $costConfig = $this->getCostConfigForType($businessUnit, $commission->transaction_type_id);
+        $this->assertTieredCommissionAllowed($validated['commission_type'], $costConfig);
+
         $validated['is_active'] = $request->has('is_active') ? true : false;
 
-        // Handle commission type specific fields
         if (!in_array($validated['commission_type'], ['tiered', 'tiered_percentage', 'tiered_fixed'])) {
             if ($validated['commission_type'] === 'fixed') {
                 $validated['percentage_rate'] = null;
@@ -234,26 +235,10 @@ class CommissionConfigurationController extends Controller
 
         $commission->update($validated);
 
-        // Handle tiers - delete existing and create new ones
-        if (in_array($validated['commission_type'], ['tiered', 'tiered_percentage', 'tiered_fixed'])) {
+        if (in_array($validated['commission_type'], ['tiered', 'tiered_percentage', 'tiered_fixed'], true)) {
             $commission->tiers()->delete();
-            
-            if (!empty($tiers)) {
-                foreach ($tiers as $index => $tier) {
-                    if (!empty($tier['min_amount']) || !empty($tier['max_amount']) || !empty($tier['rate']) || !empty($tier['amount'])) {
-                        CommissionTier::create([
-                            'commission_configuration_id' => $commission->id,
-                            'min_amount' => $tier['min_amount'] ?? null,
-                            'max_amount' => $tier['max_amount'] ?? null,
-                            'rate' => $tier['rate'] ?? null,
-                            'amount' => $tier['amount'] ?? null,
-                            'order' => $index,
-                        ]);
-                    }
-                }
-            }
+            $this->syncCommissionTiersFromCost($commission, $costConfig, $tiers, $validated['commission_type']);
         } else {
-            // Delete all tiers if changing from tiered to another type
             $commission->tiers()->delete();
         }
 
@@ -276,7 +261,9 @@ class CommissionConfigurationController extends Controller
         $commission = CommissionConfiguration::where('business_unit_id', $businessUnit->id)
             ->findOrFail($id);
 
-        $commission->delete();
+        // Hard delete so the unique key (business_unit_id, transaction_type_id)
+        // can be reused when creating a replacement configuration.
+        $commission->forceDelete();
 
         return redirect()->route('business.config.commissions.index')
             ->with('success', __('common.deleted_successfully'));
@@ -363,5 +350,103 @@ class CommissionConfigurationController extends Controller
         $tier->delete();
 
         return response()->json(['success' => true]);
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function costConfigsByType(BusinessUnit $businessUnit): array
+    {
+        return TransactionCostConfiguration::where('business_unit_id', $businessUnit->id)
+            ->where('is_active', true)
+            ->with('tiers')
+            ->get()
+            ->mapWithKeys(function (TransactionCostConfiguration $config) {
+                return [
+                    $config->transaction_type_id => [
+                        'id' => $config->id,
+                        'edit_url' => route('business.config.transaction-costs.edit', $config->id),
+                        'cost_type' => $config->cost_type,
+                        'is_tiered' => $config->isTiered(),
+                        'fixed_amount' => $config->fixed_amount,
+                        'percentage_rate' => $config->percentage_rate,
+                        'tiers' => $config->tiers->sortBy('order')->values()->map(function ($tier) {
+                            return [
+                                'min_amount' => $tier->min_amount,
+                                'max_amount' => $tier->max_amount,
+                                'rate' => $tier->rate,
+                                'amount' => $tier->amount,
+                                'order' => $tier->order,
+                            ];
+                        })->all(),
+                    ],
+                ];
+            })
+            ->all();
+    }
+
+    private function getCostConfigForType(BusinessUnit $businessUnit, int $transactionTypeId): ?TransactionCostConfiguration
+    {
+        return TransactionCostConfiguration::where('business_unit_id', $businessUnit->id)
+            ->where('transaction_type_id', $transactionTypeId)
+            ->where('is_active', true)
+            ->with('tiers')
+            ->first();
+    }
+
+    private function assertTieredCommissionAllowed(string $commissionType, ?TransactionCostConfiguration $costConfig): void
+    {
+        if (!in_array($commissionType, ['tiered', 'tiered_percentage', 'tiered_fixed'], true)) {
+            return;
+        }
+
+        if (!$costConfig || !$costConfig->isTiered()) {
+            throw ValidationException::withMessages([
+                'commission_type' => [__('common.tiered_commission_requires_tiered_cost')],
+            ]);
+        }
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $inputTiers
+     */
+    private function syncCommissionTiersFromCost(
+        CommissionConfiguration $commission,
+        TransactionCostConfiguration $costConfig,
+        array $inputTiers,
+        string $commissionType
+    ): void {
+        $costTiers = $costConfig->tiers()->orderBy('order')->get();
+
+        if ($costTiers->count() !== count($inputTiers)) {
+            throw ValidationException::withMessages([
+                'tiers' => [__('common.commission_tier_count_must_match_cost')],
+            ]);
+        }
+
+        foreach ($costTiers->values() as $index => $costTier) {
+            $input = $inputTiers[$index] ?? [];
+
+            if ($commissionType === 'tiered_percentage' && empty($input['rate']) && $input['rate'] !== '0' && $input['rate'] !== 0) {
+                throw ValidationException::withMessages([
+                    "tiers.{$index}.rate" => [__('common.required')],
+                ]);
+            }
+
+            if ($commissionType === 'tiered_fixed' && empty($input['amount']) && $input['amount'] !== '0' && $input['amount'] !== 0) {
+                throw ValidationException::withMessages([
+                    "tiers.{$index}.amount" => [__('common.required')],
+                ]);
+            }
+
+            CommissionTier::create([
+                'commission_configuration_id' => $commission->id,
+                'min_amount' => $costTier->min_amount,
+                'max_amount' => $costTier->max_amount,
+                'order' => $costTier->order,
+                'rate' => $commissionType === 'tiered_percentage' ? ($input['rate'] ?? null) : null,
+                'amount' => in_array($commissionType, ['tiered_fixed', 'tiered'], true) ? ($input['amount'] ?? null) : null,
+            ]);
+        }
     }
 }

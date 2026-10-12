@@ -6,7 +6,7 @@
 @section('content')
 <div class="card">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 15px;">
-        <h1 style="color: var(--accent-color);">{{ __('common.terminals') }}</h1>
+        <h1 class="text-accent">{{ __('common.terminals') }}</h1>
         <div style="display: flex; gap: 10px; align-items: center;">
             <div style="position: relative;">
                 <button onclick="toggleExportDropdown()" class="btn" style="display: flex; align-items: center; gap: 5px;">
@@ -38,8 +38,8 @@
     </div>
 
     <!-- Search Form -->
-    <form method="GET" action="{{ route('terminals.index') }}" style="margin-bottom: 20px;">
-        <div style="display: flex; gap: 10px;">
+    <form method="GET" action="{{ route('terminals.index') }}" class="mb-20">
+        <div class="btn-row">
             <input 
                 type="text" 
                 name="search" 
@@ -56,41 +56,41 @@
     </form>
 
     @if($terminals->count() > 0)
-        <div style="overflow-x: auto;">
-            <table style="width: 100%; border-collapse: collapse;">
+        <div class="data-table">
+            <table>
                 <thead>
                     <tr style="border-bottom: 2px solid var(--border-color);">
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">#</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.serial_number') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.simcard_number') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.device_alias') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.model_make') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.actions') }}</th>
+                        <th>#</th>
+                        <th>{{ __('common.serial_number') }}</th>
+                        <th>{{ __('common.simcard_number') }}</th>
+                        <th>{{ __('common.device_alias') }}</th>
+                        <th>{{ __('common.model_make') }}</th>
+                        <th>{{ __('common.actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach($terminals as $index => $terminal)
                         <tr style="border-bottom: 1px solid var(--border-color);">
-                            <td style="padding: 12px;">{{ ($terminals->currentPage() - 1) * $terminals->perPage() + $index + 1 }}</td>
-                            <td style="padding: 12px;">{{ $terminal->serial_number }}</td>
-                            <td style="padding: 12px;">{{ $terminal->simcard_number }}</td>
-                            <td style="padding: 12px;">{{ $terminal->device_alias }}</td>
-                            <td style="padding: 12px;">{{ $terminal->model_make }}</td>
-                            <td style="padding: 12px;">
+                            <td>{{ ($terminals->currentPage() - 1) * $terminals->perPage() + $index + 1 }}</td>
+                            <td>{{ $terminal->serial_number }}</td>
+                            <td>{{ $terminal->simcard_number }}</td>
+                            <td>{{ $terminal->device_alias }}</td>
+                            <td>{{ $terminal->model_make }}</td>
+                            <td>
                                 @php
                                     $canEdit = $user->isSuperAdmin() || ($businessUnit && $user->hasPermission('edit-terminal', $businessUnit->id));
                                     $canDelete = $user->isSuperAdmin() || ($businessUnit && $user->hasPermission('delete-terminal', $businessUnit->id));
                                 @endphp
                                 <div style="display: flex; gap: 5px;">
-                                    <a href="{{ route('terminals.show', $terminal->id) }}" class="btn" style="padding: 6px 12px; font-size: 12px;">{{ __('common.show') }}</a>
+                                    <a href="{{ route('terminals.show', $terminal->id) }}" class="btn btn-sm">{{ __('common.show') }}</a>
                                     @if($canEdit)
-                                        <a href="{{ route('terminals.edit', $terminal->id) }}" class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">{{ __('common.edit') }}</a>
+                                        <a href="{{ route('terminals.edit', $terminal->id) }}" class="btn btn-secondary btn-sm">{{ __('common.edit') }}</a>
                                     @endif
                                     @if($canDelete)
                                         <form action="{{ route('terminals.destroy', $terminal->id) }}" method="POST" style="display: inline;" onsubmit="return confirm('{{ __('common.confirm_delete') }}');">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="btn btn-danger" style="padding: 6px 12px; font-size: 12px;">{{ __('common.delete') }}</button>
+                                            <button type="submit" class="btn btn-danger btn-sm">{{ __('common.delete') }}</button>
                                         </form>
                                     @endif
                                 </div>
@@ -101,12 +101,12 @@
             </table>
         </div>
 
-        <div style="margin-top: 20px;">
+        <div class="mt-20">
             {{ $terminals->links() }}
         </div>
     @else
-        <div style="text-align: center; padding: 40px; color: var(--text-muted);">
-            <p style="margin-bottom: 20px;">{{ __('common.no_terminals') }}</p>
+        <div class="muted-center">
+            <p class="mb-20">{{ __('common.no_terminals') }}</p>
             @if($canCreate)
                 <a href="{{ route('terminals.create') }}" class="btn">{{ __('common.add_terminal') }}</a>
             @endif

@@ -24,6 +24,7 @@ class CnssContributionWebTest extends TestCase
             'name' => 'Web CNSS Contrib BU',
             'slug' => 'web-cnss-contrib-'.uniqid(),
             'is_active' => true,
+            'cnss_enabled' => true,
         ]);
 
         $role = Role::create([
@@ -53,6 +54,7 @@ class CnssContributionWebTest extends TestCase
             'name' => 'Web CNSS Contrib BU 2',
             'slug' => 'web-cnss-contrib2-'.uniqid(),
             'is_active' => true,
+            'cnss_enabled' => true,
         ]);
 
         $permList = Permission::firstOrCreate(
@@ -133,11 +135,13 @@ class CnssContributionWebTest extends TestCase
             'name' => 'BU A',
             'slug' => 'bu-a-cnss-'.uniqid(),
             'is_active' => true,
+            'cnss_enabled' => true,
         ]);
         $buB = BusinessUnit::create([
             'name' => 'BU B',
             'slug' => 'bu-b-cnss-'.uniqid(),
             'is_active' => true,
+            'cnss_enabled' => true,
         ]);
 
         $permList = Permission::firstOrCreate(
@@ -189,6 +193,7 @@ class CnssContributionWebTest extends TestCase
             'name' => 'Export Contrib BU',
             'slug' => 'export-contrib-'.uniqid(),
             'is_active' => true,
+            'cnss_enabled' => true,
         ]);
 
         $role = Role::create(['name' => 'No CNSS', 'business_unit_id' => $bu->id]);
@@ -208,6 +213,7 @@ class CnssContributionWebTest extends TestCase
             'name' => 'Export Contrib BU 2',
             'slug' => 'export-contrib2-'.uniqid(),
             'is_active' => true,
+            'cnss_enabled' => true,
         ]);
 
         $permList = Permission::firstOrCreate(

@@ -14,9 +14,9 @@
 @endphp
 
 <div class="card">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-        <h1 style="color: var(--accent-color);">{{ __('common.card_details') }}</h1>
-        <div style="display: flex; gap: 10px;">
+    <div class="toolbar">
+        <h1 class="text-accent">{{ __('common.card_details') }}</h1>
+        <div class="btn-row">
             @if($canEdit)
                 <a href="{{ route('cards.edit', $card->id) }}" class="btn">{{ __('common.edit') }}</a>
             @endif
@@ -31,6 +31,7 @@
                 <h2 style="color: var(--accent-color); margin-bottom: 10px; font-size: 24px;">{{ $card->card_number }}</h2>
                 @php
                     $statusColors = [
+                        'unassigned' => 'var(--warning-bg)',
                         'active' => 'var(--success-bg)',
                         'inactive' => 'var(--bg-primary)',
                         'blocked' => 'var(--error-bg)',
@@ -47,7 +48,7 @@
                 @if($card->isReplaced() && $card->replacedByCard)
                     <p style="color: var(--text-muted); margin: 5px 0;">
                         <strong>{{ __('common.replaced_by') }}:</strong> 
-                        <a href="{{ route('cards.show', $card->replacedByCard->id) }}" style="color: var(--accent-color);">
+                        <a href="{{ route('cards.show', $card->replacedByCard->id) }}" class="text-accent">
                             {{ $card->replacedByCard->card_number }}
                         </a>
                     </p>
@@ -55,7 +56,7 @@
                 @if($card->replacedCard)
                     <p style="color: var(--text-muted); margin: 5px 0;">
                         <strong>{{ __('common.replaces') }}:</strong> 
-                        <a href="{{ route('cards.show', $card->replacedCard->id) }}" style="color: var(--accent-color);">
+                        <a href="{{ route('cards.show', $card->replacedCard->id) }}" class="text-accent">
                             {{ $card->replacedCard->card_number }}
                         </a>
                     </p>
@@ -66,82 +67,67 @@
 
     <!-- Card Information -->
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 30px;">
+        @php
+            $sunuClient = $card->sunuClient()
+                ?? $subscriptions['policies']->first()?->client
+                ?? $subscriptions['proposals']->first()?->client;
+        @endphp
         <div>
-            <strong style="color: var(--accent-color); display: block; margin-bottom: 5px;">{{ __('common.account') }}:</strong>
+            <strong class="detail-label">{{ __('common.sunu_card_client') }}:</strong>
             <p style="color: var(--text-primary); margin: 0 0 15px 0;">
-                <a href="{{ route('accounts.show', $card->account->id) }}" style="color: var(--accent-color);">
-                    {{ $card->account->account_number }}
-                </a>
-            </p>
-        </div>
-
-        <div>
-            <strong style="color: var(--accent-color); display: block; margin-bottom: 5px;">{{ __('common.client') }}:</strong>
-            <p style="color: var(--text-primary); margin: 0 0 15px 0;">
-                @if($card->account->accountable_type == 'App\Models\Client')
-                    <a href="{{ route('clients.show', $card->account->accountable_id) }}" style="color: var(--accent-color);">
-                        {{ $card->account->accountable->full_name ?? 'N/A' }}
-                    </a>
+                @if($sunuClient)
+                    {{ trim($sunuClient->last_name . ' ' . $sunuClient->first_name) }}
+                    @if($sunuClient->phone_number)<br><small class="muted">{{ $sunuClient->phone_number }}</small>@endif
                 @else
-                    N/A
+                    <span class="muted">{{ __('common.sunu_card_not_linked') }}</span>
                 @endif
             </p>
         </div>
 
         <div>
-            <strong style="color: var(--accent-color); display: block; margin-bottom: 5px;">{{ __('common.expiration_date') }}:</strong>
-            <p style="color: var(--text-primary); margin: 0 0 15px 0;">{{ $card->expiration_date->format('Y-m-d') }}</p>
+            <strong class="detail-label">{{ __('common.expiration_date') }}:</strong>
+            <p style="color: var(--text-primary); margin: 0 0 15px 0;">{{ $card->expiration_date?->format('Y-m-d') ?? '-' }}</p>
         </div>
 
         <div>
-            <strong style="color: var(--accent-color); display: block; margin-bottom: 5px;">{{ __('common.issued_at') }}:</strong>
+            <strong class="detail-label">{{ __('common.issued_at') }}:</strong>
             <p style="color: var(--text-primary); margin: 0 0 15px 0;">{{ $card->issued_at ? $card->issued_at->format('Y-m-d H:i') : '-' }}</p>
         </div>
 
         <div>
-            <strong style="color: var(--accent-color); display: block; margin-bottom: 5px;">{{ __('common.activated_at') }}:</strong>
+            <strong class="detail-label">{{ __('common.activated_at') }}:</strong>
             <p style="color: var(--text-primary); margin: 0 0 15px 0;">{{ $card->activated_at ? $card->activated_at->format('Y-m-d H:i') : '-' }}</p>
         </div>
 
         @if($card->card_serial)
             <div>
-                <strong style="color: var(--accent-color); display: block; margin-bottom: 5px;">{{ __('common.card_serial') }}:</strong>
+                <strong class="detail-label">{{ __('common.card_serial') }}:</strong>
                 <p style="color: var(--text-primary); margin: 0 0 15px 0;">{{ $card->card_serial }}</p>
             </div>
         @endif
 
         @if($card->written_at)
             <div>
-                <strong style="color: var(--accent-color); display: block; margin-bottom: 5px;">{{ __('common.written_at') }}:</strong>
+                <strong class="detail-label">{{ __('common.written_at') }}:</strong>
                 <p style="color: var(--text-primary); margin: 0 0 15px 0;">{{ $card->written_at->format('Y-m-d H:i') }}</p>
             </div>
         @endif
 
         @if($card->written_by)
             <div>
-                <strong style="color: var(--accent-color); display: block; margin-bottom: 5px;">{{ __('common.written_by') }}:</strong>
+                <strong class="detail-label">{{ __('common.written_by') }}:</strong>
                 <p style="color: var(--text-primary); margin: 0 0 15px 0;">{{ $card->written_by }}</p>
             </div>
         @endif
 
-        <div>
-            <strong style="color: var(--accent-color); display: block; margin-bottom: 5px;">{{ __('common.daily_transaction_limit') }}:</strong>
-            <p style="color: var(--text-primary); margin: 0 0 15px 0;">{{ $card->daily_transaction_limit ? number_format($card->daily_transaction_limit, 2) : '-' }}</p>
-        </div>
-
-        <div>
-            <strong style="color: var(--accent-color); display: block; margin-bottom: 5px;">{{ __('common.daily_withdrawal_limit') }}:</strong>
-            <p style="color: var(--text-primary); margin: 0 0 15px 0;">{{ $card->daily_withdrawal_limit ? number_format($card->daily_withdrawal_limit, 2) : '-' }}</p>
-        </div>
-
         @if($card->blocked_at)
             <div>
-                <strong style="color: var(--accent-color); display: block; margin-bottom: 5px;">{{ __('common.blocked_at') }}:</strong>
+                <strong class="detail-label">{{ __('common.blocked_at') }}:</strong>
                 <p style="color: var(--text-primary); margin: 0 0 15px 0;">{{ $card->blocked_at->format('Y-m-d H:i') }}</p>
             </div>
             @if($card->blocked_reason)
                 <div>
-                    <strong style="color: var(--accent-color); display: block; margin-bottom: 5px;">{{ __('common.blocked_reason') }}:</strong>
+                    <strong class="detail-label">{{ __('common.blocked_reason') }}:</strong>
                     <p style="color: var(--text-primary); margin: 0 0 15px 0;">{{ $card->blocked_reason }}</p>
                 </div>
             @endif
@@ -149,15 +135,57 @@
 
         @if($card->replacement_reason)
             <div>
-                <strong style="color: var(--accent-color); display: block; margin-bottom: 5px;">{{ __('common.replacement_reason') }}:</strong>
+                <strong class="detail-label">{{ __('common.replacement_reason') }}:</strong>
                 <p style="color: var(--text-primary); margin: 0 0 15px 0;">{{ $card->replacement_reason }}</p>
             </div>
         @endif
 
         @if($card->description)
-            <div style="grid-column: 1 / -1;">
-                <strong style="color: var(--accent-color); display: block; margin-bottom: 5px;">{{ __('common.description') }}:</strong>
+            <div class="detail-full">
+                <strong class="detail-label">{{ __('common.description') }}:</strong>
                 <p style="color: var(--text-primary); margin: 0 0 15px 0;">{{ $card->description }}</p>
+            </div>
+        @endif
+    </div>
+
+    <!-- SUNU subscriptions reachable with this card (what the TPE shows) -->
+    <div style="margin-bottom: 30px;">
+        <h3 style="color: var(--accent-color); margin-bottom: 6px;">{{ __('common.sunu_card_subscriptions') }}</h3>
+        <p class="muted" style="margin: 0 0 12px; font-size: 13px;">{{ __('common.sunu_card_help') }}</p>
+        @if($subscriptions['policies']->isEmpty() && $subscriptions['proposals']->isEmpty())
+            <p class="muted">{{ __('common.sunu_card_not_linked') }}</p>
+        @else
+            <div class="data-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>{{ __('common.sunu_card_number_col') }}</th>
+                            <th>{{ __('common.sunu_card_type_col') }}</th>
+                            <th>{{ __('common.sunu_card_product_col') }}</th>
+                            <th>{{ __('common.status') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($subscriptions['policies'] as $policy)
+                            <tr>
+                                <td><strong>{{ $policy->policy_number }}</strong></td>
+                                <td>{{ __('common.sunu_card_type_policy') }}</td>
+                                <td>{{ $policy->product?->localizedName() ?? '-' }}</td>
+                                <td>{{ $policy->status }}</td>
+                            </tr>
+                        @endforeach
+                        @foreach($subscriptions['proposals'] as $proposal)
+                            <tr>
+                                <td>
+                                    <a href="{{ route('business.sunu.proposals.show', $proposal->id) }}" class="text-accent"><strong>{{ $proposal->proposal_number }}</strong></a>
+                                </td>
+                                <td>{{ __('common.sunu_card_type_proposal') }}</td>
+                                <td>{{ $proposal->product?->localizedName() ?? '-' }}</td>
+                                <td>{{ $proposal->status }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
             </div>
         @endif
     </div>
@@ -219,30 +247,6 @@
                     <div class="form-group">
                         <label class="form-label">{{ __('common.reason') }} ({{ __('common.optional') }})</label>
                         <textarea name="reason" class="form-control" rows="3"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">{{ __('common.expiration_date') }}</label>
-                        <input type="date" name="expiration_date" class="form-control" 
-                               value="{{ $card->expiration_date->format('Y-m-d') }}" 
-                               min="{{ date('Y-m-d', strtotime('+1 day')) }}">
-                        <small style="color: var(--text-muted);">{{ __('common.leave_empty_to_use_current') }}</small>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">{{ __('common.daily_transaction_limit') }}</label>
-                        <input type="number" name="daily_transaction_limit" class="form-control" 
-                               step="0.01" min="0" value="{{ $card->daily_transaction_limit }}">
-                        <small style="color: var(--text-muted);">{{ __('common.leave_empty_to_use_current') }}</small>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">{{ __('common.daily_withdrawal_limit') }}</label>
-                        <input type="number" name="daily_withdrawal_limit" class="form-control" 
-                               step="0.01" min="0" value="{{ $card->daily_withdrawal_limit }}">
-                        <small style="color: var(--text-muted);">{{ __('common.leave_empty_to_use_current') }}</small>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">{{ __('common.pin') }}</label>
-                        <input type="text" name="pin" class="form-control" maxlength="6" minlength="4">
-                        <small style="color: var(--text-muted);">{{ __('common.leave_empty_to_keep_current') }}</small>
                     </div>
                     <div style="display: flex; gap: 10px; margin-top: 20px;">
                         <button type="submit" class="btn" style="background: var(--warning-bg);">{{ __('common.replace') }}</button>

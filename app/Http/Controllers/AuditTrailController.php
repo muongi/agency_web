@@ -235,37 +235,33 @@ class AuditTrailController extends Controller
         // Generate CSV
         $filename = 'audit_trail_' . now()->format('Y-m-d_His') . '.csv';
         $headers = [
-            'Content-Type' => 'text/csv',
+            'Content-Type' => 'text/csv; charset=UTF-8',
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
         ];
 
-        $callback = function() use ($auditLogs) {
+        $exports = app(\App\Services\ExportService::class);
+        $callback = function() use ($auditLogs, $exports) {
             $file = fopen('php://output', 'w');
-            
+            fwrite($file, "\xEF\xBB\xBF"); // BOM so Excel reads UTF-8 (é, è…)
+            $delimiter = $exports->csvDelimiter();
+
             // Headers
-            fputcsv($file, [
-                'Date/Time',
-                'User',
-                'Action',
-                'Model Type',
-                'Model ID',
-                'Description',
-                'IP Address',
-                'User Agent',
-            ]);
+            fputcsv($file, array_map(fn ($k) => __('common.export_col_'.$k), [
+                'datetime', 'user', 'action', 'model_type', 'model_id', 'description', 'ip_address', 'user_agent',
+            ]), $delimiter);
 
             // Data
             foreach ($auditLogs as $log) {
                 fputcsv($file, [
                     $log->created_at->format('Y-m-d H:i:s'),
-                    $log->causer ? $log->causer->name : 'System',
-                    $log->event ?? 'N/A',
+                    $log->causer ? $log->causer->name : __('common.system'),
+                    $log->event ? $exports->valueLabel($log->event, '') : '-',
                     $this->auditTrailService->getModelDisplayName($log->subject_type),
-                    $log->subject_id ?? 'N/A',
+                    $log->subject_id ?? '-',
                     $log->description,
-                    $log->ip_address ?? 'N/A',
-                    $log->user_agent ?? 'N/A',
-                ]);
+                    $log->ip_address ?? '-',
+                    $log->user_agent ?? '-',
+                ], $delimiter);
             }
 
             fclose($file);

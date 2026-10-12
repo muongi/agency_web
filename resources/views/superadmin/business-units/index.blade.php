@@ -4,80 +4,80 @@
 
 @section('content')
 <div class="card">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-        <h1 style="color: #4a9eff;">{{ __('common.business_units') }}</h1>
+    <div class="toolbar">
+        <h1 class="text-accent">{{ __('common.business_units') }}</h1>
         <a href="{{ route('superadmin.business-units.create') }}" class="btn">{{ __('common.create_business_unit') }}</a>
     </div>
 
     @if($businessUnits->count() > 0)
-        <div style="overflow-x: auto;">
-            <table style="width: 100%; border-collapse: collapse;">
+        <div class="data-table">
+            <table>
                 <thead>
-                    <tr style="border-bottom: 2px solid #404040;">
-                        <th style="padding: 12px; text-align: left; color: #4a9eff;">{{ __('common.logo') }}</th>
-                        <th style="padding: 12px; text-align: left; color: #4a9eff;">{{ __('common.name') }}</th>
-                        <th style="padding: 12px; text-align: left; color: #4a9eff;">{{ __('common.email') }}</th>
-                        <th style="padding: 12px; text-align: left; color: #4a9eff;">{{ __('common.phone') }}</th>
-                        <th style="padding: 12px; text-align: left; color: #4a9eff;">{{ __('common.users') }}</th>
-                        <th style="padding: 12px; text-align: left; color: #4a9eff;">{{ __('common.kato_status') }}</th>
-                        <th style="padding: 12px; text-align: left; color: #4a9eff;">{{ __('common.status') }}</th>
-                        <th style="padding: 12px; text-align: left; color: #4a9eff;">{{ __('common.actions') }}</th>
+                    <tr style="border-bottom: 2px solid var(--border-color);">
+                        <th>{{ __('common.logo') }}</th>
+                        <th>{{ __('common.name') }}</th>
+                        <th>{{ __('common.email') }}</th>
+                        <th>{{ __('common.phone') }}</th>
+                        <th>{{ __('common.users') }}</th>
+                        <th>{{ __('common.kato_status') }}</th>
+                        <th>{{ __('common.status') }}</th>
+                        <th>{{ __('common.actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach($businessUnits as $businessUnit)
-                        <tr style="border-bottom: 1px solid #404040;">
-                            <td style="padding: 12px;">
+                        <tr style="border-bottom: 1px solid var(--border-color);">
+                            <td>
                                 @if($businessUnit->logo)
                                     <img src="{{ asset('storage/' . $businessUnit->logo) }}" alt="{{ $businessUnit->name }}" class="business-logo-small">
                                 @else
-                                    <span style="color: var(--text-muted);">-</span>
+                                    <span class="muted">-</span>
                                 @endif
                             </td>
-                            <td style="padding: 12px;">{{ $businessUnit->name }}</td>
-                            <td style="padding: 12px;">{{ $businessUnit->email ?? '-' }}</td>
-                            <td style="padding: 12px;">{{ $businessUnit->phone ?? '-' }}</td>
-                            <td style="padding: 12px;">{{ $businessUnit->users_count }}</td>
-                            <td style="padding: 12px;">
+                            <td>{{ $businessUnit->name }}</td>
+                            <td>{{ $businessUnit->email ?? '-' }}</td>
+                            <td>{{ $businessUnit->phone ?? '-' }}</td>
+                            <td>{{ $businessUnit->users_count }}</td>
+                            <td>
                                 @php
                                     $isKato = $businessUnit->coreBankingSystem && strtolower($businessUnit->coreBankingSystem->code) === 'kato';
                                 @endphp
                                 @if($isKato)
                                     @if($businessUnit->kato_registered_at)
-                                        <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; background: #2d5a2d; color: #90ee90;" title="{{ __('common.kato_registered') }}">
+                                        <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; background: var(--success-bg); color: var(--success-text);" title="{{ __('common.kato_registered') }}">
                                             {{ __('common.registered') }}
                                         </span>
                                     @elseif($businessUnit->kato_registration_error)
-                                        <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; background: #5a2d2d; color: #ee9090;" title="{{ $businessUnit->kato_registration_error }}">
+                                        <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; background: var(--error-bg); color: var(--error-text);" title="{{ $businessUnit->kato_registration_error }}">
                                             {{ __('common.failed') }}
                                         </span>
                                     @else
-                                        <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; background: #5a5a2d; color: #eeee90;">
+                                        <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; background: var(--warning-bg); color: var(--warning-text);">
                                             {{ __('common.pending') }}
                                         </span>
                                     @endif
                                 @else
-                                    <span style="color: var(--text-muted);">-</span>
+                                    <span class="muted">-</span>
                                 @endif
                             </td>
-                            <td style="padding: 12px;">
-                                <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; background: {{ $businessUnit->is_active ? '#2d5a2d' : '#5a2d2d' }}; color: {{ $businessUnit->is_active ? '#90ee90' : '#ee9090' }};">
+                            <td>
+                                <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; background: {{ $businessUnit->is_active ? 'var(--success-bg)' : 'var(--error-bg)' }}; color: {{ $businessUnit->is_active ? 'var(--success-text)' : 'var(--error-text)' }};">
                                     {{ $businessUnit->is_active ? __('common.active') : __('common.inactive') }}
                                 </span>
                             </td>
-                            <td style="padding: 12px;">
+                            <td>
                                 <div style="display: flex; gap: 5px; flex-wrap: wrap;">
-                                    <a href="{{ route('superadmin.business-units.edit', $businessUnit->id) }}" class="btn" style="padding: 6px 12px; font-size: 12px;">{{ __('common.edit') }}</a>
-                                    <a href="{{ route('superadmin.business-units.users', $businessUnit->id) }}" class="btn" style="padding: 6px 12px; font-size: 12px;">{{ __('common.users') }}</a>
+                                    <a href="{{ route('superadmin.business-units.edit', $businessUnit->id) }}" class="btn btn-sm">{{ __('common.edit') }}</a>
+                                    <a href="{{ route('superadmin.business-units.users', $businessUnit->id) }}" class="btn btn-sm">{{ __('common.users') }}</a>
                                     @if($isKato && !$businessUnit->kato_registered_at && $businessUnit->coreBankingSystem->base_url)
                                         <form action="{{ route('superadmin.business-units.register-kato', $businessUnit->id) }}" method="POST" style="display: inline;">
                                             @csrf
-                                            <button type="submit" class="btn" style="padding: 6px 12px; font-size: 12px; background: #4a9eff;">{{ __('common.register_with_kato') }}</button>
+                                            <button type="submit" class="btn" style="padding: 6px 12px; font-size: 12px; background: var(--accent);">{{ __('common.register_with_kato') }}</button>
                                         </form>
                                     @endif
                                     <form action="{{ route('superadmin.switch-business', $businessUnit->id) }}" method="POST" style="display: inline;">
                                         @csrf
-                                        <button type="submit" class="btn" style="padding: 6px 12px; font-size: 12px;">{{ __('common.switch_business') }}</button>
+                                        <button type="submit" class="btn btn-sm">{{ __('common.switch_business') }}</button>
                                     </form>
                                 </div>
                             </td>
@@ -87,12 +87,12 @@
             </table>
         </div>
 
-        <div style="margin-top: 20px;">
+        <div class="mt-20">
             {{ $businessUnits->links() }}
         </div>
     @else
-        <div style="text-align: center; padding: 40px; color: #888;">
-            <p style="margin-bottom: 20px;">{{ __('common.no_business_units') }}</p>
+        <div class="muted-center">
+            <p class="mb-20">{{ __('common.no_business_units') }}</p>
             <a href="{{ route('superadmin.business-units.create') }}" class="btn">{{ __('common.create_business_unit') }}</a>
         </div>
     @endif

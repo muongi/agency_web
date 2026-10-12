@@ -22,6 +22,7 @@ class CnssMemberWebTest extends TestCase
             'name' => 'Web CNSS BU',
             'slug' => 'web-cnss-bu-'.uniqid(),
             'is_active' => true,
+            'cnss_enabled' => true,
         ]);
 
         $role = Role::create([
@@ -45,6 +46,7 @@ class CnssMemberWebTest extends TestCase
             'name' => 'Web CNSS BU 2',
             'slug' => 'web-cnss-bu2-'.uniqid(),
             'is_active' => true,
+            'cnss_enabled' => true,
         ]);
 
         $permList = Permission::firstOrCreate(
@@ -112,6 +114,7 @@ class CnssMemberWebTest extends TestCase
             'name' => 'Web CNSS BU 3',
             'slug' => 'web-cnss-bu3-'.uniqid(),
             'is_active' => true,
+            'cnss_enabled' => true,
         ]);
 
         $permList = Permission::firstOrCreate(
@@ -155,6 +158,7 @@ class CnssMemberWebTest extends TestCase
             'name' => 'Web CNSS BU docs',
             'slug' => 'web-cnss-bu-docs-'.uniqid(),
             'is_active' => true,
+            'cnss_enabled' => true,
         ]);
 
         $permShow = Permission::firstOrCreate(
@@ -220,6 +224,7 @@ class CnssMemberWebTest extends TestCase
             'name' => 'Web CNSS BU docs 2',
             'slug' => 'web-cnss-bu-docs2-'.uniqid(),
             'is_active' => true,
+            'cnss_enabled' => true,
         ]);
 
         $permList = Permission::firstOrCreate(
@@ -265,6 +270,7 @@ class CnssMemberWebTest extends TestCase
             'name' => 'Web CNSS BU docs 3',
             'slug' => 'web-cnss-bu-docs3-'.uniqid(),
             'is_active' => true,
+            'cnss_enabled' => true,
         ]);
 
         $permShow = Permission::firstOrCreate(
@@ -375,6 +381,7 @@ class CnssMemberWebTest extends TestCase
             'name' => 'Export BU',
             'slug' => 'export-bu-'.uniqid(),
             'is_active' => true,
+            'cnss_enabled' => true,
         ]);
 
         $role = Role::create(['name' => 'No CNSS', 'business_unit_id' => $bu->id]);
@@ -430,6 +437,7 @@ class CnssMemberWebTest extends TestCase
             'name' => 'Reader BU',
             'slug' => 'reader-bu-'.uniqid(),
             'is_active' => true,
+            'cnss_enabled' => true,
         ]);
 
         $permList = Permission::firstOrCreate(
@@ -546,5 +554,59 @@ class CnssMemberWebTest extends TestCase
             ],
             'beneficiary' => [],
         ], $overrides);
+    }
+
+    public function test_index_forbidden_when_cnss_module_disabled(): void
+    {
+        $bu = BusinessUnit::create([
+            'name' => 'CNSS Disabled BU',
+            'slug' => 'cnss-disabled-bu-'.uniqid(),
+            'is_active' => true,
+            'cnss_enabled' => false,
+        ]);
+
+        $permList = Permission::firstOrCreate(
+            ['slug' => 'view-cnss-members'],
+            [
+                'name' => 'View CNSS Members',
+                'description' => 'Test',
+                'group' => 'CNSS',
+            ]
+        );
+
+        $role = Role::create([
+            'name' => 'CNSS reader',
+            'business_unit_id' => $bu->id,
+        ]);
+        $role->permissions()->sync([$permList->id]);
+
+        $user = User::factory()->create([
+            'current_business_unit_id' => $bu->id,
+        ]);
+        $user->businessUnits()->attach($bu->id, ['role_id' => $role->id, 'is_active' => true]);
+
+        $this->actingAs($user)
+            ->get(route('business.cnss.members.index'))
+            ->assertForbidden();
+    }
+
+    public function test_super_admin_can_enable_cnss_module_on_business_unit(): void
+    {
+        $bu = BusinessUnit::create([
+            'name' => 'Toggle CNSS BU',
+            'slug' => 'toggle-cnss-bu-'.uniqid(),
+            'is_active' => true,
+            'cnss_enabled' => false,
+        ]);
+
+        $admin = User::factory()->create(['is_super_admin' => true]);
+
+        $this->actingAs($admin)->put(route('superadmin.business-units.update', $bu->id), [
+            'name' => $bu->name,
+            'cnss_enabled' => '1',
+        ])->assertRedirect();
+
+        $bu->refresh();
+        $this->assertTrue($bu->cnss_enabled);
     }
 }

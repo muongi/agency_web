@@ -5,13 +5,13 @@
 
 @section('content')
 <div class="card">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-        <h1 style="color: #4a9eff;">{{ __('common.roles') }}</h1>
+    <div class="toolbar">
+        <h1 class="text-accent">{{ __('common.roles') }}</h1>
         <a href="{{ route('superadmin.user-management.roles.create') }}" class="btn">{{ __('common.create_role') }}</a>
     </div>
 
     @if($roles->count() > 0)
-        <div style="overflow-x: auto;">
+        <div class="data-table">
             <table>
                 <thead>
                     <tr>
@@ -30,7 +30,7 @@
                             <td>{{ $role->description ?? '-' }}</td>
                             <td>{{ $role->permissions->count() }} {{ __('common.permissions') }}</td>
                             <td>
-                                <a href="{{ route('superadmin.user-management.roles.edit', $role->id) }}" class="btn" style="padding: 6px 12px; font-size: 12px;">{{ __('common.edit') }}</a>
+                                <a href="{{ route('superadmin.user-management.roles.edit', $role->id) }}" class="btn btn-sm">{{ __('common.edit') }}</a>
                             </td>
                         </tr>
                     @endforeach
@@ -38,13 +38,13 @@
             </table>
         </div>
 
-        <div style="margin-top: 20px;">
+        <div class="mt-20">
             {{ $roles->links() }}
         </div>
     @else
-        <div style="text-align: center; padding: 40px; color: #888;">
+        <div class="muted-center">
             <p>{{ __('common.no_roles') }}</p>
-            <a href="{{ route('superadmin.user-management.roles.create') }}" class="btn" style="margin-top: 20px;">{{ __('common.create_role') }}</a>
+            <a href="{{ route('superadmin.user-management.roles.create') }}" class="btn mt-20">{{ __('common.create_role') }}</a>
         </div>
     @endif
 </div>

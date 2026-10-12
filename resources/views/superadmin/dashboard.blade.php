@@ -3,57 +3,40 @@
 @section('title', __('common.super_admin') . ' - ' . __('common.dashboard'))
 
 @section('content')
-<div class="card">
-    <h1 style="margin-bottom: 20px; color: #4a9eff;">{{ __('common.super_admin') }} {{ __('common.dashboard') }}</h1>
-    
-    <p style="margin-bottom: 20px; color: #aaa;">Welcome, {{ auth()->user()->name }}!</p>
-    
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-top: 30px;">
-        <div class="card" style="background: #3d3d3d;">
-            <h3 style="color: #4a9eff; margin-bottom: 10px;">{{ __('common.business_units') }}</h3>
-            <p style="font-size: 32px; font-weight: bold; color: #4a9eff;">{{ $businessUnits->count() }}</p>
-            <a href="{{ route('superadmin.business-units.index') }}" class="btn" style="margin-top: 10px;">{{ __('common.view_all') }}</a>
-        </div>
-        
-        <div class="card" style="background: #3d3d3d;">
-            <h3 style="color: #4a9eff; margin-bottom: 10px;">{{ __('common.users') }}</h3>
-            <p style="font-size: 32px; font-weight: bold; color: #4a9eff;">{{ \App\Models\User::count() }}</p>
-        </div>
-        
-        <div class="card" style="background: #3d3d3d;">
-            <h3 style="color: #4a9eff; margin-bottom: 10px;">{{ __('common.transaction_types') }}</h3>
-            <p style="font-size: 32px; font-weight: bold; color: #4a9eff;">{{ $transactionTypesCount }}</p>
-            <a href="{{ route('superadmin.transaction-types.index') }}" class="btn" style="margin-top: 10px;">{{ __('common.manage') }}</a>
-        </div>
-    </div>
-    
-    <div style="margin-top: 30px;">
-        <a href="{{ route('superadmin.business-units.create') }}" class="btn">{{ __('common.create_business_unit') }}</a>
-    </div>
+<x-page-header :title="__('common.super_admin') . ' ' . __('common.dashboard')"
+               :subtitle="__('common.welcome') . ', ' . auth()->user()->name . '!'">
+    <a href="{{ route('superadmin.business-units.create') }}" class="btn">
+        <x-icon name="plus" :size="16" /> {{ __('common.create_business_unit') }}
+    </a>
+</x-page-header>
 
-    @if($businessUnits->count() > 0)
-    <div class="card" style="margin-top: 30px;">
-        <h2 style="margin-bottom: 20px; color: #4a9eff;">{{ __('common.recent_business_units') }}</h2>
-        <div style="display: grid; gap: 15px;">
-            @foreach($businessUnits->take(5) as $businessUnit)
-                <div style="padding: 15px; background: #3d3d3d; border-radius: 4px; border: 1px solid #404040;">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <h3 style="color: #4a9eff; margin-bottom: 5px;">{{ $businessUnit->name }}</h3>
-                            @if($businessUnit->email)
-                                <p style="color: #aaa; font-size: 14px;">{{ $businessUnit->email }}</p>
-                            @endif
-                        </div>
-                        <form action="{{ route('superadmin.switch-business', $businessUnit->id) }}" method="POST" style="display: inline;">
-                            @csrf
-                            <button type="submit" class="btn" style="padding: 8px 16px;">{{ __('common.switch_business') }}</button>
-                        </form>
-                    </div>
-                </div>
-            @endforeach
-        </div>
-    </div>
-    @endif
+<div class="stat-grid">
+    <x-stat-card icon="building" :label="__('common.business_units')" :value="$businessUnits->count()"
+                 :href="route('superadmin.business-units.index')" />
+    <x-stat-card icon="users" :label="__('common.users')" :value="\App\Models\User::count()" />
+    <x-stat-card icon="card" :label="__('common.transaction_types')" :value="$transactionTypesCount"
+                 :href="route('superadmin.transaction-types.index')" />
 </div>
-@endsection
 
+@if($businessUnits->count() > 0)
+<div class="card">
+    <h2 class="mb-20">{{ __('common.recent_business_units') }}</h2>
+    <div style="display: grid; gap: 12px;">
+        @foreach($businessUnits->take(5) as $businessUnit)
+            <div style="padding: 16px; background: var(--bg-tertiary); border-radius: var(--radius-sm); border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; gap: 16px;">
+                <div>
+                    <h3 style="margin-bottom: 4px;">{{ $businessUnit->name }}</h3>
+                    @if($businessUnit->email)
+                        <p style="color: var(--text-secondary); font-size: 14px;">{{ $businessUnit->email }}</p>
+                    @endif
+                </div>
+                <form action="{{ route('superadmin.switch-business', $businessUnit->id) }}" method="POST" style="display: inline;">
+                    @csrf
+                    <button type="submit" class="btn btn-sm">{{ __('common.switch_business') }}</button>
+                </form>
+            </div>
+        @endforeach
+    </div>
+</div>
+@endif
+@endsection

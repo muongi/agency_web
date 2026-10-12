@@ -4,10 +4,10 @@
 
 @section('content')
 @if($businessUnit)
+<x-page-header :title="__('common.dashboard')" :subtitle="$businessUnit->name" />
+
 <div class="card">
-    <h1 style="margin-bottom: 20px; color: var(--accent-color);">{{ __('common.dashboard') }}</h1>
-    
-    <div style="margin-bottom: 30px; padding: 20px; background: var(--bg-tertiary); border-radius: 8px; border: 1px solid var(--border-color);">
+    <div style="margin-bottom: 30px; padding: 20px; background: var(--bg-tertiary); border-radius: var(--radius); border: 1px solid var(--border-color);">
         <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 15px;">
             @if($businessUnit->logo)
                 <img src="{{ asset('storage/' . $businessUnit->logo) }}" alt="{{ $businessUnit->name }}" class="business-logo">
@@ -25,61 +25,56 @@
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-top: 15px;">
             @if($businessUnit->email)
                 <div>
-                    <strong style="color: var(--accent-color);">{{ __('common.email') }}:</strong>
+                    <strong class="text-accent">{{ __('common.email') }}:</strong>
                     <p style="color: var(--text-primary);">{{ $businessUnit->email }}</p>
                 </div>
             @endif
             @if($businessUnit->phone)
                 <div>
-                    <strong style="color: var(--accent-color);">{{ __('common.phone') }}:</strong>
+                    <strong class="text-accent">{{ __('common.phone') }}:</strong>
                     <p style="color: var(--text-primary);">{{ $businessUnit->phone }}</p>
                 </div>
             @endif
             @if($businessUnit->address)
                 <div>
-                    <strong style="color: var(--accent-color);">{{ __('common.address') }}:</strong>
+                    <strong class="text-accent">{{ __('common.address') }}:</strong>
                     <p style="color: var(--text-primary);">{{ $businessUnit->address }}</p>
                 </div>
             @endif
             @if($businessUnit->tax_number)
                 <div>
-                    <strong style="color: var(--accent-color);">{{ __('common.tax_number') }}:</strong>
+                    <strong class="text-accent">{{ __('common.tax_number') }}:</strong>
                     <p style="color: var(--text-primary);">{{ $businessUnit->tax_number }}</p>
                 </div>
             @endif
             @if($businessUnit->mailing_address)
                 <div>
-                    <strong style="color: var(--accent-color);">{{ __('common.mailing_address') }}:</strong>
+                    <strong class="text-accent">{{ __('common.mailing_address') }}:</strong>
                     <p style="color: var(--text-primary);">{{ $businessUnit->mailing_address }}</p>
                 </div>
             @endif
             @if($businessUnit->relation_manager_phone)
                 <div>
-                    <strong style="color: var(--accent-color);">{{ __('common.relation_manager_phone') }}:</strong>
+                    <strong class="text-accent">{{ __('common.relation_manager_phone') }}:</strong>
                     <p style="color: var(--text-primary);">{{ $businessUnit->relation_manager_phone }}</p>
                 </div>
             @endif
             @if($businessUnit->relation_manager_email)
                 <div>
-                    <strong style="color: var(--accent-color);">{{ __('common.relation_manager_email') }}:</strong>
+                    <strong class="text-accent">{{ __('common.relation_manager_email') }}:</strong>
                     <p style="color: var(--text-primary);">{{ $businessUnit->relation_manager_email }}</p>
                 </div>
             @endif
         </div>
     </div>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-top: 30px;">
-        <div class="card" style="background: var(--bg-tertiary);">
-            <h3 style="color: var(--accent-color); margin-bottom: 10px;">{{ __('common.users') }}</h3>
-            <p style="font-size: 32px; font-weight: bold; color: var(--accent-color);">{{ $businessUnit->users->count() }}</p>
-            <a href="{{ route('business.users.index') }}" class="btn" style="margin-top: 10px; padding: 8px 16px; font-size: 12px;">{{ __('common.manage_users') }}</a>
-        </div>
-        
-        <div class="card" style="background: var(--bg-tertiary);">
-            <h3 style="color: var(--accent-color); margin-bottom: 10px;">{{ __('common.roles') }}</h3>
-            <p style="font-size: 32px; font-weight: bold; color: var(--accent-color);">{{ $businessUnit->roles->count() }}</p>
-            <a href="{{ route('business.roles.index') }}" class="btn" style="margin-top: 10px; padding: 8px 16px; font-size: 12px;">{{ __('common.manage_roles') }}</a>
-        </div>
+    <div class="stat-grid">
+        <x-stat-card icon="users" :label="__('common.users')" :value="$businessUnit->users->count()">
+            <a href="{{ route('business.users.index') }}" class="btn btn-sm" style="margin-top: 10px; align-self: flex-start;">{{ __('common.manage_users') }}</a>
+        </x-stat-card>
+        <x-stat-card icon="shield" :label="__('common.roles')" :value="$businessUnit->roles->count()">
+            <a href="{{ route('business.roles.index') }}" class="btn btn-sm" style="margin-top: 10px; align-self: flex-start;">{{ __('common.manage_roles') }}</a>
+        </x-stat-card>
     </div>
 
     @if(isset($transactionStats))
@@ -102,62 +97,36 @@
     <div style="margin-top: 30px;">
         <h2 style="color: var(--accent-color); margin-bottom: 20px;">{{ __('common.transaction_summary') }} - {{ __('common.current_month') }}</h2>
         
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px;">
-            <div class="card" style="background: var(--bg-tertiary);">
-                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
-                    <span style="font-size: 32px;">💳</span>
-                    <h3 style="color: var(--accent-color); margin: 0;">{{ __('common.total_transactions_month') }}</h3>
-                </div>
-                <p style="font-size: 36px; font-weight: bold; color: var(--accent-color); margin: 0;">
-                    {{ number_format($transactionStats['total_transactions']) }}
-                </p>
-                <a href="{{ route('transactions.index') }}" class="btn" style="margin-top: 10px; padding: 8px 16px; font-size: 12px;">{{ __('common.view_all') }}</a>
-            </div>
-            
-            <div class="card" style="background: var(--bg-tertiary);">
-                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
-                    <span style="font-size: 32px;">💰</span>
-                    <h3 style="color: var(--accent-color); margin: 0;">{{ __('common.total_transaction_amount') }}</h3>
-                </div>
-                <p style="font-size: 36px; font-weight: bold; color: var(--accent-color); margin: 0;">
-                    {{ number_format($transactionStats['total_amount'], 2) }}
-                </p>
-                <small style="color: var(--text-muted);">{{ config('currency.default', 'CFA') }}</small>
-            </div>
-            
-            <div class="card" style="background: var(--bg-tertiary);">
-                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
-                    <span style="font-size: 32px;">📈</span>
-                    <h3 style="color: var(--accent-color); margin: 0;">{{ __('common.total_commissions_paid') }}</h3>
-                </div>
-                <p style="font-size: 36px; font-weight: bold; color: var(--success-text); margin: 0;">
-                    {{ number_format($transactionStats['total_commissions'], 2) }}
-                </p>
-                <small style="color: var(--text-muted);">{{ config('currency.default', 'CFA') }}</small>
-            </div>
-            
-            <div class="card" style="background: var(--bg-tertiary);">
-                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
-                    <span style="font-size: 32px;">🏢</span>
-                    <h3 style="color: var(--accent-color); margin: 0;">{{ __('common.business_revenue') }}</h3>
-                </div>
-                <p style="font-size: 36px; font-weight: bold; color: var(--accent-color); margin: 0;">
-                    {{ number_format($transactionStats['total_business_share'], 2) }}
-                </p>
-                <small style="color: var(--text-muted);">{{ config('currency.default', 'CFA') }}</small>
-            </div>
+        @php $cur = config('currency.default', 'CFA'); @endphp
+        <div class="stat-grid">
+            <x-stat-card icon="card" :label="__('common.total_transactions_month')"
+                         :value="number_format($transactionStats['total_transactions'])">
+                <a href="{{ route('transactions.index') }}" class="btn btn-sm" style="margin-top: 10px; align-self: flex-start;">{{ __('common.view_all') }}</a>
+            </x-stat-card>
+            <x-stat-card icon="wallet" :label="__('common.total_transaction_amount')"
+                         :value="number_format($transactionStats['total_amount'], 2)">
+                <small class="muted">{{ $cur }}</small>
+            </x-stat-card>
+            <x-stat-card icon="chart" :label="__('common.total_commissions_paid')"
+                         :value="number_format($transactionStats['total_commissions'], 2)">
+                <small class="muted">{{ $cur }}</small>
+            </x-stat-card>
+            <x-stat-card icon="building" :label="__('common.business_revenue')"
+                         :value="number_format($transactionStats['total_business_share'], 2)">
+                <small class="muted">{{ $cur }}</small>
+            </x-stat-card>
         </div>
 
         <!-- Top Agents by Commission -->
         @if($topAgents->count() > 0)
-        <div class="card" style="margin-top: 20px;">
+        <div class="card mt-20">
             <h2 style="margin-bottom: 20px; color: var(--accent-color);">{{ __('common.top_agents_by_commission') }}</h2>
-            <div style="overflow-x: auto;">
-                <table style="width: 100%; border-collapse: collapse;">
+            <div class="data-table">
+                <table>
                     <thead>
                         <tr style="border-bottom: 2px solid var(--border-color);">
-                            <th style="padding: 12px; text-align: left; color: var(--accent-color);">#</th>
-                            <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.agent_name') }}</th>
+                            <th>#</th>
+                            <th>{{ __('common.agent_name') }}</th>
                             <th style="padding: 12px; text-align: right; color: var(--accent-color);">{{ __('common.number_of_transactions') }}</th>
                             <th style="padding: 12px; text-align: right; color: var(--accent-color);">{{ __('common.total_commission_earned') }}</th>
                         </tr>
@@ -166,13 +135,13 @@
                         @foreach($topAgents as $index => $item)
                             <tr style="border-bottom: 1px solid var(--border-color);">
                                 <td style="padding: 12px; color: var(--text-muted);">{{ $index + 1 }}</td>
-                                <td style="padding: 12px;">
+                                <td>
                                     @if($item['agent'])
                                         <a href="{{ route('agents.show', $item['agent']->id) }}" style="color: var(--accent-color); text-decoration: none;">
                                             <strong>{{ $item['agent']->full_name }}</strong>
                                         </a>
                                     @else
-                                        <span style="color: var(--text-muted);">{{ __('common.unknown') }}</span>
+                                        <span class="muted">{{ __('common.unknown') }}</span>
                                     @endif
                                 </td>
                                 <td style="padding: 12px; text-align: right;">
@@ -189,7 +158,7 @@
         </div>
         @else
         <div class="card" style="margin-top: 20px; padding: 40px; text-align: center;">
-            <p style="color: var(--text-muted);">{{ __('common.no_transactions_this_month') }}</p>
+            <p class="muted">{{ __('common.no_transactions_this_month') }}</p>
         </div>
         @endif
     </div>
@@ -198,13 +167,13 @@
     <div class="card" style="margin-top: 30px;">
         <h2 style="margin-bottom: 20px; color: var(--accent-color);">{{ __('common.users') }}</h2>
         @if($businessUnit->users->count() > 0)
-            <div style="overflow-x: auto;">
-                <table style="width: 100%; border-collapse: collapse;">
+            <div class="data-table">
+                <table>
                     <thead>
                         <tr style="border-bottom: 2px solid var(--border-color);">
-                            <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.name') }}</th>
-                            <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.email') }}</th>
-                            <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.role') }}</th>
+                            <th>{{ __('common.name') }}</th>
+                            <th>{{ __('common.email') }}</th>
+                            <th>{{ __('common.role') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -214,9 +183,9 @@
                                 $role = $pivot->role_id ? \App\Models\Role::find($pivot->role_id) : null;
                             @endphp
                             <tr style="border-bottom: 1px solid var(--border-color);">
-                                <td style="padding: 12px;">{{ $user->name }}</td>
-                                <td style="padding: 12px;">{{ $user->email }}</td>
-                                <td style="padding: 12px;">{{ $role ? $role->name : '-' }}</td>
+                                <td>{{ $user->name }}</td>
+                                <td>{{ $user->email }}</td>
+                                <td>{{ $role ? $role->name : '-' }}</td>
                             </tr>
                         @endforeach
                     </tbody>
@@ -230,7 +199,7 @@
 @else
 <div class="card">
     <h1 style="margin-bottom: 20px; color: var(--accent-color);">{{ __('common.dashboard') }}</h1>
-    <p style="color: var(--text-muted);">No business unit assigned. Please contact your administrator.</p>
+    <p class="muted">No business unit assigned. Please contact your administrator.</p>
 </div>
 @endif
 

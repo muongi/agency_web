@@ -5,11 +5,11 @@
 
 @section('content')
 <div class="card">
-    <h1 style="margin-bottom: 24px; color: #4a9eff;">{{ __('common.edit') }} {{ __('common.business_unit') }}</h1>
+    <h1 style="margin-bottom: 24px; color: var(--accent);">{{ __('common.edit') }} {{ __('common.business_unit') }}</h1>
 
     @if(session('kato_credentials'))
-        <div style="margin-bottom: 20px; padding: 15px; background: #2d4a2d; border: 1px solid #4a9eff; border-radius: 4px;">
-            <strong style="color: #90ee90;">{{ __('common.kato_credentials_flash_title') }}</strong>
+        <div style="margin-bottom: 20px; padding: 15px; background: var(--success-bg); border: 1px solid var(--accent); border-radius: 4px;">
+            <strong style="color: var(--success-text);">{{ __('common.kato_credentials_flash_title') }}</strong>
             <p style="margin: 10px 0 0; color: var(--text-primary); font-size: 14px;">
                 <strong>{{ __('common.kato_admin_name') }}:</strong> {{ session('kato_credentials.adminName') ?? '-' }}<br>
                 <strong>{{ __('common.admin_username') }}:</strong> {{ session('kato_credentials.adminUsername') ?? '-' }}<br>
@@ -24,7 +24,7 @@
         @method('PUT')
 
         <div class="form-group">
-            <label class="form-label" for="name">{{ __('common.name') }} <span style="color: #ff6b6b;">*</span></label>
+            <label class="form-label" for="name">{{ __('common.name') }} <span class="text-error">*</span></label>
             <input 
                 type="text" 
                 id="name" 
@@ -35,7 +35,7 @@
                 autofocus
             >
             @error('name')
-                <div style="color: #ff6b6b; margin-top: 5px; font-size: 14px;">{{ $message }}</div>
+                <div class="field-error">{{ $message }}</div>
             @enderror
         </div>
 
@@ -48,11 +48,11 @@
                 rows="4"
             >{{ old('description', $businessUnit->description) }}</textarea>
             @error('description')
-                <div style="color: #ff6b6b; margin-top: 5px; font-size: 14px;">{{ $message }}</div>
+                <div class="field-error">{{ $message }}</div>
             @enderror
         </div>
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+        <div class="detail-grid">
             <div class="form-group">
                 <label class="form-label" for="email">{{ __('common.email') }}</label>
                 <input 
@@ -63,7 +63,7 @@
                     value="{{ old('email', $businessUnit->email) }}"
                 >
                 @error('email')
-                    <div style="color: #ff6b6b; margin-top: 5px; font-size: 14px;">{{ $message }}</div>
+                    <div class="field-error">{{ $message }}</div>
                 @enderror
             </div>
 
@@ -77,11 +77,11 @@
                     value="{{ old('phone', $businessUnit->phone) }}"
                 >
                 @error('phone')
-                    <div style="color: #ff6b6b; margin-top: 5px; font-size: 14px;">{{ $message }}</div>
+                    <div class="field-error">{{ $message }}</div>
                 @enderror
             </div>
 
-            <div class="form-group" style="grid-column: 1 / -1;">
+            <div class="form-group detail-full">
                 <label class="form-label" for="address">{{ __('common.address') }}</label>
                 <textarea 
                     id="address" 
@@ -90,7 +90,7 @@
                     rows="3"
                 >{{ old('address', $businessUnit->address) }}</textarea>
                 @error('address')
-                    <div style="color: #ff6b6b; margin-top: 5px; font-size: 14px;">{{ $message }}</div>
+                    <div class="field-error">{{ $message }}</div>
                 @enderror
             </div>
 
@@ -104,7 +104,7 @@
                     value="{{ old('account', $businessUnit->account) }}"
                 >
                 @error('account')
-                    <div style="color: #ff6b6b; margin-top: 5px; font-size: 14px;">{{ $message }}</div>
+                    <div class="field-error">{{ $message }}</div>
                 @enderror
             </div>
 
@@ -118,11 +118,11 @@
                     value="{{ old('tax_number', $businessUnit->tax_number) }}"
                 >
                 @error('tax_number')
-                    <div style="color: #ff6b6b; margin-top: 5px; font-size: 14px;">{{ $message }}</div>
+                    <div class="field-error">{{ $message }}</div>
                 @enderror
             </div>
 
-            <div class="form-group" style="grid-column: 1 / -1;">
+            <div class="form-group detail-full">
                 <label class="form-label" for="mailing_address">{{ __('common.mailing_address') }}</label>
                 <textarea 
                     id="mailing_address" 
@@ -131,7 +131,7 @@
                     rows="3"
                 >{{ old('mailing_address', $businessUnit->mailing_address) }}</textarea>
                 @error('mailing_address')
-                    <div style="color: #ff6b6b; margin-top: 5px; font-size: 14px;">{{ $message }}</div>
+                    <div class="field-error">{{ $message }}</div>
                 @enderror
             </div>
 
@@ -145,7 +145,7 @@
                     value="{{ old('relation_manager_phone', $businessUnit->relation_manager_phone) }}"
                 >
                 @error('relation_manager_phone')
-                    <div style="color: #ff6b6b; margin-top: 5px; font-size: 14px;">{{ $message }}</div>
+                    <div class="field-error">{{ $message }}</div>
                 @enderror
             </div>
 
@@ -159,7 +159,7 @@
                     value="{{ old('relation_manager_email', $businessUnit->relation_manager_email) }}"
                 >
                 @error('relation_manager_email')
-                    <div style="color: #ff6b6b; margin-top: 5px; font-size: 14px;">{{ $message }}</div>
+                    <div class="field-error">{{ $message }}</div>
                 @enderror
             </div>
 
@@ -175,7 +175,7 @@
                 >
                 <small style="color: var(--text-muted); font-size: 12px; margin-top: 5px; display: block;">{{ __('common.sms_sender_number_format') }}</small>
                 @error('sms_sender_number')
-                    <div style="color: #ff6b6b; margin-top: 5px; font-size: 14px;">{{ $message }}</div>
+                    <div class="field-error">{{ $message }}</div>
                 @enderror
             </div>
 
@@ -194,7 +194,7 @@
                     @endforeach
                 </select>
                 @error('core_banking_system_id')
-                    <div style="color: #ff6b6b; margin-top: 5px; font-size: 14px;">{{ $message }}</div>
+                    <div class="field-error">{{ $message }}</div>
                 @enderror
             </div>
 
@@ -205,9 +205,12 @@
                 $katoRegisteredUsername = $businessUnit->getKatoRegisteredAdminUsername();
                 $katoCanRefresh = $businessUnit->hasKatoRefreshCredentials();
                 $katoCredentialsMismatch = $businessUnit->katoCredentialsMismatch();
+                $katoTokenExpired = $businessUnit->kato_token
+                    && $businessUnit->kato_token_expires_at
+                    && $businessUnit->kato_token_expires_at->isPast();
             @endphp
             <div id="kato-admin-credentials" class="form-group" style="grid-column: 1 / -1; display: {{ $isKato ? 'block' : 'none' }}; padding: 15px; background: var(--bg-tertiary); border-radius: 4px; border: 1px solid var(--border-color);">
-                <h3 style="color: #4a9eff; margin-bottom: 15px; font-size: 16px;">{{ __('common.kato_admin_credentials') }}</h3>
+                <h3 style="color: var(--accent); margin-bottom: 15px; font-size: 16px;">{{ __('common.kato_admin_credentials') }}</h3>
                 <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 15px;">{{ __('common.kato_admin_credentials_help') }}</p>
 
                 @if($isKato && $businessUnit->kato_company_id)
@@ -219,11 +222,14 @@
                     @endif
 
                     @if(!$katoCanRefresh)
-                        <div style="margin-bottom: 12px; padding: 12px; background: #5a5a2d; border-radius: 4px; color: #eeee90; font-size: 13px;">
+                        <div style="margin-bottom: 12px; padding: 12px; background: var(--warning-bg); border-radius: 4px; color: var(--warning-text); font-size: 13px;">
                             {{ __('common.kato_credentials_missing_warning') }}
+                            @if($katoTokenExpired)
+                                <p style="margin: 8px 0 0;">{{ __('common.kato_transactions_blocked_warning') }}</p>
+                            @endif
                         </div>
                     @elseif($katoCredentialsMismatch)
-                        <div style="margin-bottom: 12px; padding: 12px; background: #5a3d2d; border-radius: 4px; color: #eecc90; font-size: 13px;">
+                        <div style="margin-bottom: 12px; padding: 12px; background: var(--warning-bg); border-radius: 4px; color: var(--warning-text); font-size: 13px;">
                             {{ __('common.kato_credentials_mismatch_warning', ['username' => $katoRegisteredUsername]) }}
                         </div>
                     @endif
@@ -240,7 +246,7 @@
                         <input type="text" id="kato_admin_name" name="kato_admin_name" class="form-control"
                             value="{{ old('kato_admin_name', $businessUnit->kato_admin_name) }}">
                         @error('kato_admin_name')
-                            <div style="color: #ff6b6b; margin-top: 5px; font-size: 14px;">{{ $message }}</div>
+                            <div class="field-error">{{ $message }}</div>
                         @enderror
                     </div>
                     <div class="form-group" style="margin: 0;">
@@ -248,7 +254,7 @@
                         <input type="text" id="kato_admin_username" name="kato_admin_username" class="form-control"
                             value="{{ old('kato_admin_username', $businessUnit->kato_admin_username) }}">
                         @error('kato_admin_username')
-                            <div style="color: #ff6b6b; margin-top: 5px; font-size: 14px;">{{ $message }}</div>
+                            <div class="field-error">{{ $message }}</div>
                         @enderror
                     </div>
                     <div class="form-group" style="margin: 0;">
@@ -256,7 +262,7 @@
                         <input type="password" id="kato_admin_password" name="kato_admin_password" class="form-control"
                             placeholder="{{ __('common.kato_admin_password_leave_blank') }}" autocomplete="new-password">
                         @error('kato_admin_password')
-                            <div style="color: #ff6b6b; margin-top: 5px; font-size: 14px;">{{ $message }}</div>
+                            <div class="field-error">{{ $message }}</div>
                         @enderror
                     </div>
                 </div>
@@ -275,7 +281,7 @@
             </div>
 
             <div id="configurable-cbs-credentials" class="form-group" style="grid-column: 1 / -1; display: {{ $isConfigurableCbs ? 'block' : 'none' }}; padding: 15px; background: var(--bg-tertiary); border-radius: 4px; border: 1px solid var(--border-color);">
-                <h3 style="color: #4a9eff; margin-bottom: 15px; font-size: 16px;">{{ __('common.cbs_credentials') }}</h3>
+                <h3 style="color: var(--accent); margin-bottom: 15px; font-size: 16px;">{{ __('common.cbs_credentials') }}</h3>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
                     <div class="form-group" style="margin: 0;">
                         <label class="form-label" for="cbs_username">{{ __('common.cbs_username') }}</label>
@@ -303,11 +309,11 @@
 
             @if($isKato)
                 <div class="form-group" style="grid-column: 1 / -1; padding: 15px; background: var(--bg-secondary); border-radius: 4px; border: 1px solid var(--border-color);">
-                    <h3 style="color: #4a9eff; margin-bottom: 15px; font-size: 16px;">{{ __('common.kato_sync_status') }}</h3>
+                    <h3 style="color: var(--accent); margin-bottom: 15px; font-size: 16px;">{{ __('common.kato_sync_status') }}</h3>
                     
                     @if($businessUnit->kato_company_id)
                         <div style="margin-bottom: 10px;">
-                            <span style="padding: 6px 12px; border-radius: 4px; font-size: 12px; background: #2d5a2d; color: #90ee90; display: inline-block;">
+                            <span style="padding: 6px 12px; border-radius: 4px; font-size: 12px; background: var(--success-bg); color: var(--success-text); display: inline-block;">
                                 ✓ {{ __('common.kato_registered') }}
                             </span>
                             <p style="margin-top: 8px; color: var(--text-muted); font-size: 13px;">
@@ -344,16 +350,16 @@
                         </div>
                     @elseif($businessUnit->kato_registration_error)
                         <div style="margin-bottom: 10px;">
-                            <span style="padding: 6px 12px; border-radius: 4px; font-size: 12px; background: #5a2d2d; color: #ee9090; display: inline-block;">
+                            <span style="padding: 6px 12px; border-radius: 4px; font-size: 12px; background: var(--error-bg); color: var(--error-text); display: inline-block;">
                                 ✗ {{ __('common.kato_registration_failed') }}
                             </span>
-                            <p style="margin-top: 8px; color: #ee9090; font-size: 13px;">
+                            <p style="margin-top: 8px; color: var(--error-text); font-size: 13px;">
                                 <strong>{{ __('common.error') }}:</strong> {{ $businessUnit->kato_registration_error }}
                             </p>
                         </div>
                     @else
                         <div style="margin-bottom: 10px;">
-                            <span style="padding: 6px 12px; border-radius: 4px; font-size: 12px; background: #5a5a2d; color: #eeee90; display: inline-block;">
+                            <span style="padding: 6px 12px; border-radius: 4px; font-size: 12px; background: var(--warning-bg); color: var(--warning-text); display: inline-block;">
                                 ⏳ {{ __('common.kato_registration_pending') }}
                             </span>
                         </div>
@@ -365,11 +371,11 @@
                                 formaction="{{ route('superadmin.business-units.register-kato', $businessUnit->id) }}"
                                 formmethod="post"
                                 class="btn"
-                                style="background: #4a9eff; margin-top: 10px;">
+                                style="background: var(--accent); margin-top: 10px;">
                                 🔄 {{ __('common.sync_with_kato') }}
                             </button>
                         @else
-                            <p style="margin-top: 10px; color: #ee9090; font-size: 13px;">
+                            <p style="margin-top: 10px; color: var(--error-text); font-size: 13px;">
                                 {{ __('common.kato_base_url_not_configured') }}
                             </p>
                         @endif
@@ -386,7 +392,7 @@
                             {{ __('common.kato_refresh_token') }}
                         </button>
                         @if(! $katoCanRefresh)
-                            <p style="margin-top: 8px; color: #eecc90; font-size: 13px;">
+                            <p style="margin-top: 8px; color: var(--warning-text); font-size: 13px;">
                                 {{ __('common.kato_refresh_token_disabled_help') }}
                             </p>
                         @endif
@@ -394,12 +400,12 @@
                 </div>
             @endif
 
-            <div class="form-group" style="grid-column: 1 / -1;">
+            <div class="form-group detail-full">
                 <label class="form-label" for="logo">{{ __('common.logo') }}</label>
                 @if($businessUnit->logo)
                     <div style="margin-bottom: 10px;">
-                        <img src="{{ asset('storage/' . $businessUnit->logo) }}" alt="{{ $businessUnit->name }}" style="max-width: 200px; max-height: 100px; border-radius: 4px; border: 1px solid #404040;">
-                        <p style="color: #888; font-size: 12px; margin-top: 5px;">{{ __('common.current_logo') }}</p>
+                        <img src="{{ asset('storage/' . $businessUnit->logo) }}" alt="{{ $businessUnit->name }}" style="max-width: 200px; max-height: 100px; border-radius: 4px; border: 1px solid var(--border-color);">
+                        <p style="color: var(--text-muted); font-size: 12px; margin-top: 5px;">{{ __('common.current_logo') }}</p>
                     </div>
                 @endif
                 <input 
@@ -409,21 +415,33 @@
                     class="form-control" 
                     accept="image/*"
                 >
-                <small style="color: #888; font-size: 12px; margin-top: 5px; display: block;">{{ __('common.logo_help') }}</small>
+                <small style="color: var(--text-muted); font-size: 12px; margin-top: 5px; display: block;">{{ __('common.logo_help') }}</small>
                 @error('logo')
-                    <div style="color: #ff6b6b; margin-top: 5px; font-size: 14px;">{{ $message }}</div>
+                    <div class="field-error">{{ $message }}</div>
                 @enderror
             </div>
         </div>
 
+        <div class="form-group" style="margin-top: 30px; padding: 20px; background: var(--bg-secondary); border-radius: 4px; border: 1px solid var(--border-color);">
+            <label class="form-label" style="margin-bottom: 15px; color: var(--accent); font-size: 16px;">{{ __('common.modules') }}</label>
+            <div class="checkbox-group">
+                <input type="checkbox" id="cnss_enabled" name="cnss_enabled" value="1" {{ old('cnss_enabled', $businessUnit->cnss_enabled) ? 'checked' : '' }}>
+                <label for="cnss_enabled">{{ __('common.cnss_module_enabled') }}</label>
+            </div>
+            <small class="text-muted-sm" style="display: block; margin-top: 8px;">{{ __('common.cnss_module_enabled_help') }}</small>
+            @error('cnss_enabled')
+                <div class="field-error">{{ $message }}</div>
+            @enderror
+        </div>
+
         @if(isset($globalTransactionTypes) && $globalTransactionTypes->count() > 0)
-        <div class="form-group" style="margin-top: 30px; padding: 20px; background: #2d2d2d; border-radius: 4px; border: 1px solid #404040;">
-            <label class="form-label" style="margin-bottom: 15px; color: #4a9eff; font-size: 16px;">{{ __('common.assign_transaction_types') }}</label>
+        <div class="form-group" style="margin-top: 30px; padding: 20px; background: var(--bg-secondary); border-radius: 4px; border: 1px solid var(--border-color);">
+            <label class="form-label" style="margin-bottom: 15px; color: var(--accent); font-size: 16px;">{{ __('common.assign_transaction_types') }}</label>
             <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 15px;">{{ __('common.select_transaction_types_for_business') }}</p>
             
             <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px;">
                 @foreach($globalTransactionTypes as $transactionType)
-                    <div style="padding: 12px; background: #3d3d3d; border-radius: 4px; border: 1px solid {{ in_array($transactionType->id, old('transaction_types', $assignedTransactionTypeIds ?? [])) ? '#4a9eff' : '#404040' }};">
+                    <div style="padding: 12px; background: var(--bg-tertiary); border-radius: 4px; border: 1px solid {{ in_array($transactionType->id, old('transaction_types', $assignedTransactionTypeIds ?? [])) ? 'var(--accent)' : 'var(--border-color)' }};">
                         <label style="display: flex; align-items: start; cursor: pointer;">
                             <input 
                                 type="checkbox" 
@@ -433,9 +451,9 @@
                                 style="margin-right: 10px; margin-top: 3px;"
                             >
                             <div style="flex: 1;">
-                                <div style="font-weight: bold; color: #4a9eff; margin-bottom: 5px;">{{ $transactionType->name }}</div>
-                                <div style="font-size: 12px; color: #888; margin-bottom: 5px;">
-                                    <code style="background: #1d1d1d; padding: 2px 6px; border-radius: 3px;">{{ $transactionType->code }}</code>
+                                <div style="font-weight: bold; color: var(--accent); margin-bottom: 5px;">{{ $transactionType->name }}</div>
+                                <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 5px;">
+                                    <code style="background: var(--bg-primary); padding: 2px 6px; border-radius: 3px;">{{ $transactionType->code }}</code>
                                 </div>
                                 @if($transactionType->description)
                                     <div style="font-size: 12px; color: var(--text-muted);">{{ \Illuminate\Support\Str::limit($transactionType->description, 80) }}</div>
@@ -446,20 +464,20 @@
                 @endforeach
             </div>
             @error('transaction_types')
-                <div style="color: #ff6b6b; margin-top: 10px; font-size: 14px;">{{ $message }}</div>
+                <div style="color: var(--error-text); margin-top: 10px; font-size: 14px;">{{ $message }}</div>
             @enderror
             @error('transaction_types.*')
-                <div style="color: #ff6b6b; margin-top: 10px; font-size: 14px;">{{ $message }}</div>
+                <div style="color: var(--error-text); margin-top: 10px; font-size: 14px;">{{ $message }}</div>
             @enderror
         </div>
         @else
-        <div class="form-group" style="margin-top: 30px; padding: 20px; background: #2d2d2d; border-radius: 4px; border: 1px solid #404040;">
-            <p style="color: var(--text-muted);">{{ __('common.no_global_transaction_types') }}</p>
+        <div class="form-group" style="margin-top: 30px; padding: 20px; background: var(--bg-secondary); border-radius: 4px; border: 1px solid var(--border-color);">
+            <p class="muted">{{ __('common.no_global_transaction_types') }}</p>
             <a href="{{ route('superadmin.transaction-types.create') }}" class="btn" style="margin-top: 10px;">{{ __('common.create_transaction_type') }}</a>
         </div>
         @endif
 
-        <div style="display: flex; gap: 10px; margin-top: 24px;">
+        <div class="btn-row mt-24">
             <button type="submit" class="btn">{{ __('common.update') }}</button>
             <a href="{{ route('superadmin.business-units.index') }}" class="btn btn-secondary">{{ __('common.cancel') }}</a>
         </div>

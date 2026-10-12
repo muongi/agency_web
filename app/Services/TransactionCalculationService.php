@@ -70,15 +70,15 @@ class TransactionCalculationService
      */
     public function calculateSplit($transactionTypeId, $transactionAmount, $businessUnitId = null)
     {
-        // Step 1: Calculate transaction cost
         $transactionCost = $this->calculateTransactionCost($transactionTypeId, $transactionAmount, $businessUnitId);
-        
-        // Step 2: Calculate commission from cost
-        $commission = $this->calculateCommission($transactionTypeId, $transactionCost, $businessUnitId);
-        
-        // Step 3: Calculate business share (cost - commission)
+
+        $commissionConfig = $this->getCommissionConfiguration($transactionTypeId, $businessUnitId);
+        $commission = $commissionConfig
+            ? $commissionConfig->calculateFromTransactionAmount($transactionAmount, $transactionTypeId)
+            : 0;
+
         $businessShare = $transactionCost - $commission;
-        
+
         return [
             'transaction_amount' => $transactionAmount,
             'transaction_cost' => $transactionCost,

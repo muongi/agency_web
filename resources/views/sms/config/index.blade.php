@@ -5,12 +5,12 @@
 
 @section('content')
 <div class="card">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-        <h1 style="color: var(--accent-color);">{{ __('common.sms_configuration') }}</h1>
+    <div class="toolbar">
+        <h1 class="text-accent">{{ __('common.sms_configuration') }}</h1>
         <a href="{{ route('superadmin.sms.config.edit') }}" class="btn">{{ __('common.edit') }}</a>
     </div>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+    <div class="detail-grid">
         <div>
             <label style="color: var(--text-muted); font-size: 14px;">{{ __('common.client_id') }}</label>
             <div style="padding: 10px; background: var(--bg-tertiary); border-radius: 4px; margin-top: 5px; color: var(--text-primary);">

@@ -5,13 +5,13 @@
 
 @section('content')
 <div class="card">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-        <h1 style="color: #4a9eff;">{{ __('common.users') }}</h1>
+    <div class="toolbar">
+        <h1 class="text-accent">{{ __('common.users') }}</h1>
         <a href="{{ route('superadmin.user-management.users.create') }}" class="btn">{{ __('common.add_user') }}</a>
     </div>
 
     @if($users->count() > 0)
-        <div style="overflow-x: auto;">
+        <div class="data-table">
             <table>
                 <thead>
                     <tr>
@@ -36,13 +36,13 @@
                             <td>{{ $role ? $role->name : '-' }}</td>
                             <td>
                                 @if($user->is_super_admin)
-                                    <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; background: #4a9eff; color: white;">Super Admin</span>
+                                    <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; background: var(--accent); color: white;">{{ __('common.super_admin') }}</span>
                                 @else
-                                    <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; background: #2d5a2d; color: #90ee90;">Active</span>
+                                    <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; background: var(--success-bg); color: var(--success-text);">{{ __('common.active') }}</span>
                                 @endif
                             </td>
                             <td>
-                                <a href="{{ route('superadmin.user-management.users.edit', $user->id) }}" class="btn" style="padding: 6px 12px; font-size: 12px;">{{ __('common.edit') }}</a>
+                                <a href="{{ route('superadmin.user-management.users.edit', $user->id) }}" class="btn btn-sm">{{ __('common.edit') }}</a>
                             </td>
                         </tr>
                     @endforeach
@@ -50,13 +50,13 @@
             </table>
         </div>
 
-        <div style="margin-top: 20px;">
+        <div class="mt-20">
             {{ $users->links() }}
         </div>
     @else
-        <div style="text-align: center; padding: 40px; color: #888;">
+        <div class="muted-center">
             <p>{{ __('common.no_users') }}</p>
-            <a href="{{ route('superadmin.user-management.users.create') }}" class="btn" style="margin-top: 20px;">{{ __('common.add_user') }}</a>
+            <a href="{{ route('superadmin.user-management.users.create') }}" class="btn mt-20">{{ __('common.add_user') }}</a>
         </div>
     @endif
 </div>

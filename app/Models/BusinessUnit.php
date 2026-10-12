@@ -39,10 +39,14 @@ class BusinessUnit extends Model
         'kato_admin_password',
         'logo',
         'is_active',
+        'cnss_enabled',
+        'sunu_collector_cap_amount',
+        'sunu_collector_cap_warning_pct',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'cnss_enabled' => 'boolean',
         'kato_api_response' => 'array',
         'kato_token' => 'encrypted',
         'kato_admin_password' => 'encrypted',
@@ -151,6 +155,14 @@ class BusinessUnit extends Model
     }
 
     /**
+     * Whether CNSS module is enabled for this business unit.
+     */
+    public function isCnssEnabled(): bool
+    {
+        return (bool) $this->cnss_enabled;
+    }
+
+    /**
      * Whether this business unit is configured for KATO agency API calls.
      */
     public function isKatoEnabled(): bool
@@ -172,6 +184,63 @@ class BusinessUnit extends Model
         }
 
         return $this->kato_token_expires_at->lte(now()->addSeconds($bufferSeconds));
+    }
+
+    /**
+     * Whether a KATO bearer token is stored locally.
+     */
+    public function hasKatoToken(): bool
+    {
+        if (! empty($this->kato_token)) {
+            return true;
+        }
+
+        if (! is_array($this->kato_api_response)) {
+            return false;
+        }
+
+        return ! empty($this->kato_api_response['data']['token'])
+            || ! empty($this->kato_api_response['token']);
+    }
+
+    /**
+     * Whether the token should be refreshed before an authenticated KATO request.
+     */
+    public function shouldRefreshKatoTokenBeforeRequest(): bool
+    {
+        if ($this->isKatoTokenExpired()) {
+            return true;
+        }
+
+        if ($this->kato_token_expires_at === null && $this->hasKatoToken() && $this->hasKatoRefreshCredentials()) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Whether the token expires within the given number of minutes (for scheduled refresh).
+     */
+    public function isKatoTokenExpiringWithin(int $minutes = 15): bool
+    {
+        if ($this->shouldRefreshKatoTokenBeforeRequest()) {
+            return true;
+        }
+
+        if (! $this->kato_token_expires_at) {
+            return false;
+        }
+
+        return $this->kato_token_expires_at->lte(now()->addMinutes($minutes));
+    }
+
+    /**
+     * Default expiry when KATO omits expiresIn from login/registration responses.
+     */
+    public static function defaultKatoTokenExpiresAt(): \Illuminate\Support\Carbon
+    {
+        return now()->addSeconds((int) config('kato.default_token_ttl', 3600));
     }
 
     /**
@@ -226,9 +295,11 @@ class BusinessUnit extends Model
     }
 
     /**
-     * Transaction types eligible for CBS mapping (assigned global + BU-specific).
+     * Active transaction types available to this business (assigned global + BU-specific).
+     *
+     * @return \Illuminate\Support\Collection<int, TransactionType>
      */
-    public function eligibleCbsTransactionTypes()
+    public function availableTransactionTypes()
     {
         return TransactionType::query()
             ->where('is_active', true)
@@ -239,6 +310,22 @@ class BusinessUnit extends Model
             })
             ->orderBy('name')
             ->get();
+    }
+
+    /**
+     * Whether the given transaction type is available to this business.
+     */
+    public function hasTransactionType(int $transactionTypeId): bool
+    {
+        return $this->availableTransactionTypes()->contains('id', $transactionTypeId);
+    }
+
+    /**
+     * Transaction types eligible for CBS mapping (assigned global + BU-specific).
+     */
+    public function eligibleCbsTransactionTypes()
+    {
+        return $this->availableTransactionTypes();
     }
 
     /**

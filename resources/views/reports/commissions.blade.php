@@ -19,8 +19,8 @@
     </div>
 @else
 <div class="card">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-        <h1 style="color: var(--accent-color);">{{ __('common.commission_reports') }}</h1>
+    <div class="toolbar">
+        <h1 class="text-accent">{{ __('common.commission_reports') }}</h1>
         <a href="{{ route('business.reports.index') }}" class="btn btn-secondary">{{ __('common.back') }}</a>
     </div>
 
@@ -73,21 +73,21 @@
 
     <h2 style="color: var(--accent-color); margin-bottom: 20px;">{{ __('common.previous_reports') }}</h2>
     @if($reports->count() > 0)
-        <div style="overflow-x: auto;">
-            <table style="width: 100%; border-collapse: collapse;">
+        <div class="data-table">
+            <table>
                 <thead>
                     <tr style="border-bottom: 2px solid var(--border-color);">
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.status') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.requested_by') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.created_at') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.total_records') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.actions') }}</th>
+                        <th>{{ __('common.status') }}</th>
+                        <th>{{ __('common.requested_by') }}</th>
+                        <th>{{ __('common.created_at') }}</th>
+                        <th>{{ __('common.total_records') }}</th>
+                        <th>{{ __('common.actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach($reports as $report)
                         <tr style="border-bottom: 1px solid var(--border-color);" data-report-id="{{ $report->id }}">
-                            <td style="padding: 12px;">
+                            <td>
                                 <span class="report-status" style="padding: 4px 8px; border-radius: 4px; font-size: 12px; text-transform: capitalize;
                                     @if($report->status === 'completed') background: var(--success-bg); color: var(--success-text);
                                     @elseif($report->status === 'processing') background: var(--warning-bg); color: var(--warning-text);
@@ -97,18 +97,18 @@
                                     {{ $report->status }}
                                 </span>
                             </td>
-                            <td style="padding: 12px;">{{ $report->user->name ?? __('common.unknown') }}</td>
-                            <td style="padding: 12px;">{{ $report->created_at->format('Y-m-d H:i') }}</td>
-                            <td style="padding: 12px;">{{ $report->total_records ?? '-' }}</td>
-                            <td style="padding: 12px;">
+                            <td>{{ $report->user->name ?? __('common.unknown') }}</td>
+                            <td>{{ $report->created_at->format('Y-m-d H:i') }}</td>
+                            <td>{{ $report->total_records ?? '-' }}</td>
+                            <td>
                                 <div style="display: flex; gap: 5px;">
                                     @if($report->isReady())
-                                        <a href="{{ route('business.reports.download', $report->id) }}" class="btn" style="padding: 6px 12px; font-size: 12px;">{{ __('common.download') }}</a>
+                                        <a href="{{ route('business.reports.download', $report->id) }}" class="btn btn-sm">{{ __('common.download') }}</a>
                                     @endif
                                     @if($report->canRetry())
                                         <form action="{{ route('business.reports.retry', $report->id) }}" method="POST" style="display: inline;">
                                             @csrf
-                                            <button type="submit" class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">{{ __('common.retry') }}</button>
+                                            <button type="submit" class="btn btn-secondary btn-sm">{{ __('common.retry') }}</button>
                                         </form>
                                     @endif
                                 </div>
@@ -118,11 +118,11 @@
                 </tbody>
             </table>
         </div>
-        <div style="margin-top: 20px;">
+        <div class="mt-20">
             {{ $reports->links() }}
         </div>
     @else
-        <div style="text-align: center; padding: 40px; color: var(--text-muted);">
+        <div class="muted-center">
             <p>{{ __('common.no_reports_found') }}</p>
         </div>
     @endif

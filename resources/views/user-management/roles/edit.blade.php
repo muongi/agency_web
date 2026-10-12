@@ -5,18 +5,18 @@
 
 @section('content')
 <div class="card">
-    <h1 style="margin-bottom: 24px; color: #4a9eff;">{{ __('common.edit') }} {{ __('common.role') }}</h1>
+    <h1 style="margin-bottom: 24px; color: var(--accent);">{{ __('common.edit') }} {{ __('common.role') }}</h1>
     
     <form method="POST" action="{{ route('superadmin.user-management.roles.update', $role->id) }}">
         @csrf
         @method('PUT')
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+        <div class="detail-grid">
             <div class="form-group">
-                <label class="form-label" for="name">{{ __('common.role_name') }} <span style="color: #ff6b6b;">*</span></label>
+                <label class="form-label" for="name">{{ __('common.role_name') }} <span class="text-error">*</span></label>
                 <input type="text" id="name" name="name" class="form-control" value="{{ old('name', $role->name) }}" required>
                 @error('name')
-                    <div style="color: #ff6b6b; margin-top: 5px; font-size: 14px;">{{ $message }}</div>
+                    <div class="field-error">{{ $message }}</div>
                 @enderror
             </div>
 
@@ -31,15 +31,15 @@
                     @endforeach
                 </select>
                 @error('business_unit_id')
-                    <div style="color: #ff6b6b; margin-top: 5px; font-size: 14px;">{{ $message }}</div>
+                    <div class="field-error">{{ $message }}</div>
                 @enderror
             </div>
 
-            <div class="form-group" style="grid-column: 1 / -1;">
+            <div class="form-group detail-full">
                 <label class="form-label" for="description">{{ __('common.role_description') }}</label>
                 <textarea id="description" name="description" class="form-control" rows="3">{{ old('description', $role->description) }}</textarea>
                 @error('description')
-                    <div style="color: #ff6b6b; margin-top: 5px; font-size: 14px;">{{ $message }}</div>
+                    <div class="field-error">{{ $message }}</div>
                 @enderror
             </div>
         </div>
@@ -49,8 +49,8 @@
             <label class="form-label">{{ __('common.permissions') }}</label>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-top: 15px;">
                 @foreach($permissions as $group => $groupPermissions)
-                    <div class="card" style="background: #3d3d3d; padding: 15px;">
-                        <h3 style="color: #4a9eff; margin-bottom: 10px; font-size: 14px;">{{ $group ?: __('common.other') }}</h3>
+                    <div class="card" style="background: var(--bg-tertiary); padding: 15px;">
+                        <h3 style="color: var(--accent); margin-bottom: 10px; font-size: 14px;">{{ \App\Models\Permission::groupLabel($group) }}</h3>
                         @foreach($groupPermissions as $permission)
                             <div class="checkbox-group" style="margin-bottom: 8px;">
                                 <input type="checkbox" name="permissions[]" id="permission_{{ $permission->id }}" value="{{ $permission->id }}" {{ in_array($permission->id, old('permissions', $role->permissions->pluck('id')->toArray())) ? 'checked' : '' }}>
@@ -63,7 +63,7 @@
         </div>
         @endif
 
-        <div style="display: flex; gap: 10px; margin-top: 24px;">
+        <div class="btn-row mt-24">
             <button type="submit" class="btn">{{ __('common.update') }}</button>
             <a href="{{ route('superadmin.user-management.roles.index') }}" class="btn btn-secondary">{{ __('common.cancel') }}</a>
         </div>

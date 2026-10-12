@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Agent;
 use App\Models\BusinessUnit;
+use App\Models\CollectorCap;
+use App\Services\CollectorCapService;
 use App\Services\ExportService;
 use App\Services\KatoService;
 use App\Services\SmsService;
@@ -200,7 +202,35 @@ class AgentController extends Controller
             $activeTab = 'information';
         }
 
-        return view('agents.show', compact('agent', 'businessUnit', 'availableTerminals', 'transactions', 'activeTab'));
+        $isKato = $businessUnit->isKatoEnabled();
+        $katoFloatSync = null;
+        $katoFloatSyncedAt = null;
+
+        if ($isKato && $activeTab === 'accounts') {
+            $katoService = new KatoService();
+            $katoFloatSync = $katoService->syncAgentFloatBalancesFromKato($agent, $businessUnit);
+
+            if ($katoFloatSync['success'] ?? false) {
+                $katoFloatSyncedAt = now();
+                $agent->load('accounts');
+            }
+        }
+
+        $collector = app(CollectorCapService::class)->status($agent->id);
+        $agentCap = CollectorCap::where('agent_id', $agent->id)->where('is_active', true)->first();
+
+        return view('agents.show', compact(
+            'collector',
+            'agentCap',
+            'agent',
+            'businessUnit',
+            'availableTerminals',
+            'transactions',
+            'activeTab',
+            'isKato',
+            'katoFloatSync',
+            'katoFloatSyncedAt'
+        ));
     }
 
     /**
@@ -422,6 +452,94 @@ class AgentController extends Controller
     }
 
     /**
+     * Grant or revoke SUNU card write / rewrite rights (TPE "Écrire la carte").
+     * Separate from update() so only holders of manage-agent-card-rights can change them.
+     */
+    public function updateCardRights(Request $request, $id)
+    {
+        $user = auth()->user();
+        $businessUnit = $user->currentBusinessUnit;
+
+        if (!$businessUnit) {
+            return redirect()->route('business.dashboard')
+                ->with('error', __('common.no_business_unit_assigned'));
+        }
+
+        if (!$user->hasPermission('manage-agent-card-rights', $businessUnit->id)) {
+            abort(403);
+        }
+
+        $agent = $businessUnit->agents()->findOrFail($id);
+
+        $canRewrite = $request->boolean('can_rewrite_cards');
+        $canWrite = $canRewrite || $request->boolean('can_write_cards');
+
+        $agent->update([
+            'can_write_cards' => $canWrite,
+            'can_rewrite_cards' => $canRewrite,
+        ]);
+
+        Log::info('SUNU_CARD_RIGHTS_CHANGED', [
+            'agent_id' => $agent->id,
+            'can_write_cards' => $canWrite,
+            'can_rewrite_cards' => $canRewrite,
+            'by_user_id' => $user->id,
+        ]);
+
+        return redirect()->back()
+            ->with('success', __('common.card_rights_updated'));
+    }
+
+    /**
+     * Collection limit of one agent: business-unit default, or an amount of its own.
+     */
+    public function updateCollectorCap(Request $request, $id)
+    {
+        $user = auth()->user();
+        $businessUnit = $user->currentBusinessUnit;
+
+        if (!$businessUnit) {
+            return redirect()->route('business.dashboard')
+                ->with('error', __('common.no_business_unit_assigned'));
+        }
+
+        if (!$user->isSuperAdmin() && !$user->hasPermission('manage-sunu-collector-caps', $businessUnit->id)) {
+            abort(403);
+        }
+
+        $agent = $businessUnit->agents()->findOrFail($id);
+        $data = $request->validate([
+            'mode' => 'required|in:default,custom',
+            'cap_amount' => 'required_if:mode,custom|nullable|numeric|min:1',
+            'warning_pct' => 'nullable|integer|min:1|max:100',
+        ]);
+
+        if ($data['mode'] === 'custom') {
+            CollectorCap::updateOrCreate(['agent_id' => $agent->id], [
+                'cap_amount' => $data['cap_amount'],
+                'warning_threshold_pct' => $data['warning_pct'] ?? 80,
+                'currency' => 'XOF',
+                'is_active' => true,
+            ]);
+        } else {
+            CollectorCap::where('agent_id', $agent->id)->update(['is_active' => false]);
+        }
+
+        $caps = app(CollectorCapService::class);
+        $caps->refreshBlock($agent->id, $user->id);
+
+        Log::info('SUNU_COLLECTOR_CAP_CHANGED', [
+            'agent_id' => $agent->id,
+            'scope' => $data['mode'],
+            'cap_amount' => $data['mode'] === 'custom' ? (float) $data['cap_amount'] : null,
+            'by_user_id' => $user->id,
+        ]);
+
+        return redirect()->route('agents.show', ['agent' => $agent->id, 'tab' => 'terminals'])
+            ->with('success', __('common.collector_cap_saved'));
+    }
+
+    /**
      * Export agents.
      */
     public function export(Request $request)
@@ -453,26 +571,26 @@ class AgentController extends Controller
         // Transform data for export
         $data = $agents->map(function ($agent) {
             return [
-                'Name' => $agent->full_name,
-                'Username' => $agent->username ?? '-',
-                'Email' => $agent->email ?? '-',
-                'Phone Number' => $agent->phone_number ?? '-',
-                'Gender' => $agent->gender ?? '-',
-                'Year of Birth' => $agent->year_of_birth ?? '-',
-                'Terminals Count' => $agent->terminals_count ?? 0,
-                'Created At' => $agent->created_at->format('Y-m-d H:i'),
+                __('common.export_col_name') => $agent->full_name,
+                __('common.export_col_username') => $agent->username ?? '-',
+                __('common.export_col_email') => $agent->email ?? '-',
+                __('common.export_col_phone') => $agent->phone_number ?? '-',
+                __('common.export_col_gender') => $this->exportService->valueLabel($agent->gender, 'gender_') ?: '-',
+                __('common.export_col_year_of_birth') => $agent->year_of_birth ?? '-',
+                __('common.export_col_terminals_count') => $agent->terminals_count ?? 0,
+                __('common.export_col_created_at') => $agent->created_at->format('Y-m-d H:i'),
             ];
         });
 
-        $headers = ['Name', 'Username', 'Email', 'Phone Number', 'Gender', 'Year of Birth', 'Terminals Count', 'Created At'];
+        $headers = array_map(fn ($k) => __('common.export_col_'.$k), ['name', 'username', 'email', 'phone', 'gender', 'year_of_birth', 'terminals_count', 'created_at']);
         $filters = $request->only(['search']);
         $filename = $this->exportService->generateFilename('agents', $filters);
 
         switch ($format) {
             case 'excel':
-                return $this->exportService->exportExcel($data, $headers, $filename, 'Agents');
+                return $this->exportService->exportExcel($data, $headers, $filename, __('common.agents'));
             case 'pdf':
-                return $this->exportService->exportPdf($data, $headers, $filename, 'Agents Export', $filters);
+                return $this->exportService->exportPdf($data, $headers, $filename, __('common.agents'), $filters);
             case 'csv':
             default:
                 return $this->exportService->exportCsv($data, $headers, $filename);
@@ -480,7 +598,9 @@ class AgentController extends Controller
     }
 
     /**
-     * Reset agent PIN (stored as agents.password): generate 4-digit PIN, SMS agent, log for support.
+     * Reset the agent's collection PIN (confirms premiums on the TPE). Never changes the login password.
+     * The PIN is sent by SMS; when SMS fails or is not configured it is shown once on screen.
+     * With config sunu.default_agent_pin set (tests), "use_default" sets that PIN instead of a random one.
      */
     public function sendPinResetOtp(Request $request, $id)
     {
@@ -497,49 +617,54 @@ class AgentController extends Controller
 
         $agent = $businessUnit->agents()->findOrFail($id);
 
-        if (! $agent->phone_number) {
-            return redirect()->back()
-                ->with('error', __('common.agent_phone_required_for_pin_reset'));
-        }
+        $default = (string) config('sunu.default_agent_pin');
+        $useDefault = $request->boolean('use_default') && preg_match('/^\d{4}$/', $default);
+        $pin = $useDefault ? $default : $this->generateNumericPin(4);
 
-        $pin = $this->generateNumericPin(4);
+        $agent->setCollectionPin($pin, true);
 
-        Log::info('Agent PIN reset (web)', [
+        Log::info('SUNU_AGENT_PIN_RESET', [
             'agent_id' => $agent->id,
-            'username' => $agent->username,
             'business_unit_id' => $businessUnit->id,
-            'generated_pin' => $pin,
+            'default_pin' => $useDefault,
             'reset_by_user_id' => auth()->id(),
         ]);
 
-        $agent->update([
-            'password' => Hash::make($pin),
-            'is_first_time_pin' => true,
-        ]);
+        if ($useDefault) {
+            return redirect()->back()
+                ->with('success', __('common.sunu_pin_reset_default', ['pin' => $pin]));
+        }
 
-        $message = __('sms.agent_pin_reset_web', ['pin' => $pin], 'fr');
+        $smsResult = ['success' => false, 'message' => 'no phone number'];
+        if ($agent->phone_number) {
+            try {
+                $smsResult = $this->smsService->sendSms(
+                    $businessUnit->id,
+                    $agent->phone_number,
+                    __('sms.agent_pin_reset_web', ['pin' => $pin], 'fr'),
+                    null,
+                    "AGENT-PIN-RESET-{$agent->id}"
+                );
+            } catch (\Throwable $e) {
+                $smsResult = ['success' => false, 'message' => $e->getMessage()];
+            }
+        }
 
-        $smsResult = $this->smsService->sendSms(
-            $businessUnit->id,
-            $agent->phone_number,
-            $message,
-            null,
-            "AGENT-PIN-RESET-{$agent->id}"
-        );
-
-        if (! $smsResult['success']) {
-            Log::warning('Agent PIN reset SMS failed', [
+        if (! ($smsResult['success'] ?? false)) {
+            Log::warning('SUNU_AGENT_PIN_RESET_SMS_FAILED', [
                 'agent_id' => $agent->id,
                 'business_unit_id' => $businessUnit->id,
                 'error' => $smsResult['message'] ?? 'unknown',
             ]);
 
+            // Shown once to the supervisor, who gives it to the agent
             return redirect()->back()
-                ->with('warning', __('common.agent_pin_reset_sms_failed'));
+                ->with('warning', __('common.sunu_pin_reset_sms_failed'))
+                ->with('pin_reveal', $pin);
         }
 
         return redirect()->back()
-            ->with('success', __('common.agent_pin_reset_success'));
+            ->with('success', __('common.sunu_pin_reset_sms_sent'));
     }
 
     /**

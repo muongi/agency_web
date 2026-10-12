@@ -3,9 +3,10 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use App\Models\TransactionCostConfiguration;
 use App\Models\TransactionCostTier;
-use App\Models\TransactionType;
 use App\Models\BusinessUnit;
 
 class TransactionCostConfigurationController extends Controller
@@ -40,9 +41,7 @@ class TransactionCostConfigurationController extends Controller
         }
 
         $costConfigs = $query->latest()->paginate(15);
-        $transactionTypes = TransactionType::where('business_unit_id', $businessUnit->id)
-            ->where('is_active', true)
-            ->get();
+        $transactionTypes = $businessUnit->availableTransactionTypes();
 
         return view('config.transaction-costs.index', compact('costConfigs', 'transactionTypes', 'businessUnit'));
     }
@@ -59,12 +58,11 @@ class TransactionCostConfigurationController extends Controller
                 ->with('error', __('common.no_business_unit_assigned'));
         }
 
-        $transactionTypes = TransactionType::where('business_unit_id', $businessUnit->id)
-            ->where('is_active', true)
-            ->get();
+        $transactionTypes = $businessUnit->availableTransactionTypes();
 
-        // Get transaction types that already have cost configurations
-        $configuredTypes = TransactionCostConfiguration::where('business_unit_id', $businessUnit->id)
+        // Include soft-deleted rows: DB unique index still blocks a second insert.
+        $configuredTypes = TransactionCostConfiguration::withTrashed()
+            ->where('business_unit_id', $businessUnit->id)
             ->pluck('transaction_type_id')
             ->toArray();
 
@@ -87,10 +85,13 @@ class TransactionCostConfigurationController extends Controller
                 ->with('error', __('common.no_business_unit_assigned'));
         }
 
+        $eligibleIds = $businessUnit->availableTransactionTypes()->pluck('id')->all();
+
         $validated = $request->validate([
             'transaction_type_id' => [
                 'required',
-                'exists:transaction_types,id',
+                'integer',
+                Rule::in($eligibleIds),
                 'unique:transaction_cost_configurations,transaction_type_id,NULL,id,business_unit_id,' . $businessUnit->id . ',deleted_at,NULL'
             ],
             'cost_type' => 'required|in:fixed,percentage,tiered_fixed,tiered_percentage',
@@ -103,10 +104,6 @@ class TransactionCostConfigurationController extends Controller
             'tiers.*.rate' => 'nullable|numeric|min:0|max:100',
             'tiers.*.amount' => 'nullable|numeric|min:0',
         ]);
-
-        // Verify transaction type belongs to this business unit
-        $transactionType = TransactionType::where('business_unit_id', $businessUnit->id)
-            ->findOrFail($validated['transaction_type_id']);
 
         $validated['business_unit_id'] = $businessUnit->id;
         $validated['is_active'] = $request->has('is_active') ? true : false;
@@ -127,6 +124,11 @@ class TransactionCostConfigurationController extends Controller
 
         $tiers = $validated['tiers'] ?? [];
         unset($validated['tiers']);
+
+        $this->assertNoDuplicateCostConfiguration(
+            $businessUnit->id,
+            (int) $validated['transaction_type_id']
+        );
 
         $costConfig = TransactionCostConfiguration::create($validated);
 
@@ -363,6 +365,28 @@ class TransactionCostConfigurationController extends Controller
         $tier->delete();
 
         return response()->json(['success' => true]);
+    }
+
+    /**
+     * Prevent duplicate (business_unit_id, transaction_type_id) rows.
+     * The DB unique index applies even when a prior row was soft-deleted.
+     *
+     * @throws ValidationException
+     */
+    private function assertNoDuplicateCostConfiguration(int $businessUnitId, int $transactionTypeId): void
+    {
+        $existing = TransactionCostConfiguration::withTrashed()
+            ->where('business_unit_id', $businessUnitId)
+            ->where('transaction_type_id', $transactionTypeId)
+            ->first();
+
+        if (!$existing) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            'transaction_type_id' => [__('common.transaction_cost_already_exists')],
+        ]);
     }
 }
 

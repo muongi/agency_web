@@ -65,8 +65,8 @@
 
             <div class="form-group">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                    <label class="form-label" style="margin: 0;">{{ __('common.select_clients') }} <span style="color: #ff6b6b;">*</span></label>
-                    <div style="display: flex; gap: 10px;">
+                    <label class="form-label" style="margin: 0;">{{ __('common.select_clients') }} <span class="text-error">*</span></label>
+                    <div class="btn-row">
                         <button type="button" class="btn btn-secondary" style="padding: 5px 15px; font-size: 12px;" onclick="selectAllClients()">{{ __('common.select_all') }}</button>
                         <button type="button" class="btn btn-secondary" style="padding: 5px 15px; font-size: 12px;" onclick="deselectAllClients()">{{ __('common.deselect_all') }}</button>
                     </div>
@@ -94,26 +94,26 @@
                     @endif
                 </div>
                 @error('client_ids')
-                    <div style="color: #ff6b6b; margin-top: 5px; font-size: 14px;">{{ $message }}</div>
+                    <div class="field-error">{{ $message }}</div>
                 @enderror
                 @if($clients->count() == 0)
-                    <div style="color: #ff6b6b; margin-top: 5px; font-size: 14px;">{{ __('common.no_clients_with_phone_numbers') }}</div>
+                    <div class="field-error">{{ __('common.no_clients_with_phone_numbers') }}</div>
                 @endif
             </div>
 
             <div class="form-group">
-                <label class="form-label" for="message">{{ __('common.message') }} <span style="color: #ff6b6b;">*</span></label>
+                <label class="form-label" for="message">{{ __('common.message') }} <span class="text-error">*</span></label>
                 <textarea id="message" name="message" class="form-control" rows="5" maxlength="160" required placeholder="{{ __('common.enter_sms_message') }}">{{ old('message') }}</textarea>
                 <div style="margin-top: 5px; display: flex; justify-content: space-between; align-items: center;">
                     <span id="char-count" style="font-size: 12px; color: var(--text-muted);">0 / 160</span>
                     <span style="font-size: 12px; color: var(--text-muted);">{{ __('common.message_will_be_sent_to_all_selected_recipients') }}</span>
                 </div>
                 @error('message')
-                    <div style="color: #ff6b6b; margin-top: 5px; font-size: 14px;">{{ $message }}</div>
+                    <div class="field-error">{{ $message }}</div>
                 @enderror
             </div>
 
-            <div style="display: flex; gap: 10px;">
+            <div class="btn-row">
                 <button type="submit" class="btn" id="sendBtn" {{ $clients->count() == 0 ? 'disabled' : '' }}>
                     <span>{{ __('common.send_bulk_sms') }}</span>
                 </button>

@@ -23,12 +23,14 @@ Route::prefix('v1')->group(function () {
     Route::middleware('log.transaction.api')->group(function () {
         Route::post('/transactions/cash-deposit', [\App\Http\Controllers\Api\ApiTransactionController::class, 'cashDeposit']);
         Route::post('/transactions/biometric-withdraw', [\App\Http\Controllers\Api\ApiTransactionController::class, 'biometricWithdraw']);
+        Route::post('/biometrics/fetch', [\App\Http\Controllers\Api\BiometricsController::class, 'fetch']);
         Route::post('/transactions/balance-enquiry', [\App\Http\Controllers\Api\ApiTransactionController::class, 'balanceEnquiry']);
         Route::post('/transactions/mini-statement', [\App\Http\Controllers\Api\ApiTransactionController::class, 'miniStatement']);
         Route::post('/transactions', [\App\Http\Controllers\Api\ApiTransactionController::class, 'store']);
     });
 
     Route::post('/agent/login', [\App\Http\Controllers\Api\AgentAuthController::class, 'login']);
+    Route::post('/agent/pin', [\App\Http\Controllers\Api\AgentAuthController::class, 'changePin']);
 
     Route::post('/client/account/open', [\App\Http\Controllers\Api\ClientAccountController::class, 'openAccount']);
 
@@ -42,12 +44,29 @@ Route::prefix('v1')->group(function () {
         Route::post('/otp/forward', [\App\Http\Controllers\Api\OtpController::class, 'forwardOtp']);
     });
 
-    Route::prefix('cnss')->group(function () {
+    Route::prefix('cnss')->middleware('cnss.module')->group(function () {
         Route::post('/voluntary-enrollments', [\App\Http\Controllers\Api\CnssController::class, 'storeEnrollment']);
         Route::get('/voluntary-enrollments/{id}', [\App\Http\Controllers\Api\CnssController::class, 'showEnrollment']);
         Route::get('/members', [\App\Http\Controllers\Api\CnssController::class, 'searchMembers'])
             ->middleware('cnss.member.search');
         Route::post('/contributions', [\App\Http\Controllers\Api\CnssController::class, 'storeContribution']);
+    });
+
+    Route::prefix('sunu')->group(function () {
+        Route::get('/products', [\App\Http\Controllers\Api\SunuController::class, 'products']);
+        Route::post('/proposals', [\App\Http\Controllers\Api\SunuController::class, 'storeProposal']);
+        Route::get('/proposals/{id}', [\App\Http\Controllers\Api\SunuController::class, 'showProposal']);
+        Route::post('/premiums', [\App\Http\Controllers\Api\SunuController::class, 'storePremium']);
+        Route::get('/policies/by-card/{uid}', [\App\Http\Controllers\Api\SunuController::class, 'policiesByCard']);
+        Route::get('/subscriptions', [\App\Http\Controllers\Api\SunuController::class, 'subscriptions']);
+        Route::post('/cards/write', [\App\Http\Controllers\Api\SunuController::class, 'writeCard']);
+        Route::get('/cards/write-check', [\App\Http\Controllers\Api\SunuController::class, 'cardWriteCheck']);
+        Route::get('/collector/status', [\App\Http\Controllers\Api\SunuController::class, 'collectorStatus']);
+        Route::post('/pay-ins', [\App\Http\Controllers\Api\SunuController::class, 'storePayIn']);
+        Route::get('/pay-ins', [\App\Http\Controllers\Api\SunuController::class, 'payIns']);
+        Route::get('/agent/operations', [\App\Http\Controllers\Api\SunuCorrectionController::class, 'operations']);
+        Route::get('/corrections', [\App\Http\Controllers\Api\SunuCorrectionController::class, 'index']);
+        Route::post('/corrections', [\App\Http\Controllers\Api\SunuCorrectionController::class, 'store']);
     });
 
     // Card management routes - public, requires business_unit_id in request

@@ -74,6 +74,41 @@ class TransactionCostConfiguration extends Model
     }
 
     /**
+     * Whether this configuration uses tiered pricing.
+     */
+    public function isTiered(): bool
+    {
+        return in_array($this->cost_type, ['tiered_fixed', 'tiered_percentage'], true);
+    }
+
+    /**
+     * Find the cost tier that matches a transaction amount.
+     */
+    public function findTierForAmount(float $transactionAmount): ?TransactionCostTier
+    {
+        foreach ($this->tiers()->orderBy('order')->get() as $tier) {
+            $minAmount = $tier->min_amount ?? 0;
+            $maxAmount = $tier->max_amount;
+
+            if ($transactionAmount >= $minAmount && ($maxAmount === null || $transactionAmount <= $maxAmount)) {
+                return $tier;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Find the order value of the cost tier matching a transaction amount.
+     */
+    public function findTierOrderForAmount(float $transactionAmount): ?int
+    {
+        $tier = $this->findTierForAmount($transactionAmount);
+
+        return $tier !== null ? (int) $tier->order : null;
+    }
+
+    /**
      * Calculate cost for tiered type.
      *
      * @param float $transactionAmount
@@ -81,26 +116,20 @@ class TransactionCostConfiguration extends Model
      */
     protected function calculateTieredCost($transactionAmount)
     {
-        $tiers = $this->tiers()->orderBy('order')->get();
-        
-        foreach ($tiers as $tier) {
-            $minAmount = $tier->min_amount ?? 0;
-            $maxAmount = $tier->max_amount;
-            
-            // Check if transaction amount falls within this tier
-            if ($transactionAmount >= $minAmount && ($maxAmount === null || $transactionAmount <= $maxAmount)) {
-                // For tiered_percentage, use rate
-                if ($this->cost_type === 'tiered_percentage' && $tier->rate !== null) {
-                    return $transactionAmount * ($tier->rate / 100);
-                }
-                
-                // For tiered_fixed, use amount
-                if ($this->cost_type === 'tiered_fixed' && $tier->amount !== null) {
-                    return $tier->amount;
-                }
-            }
+        $tier = $this->findTierForAmount($transactionAmount);
+
+        if (!$tier) {
+            return 0;
         }
-        
+
+        if ($this->cost_type === 'tiered_percentage' && $tier->rate !== null) {
+            return $transactionAmount * ($tier->rate / 100);
+        }
+
+        if ($this->cost_type === 'tiered_fixed' && $tier->amount !== null) {
+            return $tier->amount;
+        }
+
         return 0;
     }
 }

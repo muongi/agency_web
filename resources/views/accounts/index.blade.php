@@ -6,7 +6,7 @@
 @section('content')
 <div class="card">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 15px;">
-        <h1 style="color: var(--accent-color);">{{ __('common.accounts') }}</h1>
+        <h1 class="text-accent">{{ __('common.accounts') }}</h1>
         <div style="display: flex; gap: 10px; align-items: center;">
             <div style="position: relative;">
                 <button onclick="toggleExportDropdown()" class="btn" style="display: flex; align-items: center; gap: 5px;">
@@ -38,7 +38,7 @@
     </div>
 
     <!-- Filters -->
-    <form method="GET" action="{{ route('accounts.index') }}" style="margin-bottom: 20px;">
+    <form method="GET" action="{{ route('accounts.index') }}" class="mb-20">
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px;">
             <div>
                 <input 
@@ -66,7 +66,7 @@
                     <option value="closed" {{ request('status') == 'closed' ? 'selected' : '' }}>{{ __('common.closed') }}</option>
                 </select>
             </div>
-            <div style="display: flex; gap: 10px;">
+            <div class="btn-row">
                 <button type="submit" class="btn">{{ __('common.filter') }}</button>
                 @if(request('search') || request('account_type') || request('status'))
                     <a href="{{ route('accounts.index') }}" class="btn btn-secondary">{{ __('common.clear') }}</a>
@@ -76,60 +76,60 @@
     </form>
 
     @if($accounts->count() > 0)
-        <div style="overflow-x: auto;">
-            <table style="width: 100%; border-collapse: collapse;">
+        <div class="data-table">
+            <table>
                 <thead>
                     <tr style="border-bottom: 2px solid var(--border-color);">
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.account_number') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.owner') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.account_type') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.balance') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.currency') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.status') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.actions') }}</th>
+                        <th>{{ __('common.account_number') }}</th>
+                        <th>{{ __('common.owner') }}</th>
+                        <th>{{ __('common.account_type') }}</th>
+                        <th>{{ __('common.balance') }}</th>
+                        <th>{{ __('common.currency') }}</th>
+                        <th>{{ __('common.status') }}</th>
+                        <th>{{ __('common.actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach($accounts as $account)
                         <tr style="border-bottom: 1px solid var(--border-color);">
-                            <td style="padding: 12px;"><code style="background: var(--bg-tertiary); padding: 4px 8px; border-radius: 4px;">{{ $account->account_number }}</code></td>
-                            <td style="padding: 12px;">
+                            <td><code style="background: var(--bg-tertiary); padding: 4px 8px; border-radius: 4px;">{{ $account->account_number }}</code></td>
+                            <td>
                                 @if($account->accountable_type === 'App\Models\Client')
                                     <span>{{ $account->accountable->full_name ?? 'N/A' }}</span>
-                                    <br><small style="color: var(--text-muted);">({{ __('common.client') }})</small>
+                                    <br><small class="muted">({{ __('common.client') }})</small>
                                 @else
                                     <span>{{ $account->accountable->full_name ?? 'N/A' }}</span>
-                                    <br><small style="color: var(--text-muted);">({{ __('common.agent') }})</small>
+                                    <br><small class="muted">({{ __('common.agent') }})</small>
                                 @endif
                             </td>
                             <td style="padding: 12px; text-transform: capitalize;">{{ $account->account_type }}</td>
                             <td style="padding: 12px; font-weight: bold;">{{ number_format($account->balance, 2) }}</td>
-                            <td style="padding: 12px;">{{ $account->currency }}</td>
-                            <td style="padding: 12px;">
+                            <td>{{ $account->currency }}</td>
+                            <td>
                                 <span style="text-transform: capitalize; padding: 4px 8px; border-radius: 4px; font-size: 12px; 
                                     @if($account->status === 'active') background: var(--success-bg); color: var(--success-text);
                                     @elseif($account->status === 'inactive') background: var(--bg-tertiary); color: var(--text-muted);
-                                    @elseif($account->status === 'suspended') background: #ff9800; color: white;
+                                    @elseif($account->status === 'suspended') background: var(--warning-bg); color: var(--warning-text);
                                     @else background: var(--error-bg); color: var(--error-text);
                                     @endif">
                                     {{ $account->status }}
                                 </span>
                             </td>
-                            <td style="padding: 12px;">
+                            <td>
                                 @php
                                     $canEdit = $user->isSuperAdmin() || ($businessUnit && $user->hasPermission('edit-account', $businessUnit->id));
                                     $canDelete = $user->isSuperAdmin() || ($businessUnit && $user->hasPermission('delete-account', $businessUnit->id));
                                 @endphp
                                 <div style="display: flex; gap: 5px;">
-                                    <a href="{{ route('accounts.show', $account->id) }}" class="btn" style="padding: 6px 12px; font-size: 12px;">{{ __('common.view') }}</a>
+                                    <a href="{{ route('accounts.show', $account->id) }}" class="btn btn-sm">{{ __('common.view') }}</a>
                                     @if($canEdit)
-                                        <a href="{{ route('accounts.edit', $account->id) }}" class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">{{ __('common.edit') }}</a>
+                                        <a href="{{ route('accounts.edit', $account->id) }}" class="btn btn-secondary btn-sm">{{ __('common.edit') }}</a>
                                     @endif
                                     @if($canDelete && !$account->isRequired())
                                         <form action="{{ route('accounts.destroy', $account->id) }}" method="POST" style="display: inline;" onsubmit="return confirm('{{ __('common.confirm_delete') }}');">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="btn btn-danger" style="padding: 6px 12px; font-size: 12px;">{{ __('common.delete') }}</button>
+                                            <button type="submit" class="btn btn-danger btn-sm">{{ __('common.delete') }}</button>
                                         </form>
                                     @elseif($account->isRequired())
                                         <span style="color: var(--text-muted); font-size: 11px;" title="{{ __('common.required_account_cannot_delete') }}">{{ __('common.required_account') }}</span>
@@ -142,12 +142,12 @@
             </table>
         </div>
 
-        <div style="margin-top: 20px;">
+        <div class="mt-20">
             {{ $accounts->links() }}
         </div>
     @else
-        <div style="text-align: center; padding: 40px; color: var(--text-muted);">
-            <p style="margin-bottom: 20px;">{{ __('common.no_accounts') }}</p>
+        <div class="muted-center">
+            <p class="mb-20">{{ __('common.no_accounts') }}</p>
             @if($canCreate)
                 <a href="{{ route('accounts.create') }}" class="btn">{{ __('common.add_account') }}</a>
             @endif

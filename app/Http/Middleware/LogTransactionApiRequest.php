@@ -19,6 +19,10 @@ class LogTransactionApiRequest
         'otp',
         'biometric_template',
         'biometricTemplate',
+        'fingerprint1',
+        'fingerprint2',
+        'fingerprint3',
+        'fingerprint4',
     ];
 
     /**
@@ -72,6 +76,13 @@ class LogTransactionApiRequest
     {
         $sanitized = [];
         foreach ($payload as $key => $value) {
+            if ($key === 'fingerprints' && is_array($value)) {
+                $sanitized[$key] = array_map(
+                    fn ($item) => $item !== null && $item !== '' ? '[REDACTED]' : null,
+                    $value
+                );
+                continue;
+            }
             if (in_array($key, $this->sensitiveKeys, true)) {
                 $sanitized[$key] = $value !== null && $value !== '' ? '[REDACTED]' : null;
                 continue;
@@ -99,7 +110,9 @@ class LogTransactionApiRequest
             Log::info('Transaction API response payload', [
                 'endpoint' => $request->path(),
                 'status' => $status,
-                'payload' => json_last_error() === JSON_ERROR_NONE ? $decoded : $response->getContent(),
+                'payload' => json_last_error() === JSON_ERROR_NONE
+                    ? $this->sanitizeForLog(is_array($decoded) ? $decoded : [])
+                    : $response->getContent(),
             ]);
 
             return;
@@ -111,7 +124,9 @@ class LogTransactionApiRequest
             Log::info('Transaction API response payload', [
                 'endpoint' => $request->path(),
                 'status' => $status,
-                'payload' => json_last_error() === JSON_ERROR_NONE ? $decoded : $response->getContent(),
+                'payload' => json_last_error() === JSON_ERROR_NONE
+                    ? $this->sanitizeForLog(is_array($decoded) ? $decoded : [])
+                    : $response->getContent(),
             ]);
 
             return;

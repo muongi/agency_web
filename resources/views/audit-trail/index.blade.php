@@ -19,7 +19,7 @@
 @else
 <div class="card">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 15px;">
-        <h1 style="color: var(--accent-color);">{{ __('common.audit_trail') }}</h1>
+        <h1 class="text-accent">{{ __('common.audit_trail') }}</h1>
         @if($user->isSuperAdmin() || ($businessUnit && $user->hasPermission('export-audit-trail', $businessUnit->id)))
             <a href="{{ route('audit-trail.export', request()->all()) }}" class="btn btn-secondary">{{ __('common.export_audit_logs') }}</a>
         @endif
@@ -68,7 +68,7 @@
                 </select>
             </div>
         </div>
-        <div style="display: flex; gap: 10px;">
+        <div class="btn-row">
             <input type="text" name="search" class="form-control" placeholder="{{ __('common.search') }}..." value="{{ request('search') }}" style="flex: 1;">
             <button type="submit" class="btn">{{ __('common.filter') }}</button>
             <a href="{{ route('audit-trail.index') }}" class="btn btn-secondary">{{ __('common.clear') }}</a>
@@ -76,46 +76,46 @@
     </form>
 
     @if($auditLogs->count() > 0)
-        <div style="overflow-x: auto;">
-            <table style="width: 100%; border-collapse: collapse;">
+        <div class="data-table">
+            <table>
                 <thead>
                     <tr style="border-bottom: 2px solid var(--border-color);">
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.date_time') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.user') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.action') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.model_type') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.description') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.ip_address') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.actions') }}</th>
+                        <th>{{ __('common.date_time') }}</th>
+                        <th>{{ __('common.user') }}</th>
+                        <th>{{ __('common.action') }}</th>
+                        <th>{{ __('common.model_type') }}</th>
+                        <th>{{ __('common.description') }}</th>
+                        <th>{{ __('common.ip_address') }}</th>
+                        <th>{{ __('common.actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach($auditLogs as $log)
                         <tr style="border-bottom: 1px solid var(--border-color);">
-                            <td style="padding: 12px;">
+                            <td>
                                 {{ $log->created_at->format('Y-m-d H:i:s') }}
                             </td>
-                            <td style="padding: 12px;">
-                                {{ $log->causer ? $log->causer->name : 'System' }}
+                            <td>
+                                {{ $log->causer ? $log->causer->name : __('common.system') }}
                             </td>
-                            <td style="padding: 12px;">
+                            <td>
                                 <span style="text-transform: capitalize;">{{ $log->event ?? 'N/A' }}</span>
                             </td>
-                            <td style="padding: 12px;">
+                            <td>
                                 {{ $log->model_display_name ?? 'N/A' }}
                                 @if($log->subject_id)
                                     <br>
-                                    <small style="color: var(--text-muted);">ID: {{ $log->subject_id }}</small>
+                                    <small class="muted">ID: {{ $log->subject_id }}</small>
                                 @endif
                             </td>
-                            <td style="padding: 12px;">
+                            <td>
                                 {{ \Illuminate\Support\Str::limit($log->description, 50) }}
                             </td>
-                            <td style="padding: 12px;">
+                            <td>
                                 {{ $log->ip_address ?? '-' }}
                             </td>
-                            <td style="padding: 12px;">
-                                <a href="{{ route('audit-trail.show', $log->id) }}" class="btn" style="padding: 6px 12px; font-size: 12px;">{{ __('common.view') }}</a>
+                            <td>
+                                <a href="{{ route('audit-trail.show', $log->id) }}" class="btn btn-sm">{{ __('common.view') }}</a>
                             </td>
                         </tr>
                     @endforeach
@@ -123,12 +123,12 @@
             </table>
         </div>
 
-        <div style="margin-top: 20px;">
+        <div class="mt-20">
             {{ $auditLogs->links() }}
         </div>
     @else
-        <div style="text-align: center; padding: 40px; color: var(--text-muted);">
-            <p style="margin-bottom: 20px;">{{ __('common.no_audit_logs') }}</p>
+        <div class="muted-center">
+            <p class="mb-20">{{ __('common.no_audit_logs') }}</p>
         </div>
     @endif
 </div>

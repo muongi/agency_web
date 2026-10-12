@@ -20,8 +20,8 @@
 @else
 <div class="card">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 15px;">
-        <h1 style="color: var(--accent-color);">{{ __('common.reports') }}</h1>
-        <div style="display: flex; gap: 10px;">
+        <h1 class="text-accent">{{ __('common.reports') }}</h1>
+        <div class="btn-row">
             <a href="{{ route('business.reports.agents') }}" class="btn">{{ __('common.agent_reports') }}</a>
             <a href="{{ route('business.reports.clients') }}" class="btn">{{ __('common.client_reports') }}</a>
             <a href="{{ route('business.reports.transactions') }}" class="btn">{{ __('common.transaction_reports') }}</a>
@@ -62,17 +62,17 @@
     </form>
 
     @if($reports->count() > 0)
-        <div style="overflow-x: auto;">
-            <table style="width: 100%; border-collapse: collapse;">
+        <div class="data-table">
+            <table>
                 <thead>
                     <tr style="border-bottom: 2px solid var(--border-color);">
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.report_type') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.status') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.requested_by') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.created_at') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.completed_at') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.total_records') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.actions') }}</th>
+                        <th>{{ __('common.report_type') }}</th>
+                        <th>{{ __('common.status') }}</th>
+                        <th>{{ __('common.requested_by') }}</th>
+                        <th>{{ __('common.created_at') }}</th>
+                        <th>{{ __('common.completed_at') }}</th>
+                        <th>{{ __('common.total_records') }}</th>
+                        <th>{{ __('common.actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -81,7 +81,7 @@
                             <td style="padding: 12px; text-transform: capitalize;">
                                 {{ __('common.' . $report->report_type . '_reports') }}
                             </td>
-                            <td style="padding: 12px;">
+                            <td>
                                 <span class="report-status" style="padding: 4px 8px; border-radius: 4px; font-size: 12px; text-transform: capitalize;
                                     @if($report->status === 'completed') background: var(--success-bg); color: var(--success-text);
                                     @elseif($report->status === 'processing') background: var(--warning-bg); color: var(--warning-text);
@@ -91,34 +91,34 @@
                                     {{ $report->status }}
                                 </span>
                             </td>
-                            <td style="padding: 12px;">
+                            <td>
                                 {{ $report->user->name ?? __('common.unknown') }}
                             </td>
-                            <td style="padding: 12px;">
+                            <td>
                                 {{ $report->created_at->format('Y-m-d H:i') }}
                             </td>
-                            <td style="padding: 12px;">
+                            <td>
                                 {{ $report->completed_at ? $report->completed_at->format('Y-m-d H:i') : '-' }}
                             </td>
-                            <td style="padding: 12px;">
+                            <td>
                                 {{ $report->total_records ?? '-' }}
                             </td>
-                            <td style="padding: 12px;">
+                            <td>
                                 <div style="display: flex; gap: 5px;">
                                     @if($report->isReady())
-                                        <a href="{{ route('business.reports.download', $report->id) }}" class="btn" style="padding: 6px 12px; font-size: 12px;">{{ __('common.download') }}</a>
+                                        <a href="{{ route('business.reports.download', $report->id) }}" class="btn btn-sm">{{ __('common.download') }}</a>
                                     @endif
                                     @if($report->canRetry())
                                         <form action="{{ route('business.reports.retry', $report->id) }}" method="POST" style="display: inline;">
                                             @csrf
-                                            <button type="submit" class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">{{ __('common.retry') }}</button>
+                                            <button type="submit" class="btn btn-secondary btn-sm">{{ __('common.retry') }}</button>
                                         </form>
                                     @endif
                                     @if($user->isSuperAdmin() || ($businessUnit && $user->hasPermission('delete-reports', $businessUnit->id)))
                                         <form action="{{ route('business.reports.delete', $report->id) }}" method="POST" style="display: inline;" onsubmit="return confirm('{{ __('common.confirm_delete') }}');">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="btn btn-danger" style="padding: 6px 12px; font-size: 12px;">{{ __('common.delete') }}</button>
+                                            <button type="submit" class="btn btn-danger btn-sm">{{ __('common.delete') }}</button>
                                         </form>
                                     @endif
                                 </div>
@@ -136,12 +136,12 @@
             </table>
         </div>
 
-        <div style="margin-top: 20px;">
+        <div class="mt-20">
             {{ $reports->links() }}
         </div>
     @else
-        <div style="text-align: center; padding: 40px; color: var(--text-muted);">
-            <p style="margin-bottom: 20px;">{{ __('common.no_reports_found') }}</p>
+        <div class="muted-center">
+            <p class="mb-20">{{ __('common.no_reports_found') }}</p>
             <div style="display: flex; gap: 10px; justify-content: center;">
                 <a href="{{ route('business.reports.agents') }}" class="btn">{{ __('common.request_agent_report') }}</a>
                 <a href="{{ route('business.reports.clients') }}" class="btn">{{ __('common.request_client_report') }}</a>

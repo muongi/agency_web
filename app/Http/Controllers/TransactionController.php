@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Transaction;
-use App\Models\TransactionType;
 use App\Models\Agent;
 use App\Models\Terminal;
 use App\Models\Client;
@@ -86,9 +85,7 @@ class TransactionController extends Controller
         $transactions = $query->orderBy('transaction_date', 'desc')->paginate(20);
 
         // Get filter options
-        $transactionTypes = TransactionType::where('business_unit_id', $businessUnit->id)
-            ->where('is_active', true)
-            ->get();
+        $transactionTypes = $businessUnit->availableTransactionTypes();
         $agents = Agent::where('business_unit_id', $businessUnit->id)->get();
         $terminals = Terminal::where('business_unit_id', $businessUnit->id)->get();
 

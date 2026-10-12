@@ -5,7 +5,10 @@
 @section('content')
 <div style="max-width: 400px; margin: 100px auto;">
     <div class="card">
-        <h2 style="margin-bottom: 24px; color: #4a9eff;">{{ __('common.login_to_account') }}</h2>
+        <div style="text-align: center; margin-bottom: 24px;">
+            <img src="{{ asset('images/sunu-logo.png') }}" alt="{{ config('app.name') }}" style="max-width: 240px; height: auto; background: #fff; border-radius: 8px;">
+        </div>
+        <h2 style="margin-bottom: 24px; color: var(--accent);">{{ __('common.login_to_account') }}</h2>
         
         <form method="POST" action="{{ route('login') }}">
             @csrf
@@ -53,12 +56,6 @@
         <div style="margin-top: 20px; text-align: center;">
             @include('components.language-switcher')
         </div>
-    </div>
-    
-    <div style="text-align: center; margin-top: 20px; color: #888;">
-        <p>Super Admin Credentials:</p>
-        <p>Email: muongi@agency.com</p>
-        <p>Password: 12345</p>
     </div>
 </div>
 @endsection

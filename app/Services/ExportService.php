@@ -27,17 +27,19 @@ class ExportService
             // Write BOM for UTF-8 (helps with Excel)
             fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
 
+            $delimiter = $this->csvDelimiter();
+
             // Write headers
-            fputcsv($file, $headers);
+            fputcsv($file, $headers, $delimiter);
 
             // Write data rows
             foreach ($data as $row) {
                 $csvRow = [];
                 foreach ($headers as $header) {
                     $value = is_array($row) ? ($row[$header] ?? '') : ($row->{$header} ?? '');
-                    $csvRow[] = $this->formatValue($value);
+                    $csvRow[] = $this->formatCsvValue($value);
                 }
-                fputcsv($file, $csvRow);
+                fputcsv($file, $csvRow, $delimiter);
             }
 
             fclose($file);
@@ -147,7 +149,7 @@ class ExportService
         }
 
         $html = view('exports.pdf-table', [
-            'title' => $title ?? 'Export',
+            'title' => $title ?? __('common.export'),
             'headers' => $headers,
             'data' => $exportData,
             'filters' => $filters,
@@ -177,10 +179,48 @@ class ExportService
         }
 
         if (is_bool($value)) {
-            return $value ? 'Yes' : 'No';
+            return $value ? __('common.yes') : __('common.no');
         }
 
         return (string) $value;
+    }
+
+    /**
+     * CSV separator for the current language: French Excel (Burkina Faso) only splits
+     * columns on ";" and reads "," as the decimal mark.
+     */
+    public function csvDelimiter(): string
+    {
+        return app()->getLocale() === 'fr' ? ';' : ',';
+    }
+
+    /** formatValue + decimal comma for numbers when the CSV uses ";". */
+    public function formatCsvValue($value): string
+    {
+        if ((is_float($value) || is_int($value)) && $this->csvDelimiter() === ';') {
+            return str_replace('.', ',', (string) $value);
+        }
+
+        return $this->formatValue($value);
+    }
+
+    /**
+     * Translated label of a stored code (status, kind, gender…): first existing
+     * common.<prefix><value> key, else the raw value.
+     */
+    public function valueLabel(?string $value, string ...$prefixes): string
+    {
+        if ($value === null || $value === '') {
+            return '';
+        }
+        foreach ($prefixes as $prefix) {
+            $key = 'common.'.$prefix.strtolower($value);
+            if (__($key) !== $key) {
+                return __($key);
+            }
+        }
+
+        return $value;
     }
 
     /**

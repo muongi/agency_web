@@ -25,16 +25,28 @@ class Agent extends Model
         'username',
         'password',
         'is_first_time_pin',
+        'collection_pin_hash',
+        'pin_failed_attempts',
+        'pin_locked_at',
+        'pin_must_change',
         'kato_agent_id',
         'kato_registration_error',
+        'can_write_cards',
+        'can_rewrite_cards',
     ];
 
     protected $casts = [
         'is_first_time_pin' => 'boolean',
+        'pin_locked_at' => 'datetime',
+        'pin_must_change' => 'boolean',
+        'pin_failed_attempts' => 'integer',
+        'can_write_cards' => 'boolean',
+        'can_rewrite_cards' => 'boolean',
     ];
 
     protected $hidden = [
         'password',
+        'collection_pin_hash',
     ];
 
     /**
@@ -208,5 +220,60 @@ class Agent extends Model
                 'opening_date' => now()->toDateString(),
             ]);
         });
+    }
+
+    // ---- Collection PIN (confirms premiums on the TPE; never the login password) ----
+
+    public function hasCollectionPin(): bool
+    {
+        return ! empty($this->collection_pin_hash);
+    }
+
+    public function isPinLocked(): bool
+    {
+        return $this->pin_locked_at !== null;
+    }
+
+    /** Set a new PIN, clear the lock and the failure counter. */
+    public function setCollectionPin(string $pin, bool $mustChange = true): void
+    {
+        $this->forceFill([
+            'collection_pin_hash' => \Illuminate\Support\Facades\Hash::make($pin),
+            'pin_failed_attempts' => 0,
+            'pin_locked_at' => null,
+            'pin_must_change' => $mustChange,
+        ])->save();
+    }
+
+    /**
+     * Check a PIN and update the counter: correct → reset; wrong → +1, lock at pin_max_attempts.
+     * Returns 'ok', 'invalid' or 'locked'.
+     */
+    public function checkCollectionPin(string $pin): string
+    {
+        if ($this->isPinLocked()) {
+            return 'locked';
+        }
+        if (\Illuminate\Support\Facades\Hash::check($pin, (string) $this->collection_pin_hash)) {
+            if ($this->pin_failed_attempts > 0) {
+                $this->forceFill(['pin_failed_attempts' => 0])->save();
+            }
+
+            return 'ok';
+        }
+
+        $attempts = $this->pin_failed_attempts + 1;
+        $max = (int) config('sunu.pin_max_attempts', 5);
+        $this->forceFill([
+            'pin_failed_attempts' => $attempts,
+            'pin_locked_at' => $attempts >= $max ? now() : null,
+        ])->save();
+
+        return $attempts >= $max ? 'locked' : 'invalid';
+    }
+
+    public function pinAttemptsLeft(): int
+    {
+        return max(0, (int) config('sunu.pin_max_attempts', 5) - $this->pin_failed_attempts);
     }
 }

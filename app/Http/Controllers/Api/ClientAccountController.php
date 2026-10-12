@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Client;
 use App\Models\Account;
+use App\Models\Agent;
 use App\Models\BusinessUnit;
 use App\Services\KatoService;
 use Illuminate\Support\Facades\Validator;
@@ -16,6 +17,16 @@ use Illuminate\Validation\Rule;
 
 class ClientAccountController extends Controller
 {
+    /**
+     * @var list<string>
+     */
+    private const FINGERPRINT_KEYS = ['fingerprint1', 'fingerprint2', 'fingerprint3', 'fingerprint4'];
+
+    /**
+     * @var list<string>
+     */
+    private const SENSITIVE_LOG_KEYS = ['password', 'pin', 'otp', 'otp_code', 'pin_code'];
+
     /**
      * Create a new client and open an account for them.
      *
@@ -30,6 +41,8 @@ class ClientAccountController extends Controller
      */
     public function openAccount(Request $request)
     {
+        $sanitizedRequestData = $this->buildSanitizedRequestDataForLog($request);
+
         // Allow business_unit_id at root level or nested under client
         $businessUnitId = $request->input('business_unit_id')
             ?? $request->input('client.business_unit_id');
@@ -44,6 +57,7 @@ class ClientAccountController extends Controller
         if ($businessUnitValidator->fails()) {
             Log::warning('API Client Account Creation Failed - Business Unit Validation Failed', [
                 'errors' => $businessUnitValidator->errors()->toArray(),
+                'request_data' => $sanitizedRequestData,
                 'ip' => $request->ip(),
             ]);
 
@@ -68,43 +82,18 @@ class ClientAccountController extends Controller
             ], 404);
         }
 
-        // Log incoming request (sanitized - exclude file binary data)
-        $requestData = $request->all();
-        // Remove file data, only keep metadata
-        if (isset($requestData['photo'])) {
-            unset($requestData['photo']);
-        }
-        if (isset($requestData['client']['photo'])) {
-            unset($requestData['client']['photo']);
-        }
-        
-        // Get photo metadata if file exists
-        $photoMetadata = null;
-        if ($request->hasFile('photo')) {
-            $photoFile = $request->file('photo');
-            $photoMetadata = [
-                'filename' => $photoFile->getClientOriginalName(),
-                'size' => $photoFile->getSize(),
-                'mime_type' => $photoFile->getMimeType(),
-            ];
-        } elseif ($request->hasFile('client.photo')) {
-            $photoFile = $request->file('client.photo');
-            $photoMetadata = [
-                'filename' => $photoFile->getClientOriginalName(),
-                'size' => $photoFile->getSize(),
-                'mime_type' => $photoFile->getMimeType(),
-            ];
-        }
+        $photoMetadata = $sanitizedRequestData['photo'] ?? null;
 
         Log::info('API Client Account Creation Request', [
             'business_unit_id' => $businessUnitId,
             'client_name' => $request->input('client.first_name') . ' ' . $request->input('client.last_name'),
             'client_email' => $request->input('client.email'),
             'client_phone' => $request->input('client.phone_number'),
-            'has_photo' => $photoMetadata !== null,
+            'has_photo' => is_array($photoMetadata),
             'photo_metadata' => $photoMetadata,
             'account_status' => $request->input('account.status'),
             'account_opening_date' => $request->input('account.opening_date'),
+            'request_data' => $sanitizedRequestData,
             'ip' => $request->ip(),
             'user_agent' => $request->userAgent(),
         ]);
@@ -121,6 +110,9 @@ class ClientAccountController extends Controller
             'marital_status' => 'nullable|in:Single,Married,Divorced,Widowed',
             'region' => 'nullable|string|max:255',
             'home_town' => 'nullable|string|max:255',
+            'location' => 'nullable|string|max:255',
+            'place_of_birth' => 'nullable|string|max:255',
+            'date_of_birth' => 'nullable|date',
             'nationality' => 'nullable|string|max:255',
             'salutation' => 'nullable|string|max:50',
             'next_of_kin_first_name' => 'nullable|string|max:255',
@@ -148,7 +140,10 @@ class ClientAccountController extends Controller
             $clientRules['year_of_birth'] = 'nullable|string|max:10';
         }
 
-        $clientValidator = Validator::make($request->input('client', []), $clientRules);
+        $clientInput = $this->normalizeClientInput($request->input('client', []));
+        $request->merge(['client' => $clientInput]);
+
+        $clientValidator = Validator::make($clientInput, $clientRules);
 
         // Validate account data
         $accountValidator = Validator::make($request->input('account', []), [
@@ -188,6 +183,7 @@ class ClientAccountController extends Controller
                 Log::warning('API Client Account Creation Failed - Photo Validation Failed', [
                     'business_unit_id' => $businessUnitId,
                     'photo_errors' => $photoValidator->errors()->toArray(),
+                    'request_data' => $sanitizedRequestData,
                     'ip' => $request->ip(),
                 ]);
 
@@ -203,6 +199,7 @@ class ClientAccountController extends Controller
         if (!$request->has('client')) {
             Log::warning('API Client Account Creation Failed - Client Data Missing', [
                 'business_unit_id' => $businessUnitId,
+                'request_data' => $sanitizedRequestData,
                 'ip' => $request->ip(),
             ]);
 
@@ -217,6 +214,7 @@ class ClientAccountController extends Controller
         if (!$request->has('account')) {
             Log::warning('API Client Account Creation Failed - Account Data Missing', [
                 'business_unit_id' => $businessUnitId,
+                'request_data' => $sanitizedRequestData,
                 'ip' => $request->ip(),
             ]);
 
@@ -236,10 +234,31 @@ class ClientAccountController extends Controller
             $errors['account'] = $accountValidator->errors()->toArray();
         }
 
+        $agent = null;
+        if ($isKato) {
+            $agentValidator = Validator::make($request->all(), [
+                'agent_id' => 'required|integer|exists:agents,id',
+            ]);
+
+            if ($agentValidator->fails()) {
+                $errors['agent_id'] = $agentValidator->errors()->toArray();
+            } else {
+                $agentId = (int) $request->input('agent_id');
+                $agent = Agent::where('business_unit_id', $businessUnitId)->find($agentId);
+
+                if (! $agent) {
+                    $errors['agent_id'] = ["Agent with id '{$agentId}' not found for business unit {$businessUnitId}"];
+                } elseif (! $agent->hasKatoCbsAccounts()) {
+                    $errors['agent_id'] = ['Agent KATO float account is not synced. Re-register the agent with KATO or run kato:backfill-agent-accounts.'];
+                }
+            }
+        }
+
         if (!empty($errors)) {
             Log::warning('API Client Account Creation Validation Failed', [
                 'business_unit_id' => $businessUnitId,
                 'errors' => $errors,
+                'request_data' => $sanitizedRequestData,
                 'ip' => $request->ip(),
             ]);
 
@@ -299,7 +318,7 @@ class ClientAccountController extends Controller
 
             if ($businessUnit->isKatoEnabled()) {
                 $katoService = new KatoService();
-                $katoResult = $katoService->registerMember($client, $businessUnit);
+                $katoResult = $katoService->registerMember($client, $businessUnit, $agent);
 
                 if (! $katoResult['success']) {
                     DB::rollBack();
@@ -469,7 +488,7 @@ class ClientAccountController extends Controller
             DB::rollBack();
             
             Log::error('API Client Account Creation Failed: ' . $e->getMessage(), [
-                'request' => $request->all(),
+                'request_data' => $this->buildSanitizedRequestDataForLog($request),
                 'trace' => $e->getTraceAsString(),
             ]);
 
@@ -479,5 +498,124 @@ class ClientAccountController extends Controller
                 'error' => config('app.debug') ? $e->getMessage() : 'Internal server error',
             ], 500);
         }
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function buildSanitizedRequestDataForLog(Request $request): array
+    {
+        $requestData = $request->all();
+
+        if (isset($requestData['photo'])) {
+            unset($requestData['photo']);
+        }
+        if (isset($requestData['client']['photo'])) {
+            unset($requestData['client']['photo']);
+        }
+
+        if ($request->hasFile('photo')) {
+            $photoFile = $request->file('photo');
+            $requestData['photo'] = [
+                'filename' => $photoFile->getClientOriginalName(),
+                'size' => $photoFile->getSize(),
+                'mime_type' => $photoFile->getMimeType(),
+            ];
+        } elseif ($request->hasFile('client.photo')) {
+            $photoFile = $request->file('client.photo');
+            $requestData['photo'] = [
+                'filename' => $photoFile->getClientOriginalName(),
+                'size' => $photoFile->getSize(),
+                'mime_type' => $photoFile->getMimeType(),
+            ];
+        }
+
+        return $this->sanitizeRequestDataForLog($requestData);
+    }
+
+    /**
+     * @param  array<string, mixed>  $requestData
+     * @return array<string, mixed>
+     */
+    private function sanitizeRequestDataForLog(array $requestData): array
+    {
+        $sanitized = [];
+
+        foreach ($requestData as $key => $value) {
+            $sanitized[$key] = $this->sanitizeRequestDataValueForLog((string) $key, $value);
+        }
+
+        return $sanitized;
+    }
+
+    /**
+     * @return mixed
+     */
+    private function sanitizeRequestDataValueForLog(string $key, mixed $value)
+    {
+        if (in_array($key, self::SENSITIVE_LOG_KEYS, true)) {
+            return '[REDACTED]';
+        }
+
+        if (in_array($key, self::FINGERPRINT_KEYS, true)) {
+            return $this->fingerprintPresenceForLog($value);
+        }
+
+        if (is_array($value)) {
+            $nested = [];
+            foreach ($value as $nestedKey => $nestedValue) {
+                $nested[$nestedKey] = $this->sanitizeRequestDataValueForLog((string) $nestedKey, $nestedValue);
+            }
+
+            return $nested;
+        }
+
+        return $value;
+    }
+
+    /**
+     * @return array{present: bool, length?: int}
+     */
+    private function fingerprintPresenceForLog(mixed $value): array
+    {
+        if ($value === null || $value === '') {
+            return ['present' => false];
+        }
+
+        return [
+            'present' => true,
+            'length' => strlen((string) $value),
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $clientInput
+     * @return array<string, mixed>
+     */
+    private function normalizeClientInput(array $clientInput): array
+    {
+        if (array_key_exists('biometrics_status', $clientInput)) {
+            $value = $clientInput['biometrics_status'];
+
+            if ($value === null || (is_string($value) && trim($value) === '')) {
+                unset($clientInput['biometrics_status']);
+            } elseif (! in_array($value, [true, false, 0, 1, '0', '1'], true)) {
+                $parsed = filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+
+                if ($parsed !== null) {
+                    $clientInput['biometrics_status'] = $parsed ? '1' : '0';
+                }
+            }
+        }
+
+        if (empty($clientInput['home_town'])) {
+            if (! empty($clientInput['location'])) {
+                $clientInput['home_town'] = $clientInput['location'];
+            } elseif (! empty($clientInput['place_of_birth'])) {
+                $clientInput['home_town'] = $clientInput['place_of_birth'];
+            }
+        }
+
+        return $clientInput;
     }
 }

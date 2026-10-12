@@ -6,7 +6,7 @@
 @section('content')
 <div class="card">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 15px;">
-        <h1 style="color: var(--accent-color);">{{ __('common.clients') }}</h1>
+        <h1 class="text-accent">{{ __('common.clients') }}</h1>
         <div style="display: flex; gap: 10px; align-items: center;">
             <div style="position: relative;">
                 <button onclick="toggleExportDropdown()" class="btn" style="display: flex; align-items: center; gap: 5px;">
@@ -39,16 +39,28 @@
                 $canSyncKato = $isKato && $businessUnit && ($user->isSuperAdmin() || $user->hasPermission('edit-client', $businessUnit->id));
             @endphp
             @if($canSyncKato && $clients->count() > 0)
-                <button type="button" class="btn btn-secondary" onclick="submitKatoBulkSync()">
-                    {{ __('common.kato_sync_selected_members') }}
-                </button>
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    @if(($katoAgents ?? collect())->isNotEmpty())
+                        <select id="kato-bulk-sync-agent" class="form-select" style="min-width: 220px;" required>
+                            <option value="">— {{ __('common.agent') }} —</option>
+                            @foreach($katoAgents as $katoAgent)
+                                <option value="{{ $katoAgent->id }}">
+                                    {{ $katoAgent->full_name }} ({{ $katoAgent->katoFloatAccountNumber() }})
+                                </option>
+                            @endforeach
+                        </select>
+                    @endif
+                    <button type="button" class="btn btn-secondary" onclick="submitKatoBulkSync()" @if(($katoAgents ?? collect())->isEmpty()) disabled @endif>
+                        {{ __('common.kato_sync_selected_members') }}
+                    </button>
+                </div>
             @endif
         </div>
     </div>
 
     <!-- Search Form -->
-    <form method="GET" action="{{ route('clients.index') }}" style="margin-bottom: 20px;">
-        <div style="display: flex; gap: 10px;">
+    <form method="GET" action="{{ route('clients.index') }}" class="mb-20">
+        <div class="btn-row">
             <input 
                 type="text" 
                 name="search" 
@@ -71,8 +83,8 @@
                 <div id="kato-bulk-sync-inputs"></div>
             </form>
         @endif
-        <div style="overflow-x: auto;">
-            <table style="width: 100%; border-collapse: collapse;">
+        <div class="data-table">
+            <table>
                 <thead>
                     <tr style="border-bottom: 2px solid var(--border-color);">
                         @if(!empty($canSyncKato))
@@ -80,30 +92,30 @@
                                 <input type="checkbox" id="select-all-clients" title="{{ __('common.select_all') }}">
                             </th>
                         @endif
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.photo') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.name') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.email') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.phone') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.gender') }}</th>
+                        <th>{{ __('common.photo') }}</th>
+                        <th>{{ __('common.name') }}</th>
+                        <th>{{ __('common.email') }}</th>
+                        <th>{{ __('common.phone') }}</th>
+                        <th>{{ __('common.gender') }}</th>
                         @if(!empty($isKato))
-                            <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.kato_member_no') }}</th>
-                            <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.kato_account_numbers') }}</th>
+                            <th>{{ __('common.kato_member_no') }}</th>
+                            <th>{{ __('common.kato_account_numbers') }}</th>
                         @endif
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.year_of_birth') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.actions') }}</th>
+                        <th>{{ __('common.year_of_birth') }}</th>
+                        <th>{{ __('common.actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach($clients as $client)
                         <tr style="border-bottom: 1px solid var(--border-color);">
                             @if(!empty($canSyncKato))
-                                <td style="padding: 12px;">
+                                <td>
                                     @if(!$client->kato_member_no)
                                         <input type="checkbox" name="client_ids[]" value="{{ $client->id }}" class="client-sync-checkbox">
                                     @endif
                                 </td>
                             @endif
-                            <td style="padding: 12px;">
+                            <td>
                                 @if($client->photo)
                                     <img src="{{ asset('storage/' . $client->photo) }}" alt="{{ $client->full_name }}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">
                                 @else
@@ -112,25 +124,25 @@
                                     </div>
                                 @endif
                             </td>
-                            <td style="padding: 12px;">{{ $client->full_name }}</td>
-                            <td style="padding: 12px;">{{ $client->email ?? '-' }}</td>
-                            <td style="padding: 12px;">{{ $client->phone_number ?? '-' }}</td>
-                            <td style="padding: 12px;">{{ $client->gender ?? '-' }}</td>
+                            <td>{{ $client->full_name }}</td>
+                            <td>{{ $client->email ?? '-' }}</td>
+                            <td>{{ $client->phone_number ?? '-' }}</td>
+                            <td>{{ $client->gender ?? '-' }}</td>
                             @if(!empty($isKato))
-                                <td style="padding: 12px;">
+                                <td>
                                     @if($client->kato_member_no)
-                                        <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; background: #2d5a2d; color: #90ee90;" title="{{ __('common.kato_registered') }}">
+                                        <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; background: var(--success-bg); color: var(--success-text);" title="{{ __('common.kato_registered') }}">
                                             {{ $client->kato_member_no }}
                                         </span>
                                     @elseif($client->kato_registration_error)
-                                        <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; background: #5a2d2d; color: #ee9090;" title="{{ $client->kato_registration_error }}">
+                                        <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; background: var(--error-bg); color: var(--error-text);" title="{{ $client->kato_registration_error }}">
                                             {{ __('common.failed') }}
                                         </span>
                                     @else
-                                        <span style="color: var(--text-muted);">{{ __('common.not_synced_with_kato') }}</span>
+                                        <span class="muted">{{ __('common.not_synced_with_kato') }}</span>
                                     @endif
                                 </td>
-                                <td style="padding: 12px;">
+                                <td>
                                     @php
                                         $katoAccountNumbers = $client->accounts->pluck('account_number')->filter()->values();
                                     @endphp
@@ -140,30 +152,30 @@
                                         @else
                                             <span title="{{ $katoAccountNumbers->implode(', ') }}">
                                                 <code style="background: var(--bg-tertiary); padding: 4px 8px; border-radius: 4px; font-size: 12px;">{{ $katoAccountNumbers->first() }}</code>
-                                                <span style="color: var(--text-muted); font-size: 12px;">+{{ $katoAccountNumbers->count() - 1 }}</span>
+                                                <span class="text-muted-sm">+{{ $katoAccountNumbers->count() - 1 }}</span>
                                             </span>
                                         @endif
                                     @else
-                                        <span style="color: var(--text-muted);">-</span>
+                                        <span class="muted">-</span>
                                     @endif
                                 </td>
                             @endif
-                            <td style="padding: 12px;">{{ $client->year_of_birth ?? '-' }}</td>
-                            <td style="padding: 12px;">
+                            <td>{{ $client->year_of_birth ?? '-' }}</td>
+                            <td>
                                 @php
                                     $canEdit = $user->isSuperAdmin() || ($businessUnit && $user->hasPermission('edit-client', $businessUnit->id));
                                     $canDelete = $user->isSuperAdmin() || ($businessUnit && $user->hasPermission('delete-client', $businessUnit->id));
                                 @endphp
                                 <div style="display: flex; gap: 5px;">
-                                    <a href="{{ route('clients.show', $client->id) }}" class="btn" style="padding: 6px 12px; font-size: 12px;">{{ __('common.view') }}</a>
+                                    <a href="{{ route('clients.show', $client->id) }}" class="btn btn-sm">{{ __('common.view') }}</a>
                                     @if($canEdit)
-                                        <a href="{{ route('clients.edit', $client->id) }}" class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">{{ __('common.edit') }}</a>
+                                        <a href="{{ route('clients.edit', $client->id) }}" class="btn btn-secondary btn-sm">{{ __('common.edit') }}</a>
                                     @endif
                                     @if($canDelete)
                                         <form action="{{ route('clients.destroy', $client->id) }}" method="POST" style="display: inline;" onsubmit="return confirm('{{ __('common.confirm_delete') }}');">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="btn btn-danger" style="padding: 6px 12px; font-size: 12px;">{{ __('common.delete') }}</button>
+                                            <button type="submit" class="btn btn-danger btn-sm">{{ __('common.delete') }}</button>
                                         </form>
                                     @endif
                                 </div>
@@ -186,12 +198,22 @@
                         alert(@json(__('common.select_clients_to_sync')));
                         return;
                     }
+                    const agentSelect = document.getElementById('kato-bulk-sync-agent');
+                    if (!agentSelect || !agentSelect.value) {
+                        alert(@json(__('common.kato_registration_agent_required')));
+                        return;
+                    }
                     const container = document.getElementById('kato-bulk-sync-inputs');
                     const form = document.getElementById('kato-bulk-sync-form');
                     if (!container || !form) {
                         return;
                     }
                     container.innerHTML = '';
+                    const agentInput = document.createElement('input');
+                    agentInput.type = 'hidden';
+                    agentInput.name = 'agent_id';
+                    agentInput.value = agentSelect.value;
+                    container.appendChild(agentInput);
                     checked.forEach(function(cb) {
                         const input = document.createElement('input');
                         input.type = 'hidden';
@@ -204,12 +226,12 @@
             </script>
         @endif
 
-        <div style="margin-top: 20px;">
+        <div class="mt-20">
             {{ $clients->links() }}
         </div>
     @else
-        <div style="text-align: center; padding: 40px; color: var(--text-muted);">
-            <p style="margin-bottom: 20px;">{{ __('common.no_clients') }}</p>
+        <div class="muted-center">
+            <p class="mb-20">{{ __('common.no_clients') }}</p>
             @if($canCreate)
                 <a href="{{ route('clients.create') }}" class="btn">{{ __('common.add_client') }}</a>
             @endif

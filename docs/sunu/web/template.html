@@ -1,0 +1,771 @@
+<title>SUNU Premium Collection Dossier</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+
+<style>
+:root{
+  --paper:#FAFAF7; --surface:#FFFFFF; --surface-2:#F1F3EF; --surface-3:#E7EAE5;
+  --ink:#16191A; --ink-2:#454B4C; --ink-3:#6E7678;
+  --rule:#DCDFD9; --rule-strong:#C3C8C1;
+  --accent:#0B4F55; --accent-2:#12777F; --accent-soft:#E1EDEC; --accent-ink:#08383D;
+  --ok:#1E6E4A; --ok-soft:#E0F0E7;
+  --warn:#8F5406; --warn-soft:#F7EBD9;
+  --crit:#9E2A20; --crit-soft:#F8E5E2;
+  --shadow:0 1px 2px rgba(20,30,30,.06),0 8px 24px -12px rgba(20,30,30,.18);
+  --measure:66ch;
+  --f-display:"Bricolage Grotesque","Helvetica Neue",Arial,sans-serif;
+  --f-body:"Source Serif 4",Georgia,"Times New Roman",serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#0F1315; --surface:#161B1D; --surface-2:#1D2426; --surface-3:#252D30;
+    --ink:#E9EEED; --ink-2:#B2BCBB; --ink-3:#7E8A89;
+    --rule:#2A3335; --rule-strong:#3A4548;
+    --accent:#4FC7BC; --accent-2:#69D8CD; --accent-soft:#14302F; --accent-ink:#93E2DA;
+    --ok:#5FC28C; --ok-soft:#12291F;
+    --warn:#DFA24B; --warn-soft:#2C2214;
+    --crit:#E9796B; --crit-soft:#2E1A18;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 28px -14px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0F1315; --surface:#161B1D; --surface-2:#1D2426; --surface-3:#252D30;
+  --ink:#E9EEED; --ink-2:#B2BCBB; --ink-3:#7E8A89;
+  --rule:#2A3335; --rule-strong:#3A4548;
+  --accent:#4FC7BC; --accent-2:#69D8CD; --accent-soft:#14302F; --accent-ink:#93E2DA;
+  --ok:#5FC28C; --ok-soft:#12291F;
+  --warn:#DFA24B; --warn-soft:#2C2214;
+  --crit:#E9796B; --crit-soft:#2E1A18;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 28px -14px rgba(0,0,0,.7);
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:var(--f-body); font-size:17px; line-height:1.62;
+  -webkit-text-size-adjust:100%;
+}
+h1,h2,h3,h4,.ui{font-family:var(--f-display)}
+h1,h2,h3,h4{text-wrap:balance; line-height:1.18; margin:0}
+
+/* ---------- header ---------- */
+.masthead{
+  position:sticky; top:0; z-index:40;
+  background:var(--surface); border-bottom:1px solid var(--rule);
+}
+.masthead-in{max-width:1080px; margin:0 auto; padding:.7rem 1rem .55rem}
+.eyebrow{
+  font-family:var(--f-display); font-size:.66rem; font-weight:600;
+  letter-spacing:.13em; text-transform:uppercase; color:var(--ink-3);
+  display:flex; align-items:center; gap:.5rem; flex-wrap:wrap;
+}
+.eyebrow .dot{width:5px;height:5px;border-radius:50%;background:var(--accent);flex:none}
+.masthead h1{font-size:1.18rem; font-weight:800; letter-spacing:-.018em; margin-top:.18rem}
+.masthead h1 .thin{font-weight:400; color:var(--ink-2)}
+
+.langsw{display:inline-flex; border:1px solid var(--rule); border-radius:7px; overflow:hidden; margin-left:auto}
+.langsw button{
+  appearance:none; background:var(--surface-2); border:0; cursor:pointer;
+  font-family:var(--f-display); font-size:.68rem; font-weight:700; letter-spacing:.06em;
+  color:var(--ink-3); padding:.28rem .55rem;
+}
+.langsw button[aria-pressed="true"]{background:var(--accent); color:var(--surface)}
+:root[data-theme="dark"] .langsw button[aria-pressed="true"]{color:var(--paper)}
+.langsw button:focus-visible{outline:2px solid var(--accent); outline-offset:-2px}
+.eyebrow-row{display:flex; align-items:center; gap:.5rem}
+.counters{display:flex; gap:.4rem; margin-top:.6rem; overflow-x:auto; scrollbar-width:none; padding-bottom:2px}
+.counters::-webkit-scrollbar{display:none}
+.ctr{
+  flex:none; border:1px solid var(--rule); border-radius:7px; background:var(--surface-2);
+  padding:.34rem .55rem; min-width:112px;
+}
+.ctr .lbl{font-family:var(--f-display); font-size:.6rem; font-weight:600; letter-spacing:.09em;
+  text-transform:uppercase; color:var(--ink-3); display:block; white-space:nowrap}
+.ctr .val{font-family:var(--f-mono); font-size:.94rem; font-weight:600; color:var(--ink); display:block; line-height:1.35}
+.ctr.is-near{border-color:var(--warn); background:var(--warn-soft)}
+.ctr.is-near .val{color:var(--warn)}
+.ctr.is-past{opacity:.55}
+
+/* ---------- tabs ---------- */
+.tabs{
+  position:sticky; top:0; z-index:39; background:var(--paper);
+  border-bottom:1px solid var(--rule); overflow-x:auto; scrollbar-width:none;
+}
+.tabs::-webkit-scrollbar{display:none}
+.tabs-in{max-width:1080px; margin:0 auto; display:flex; gap:.15rem; padding:0 .5rem}
+.tab{
+  flex:none; appearance:none; background:none; border:0; cursor:pointer;
+  font-family:var(--f-display); font-size:.8rem; font-weight:600; color:var(--ink-3);
+  padding:.72rem .6rem .6rem; border-bottom:2px solid transparent; white-space:nowrap;
+}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected="true"]{color:var(--accent); border-bottom-color:var(--accent)}
+.tab:focus-visible{outline:2px solid var(--accent); outline-offset:-2px; border-radius:3px}
+
+main{max-width:1080px; margin:0 auto; padding:1.1rem 1rem 4rem}
+.panel[hidden]{display:none!important}
+
+/* ---------- status view ---------- */
+.lede{font-size:1.02rem; color:var(--ink-2); max-width:var(--measure); margin:0 0 1.4rem}
+.lede strong{color:var(--ink); font-weight:600}
+
+.sec{margin:0 0 2rem}
+.sec-head{display:flex; align-items:baseline; gap:.55rem; margin-bottom:.7rem; flex-wrap:wrap}
+.sec-head h2{font-size:1.02rem; font-weight:800; letter-spacing:-.01em}
+.sec-head .note{font-family:var(--f-display); font-size:.72rem; color:var(--ink-3)}
+
+/* milestone rail */
+.rail{list-style:none; margin:0; padding:0; position:relative}
+.rail::before{content:""; position:absolute; left:11px; top:14px; bottom:14px; width:1px; background:var(--rule)}
+.ms{position:relative; padding:0 0 .95rem 2.1rem}
+.ms:last-child{padding-bottom:0}
+.ms .pip{
+  position:absolute; left:4px; top:4px; width:15px; height:15px; border-radius:50%;
+  background:var(--surface); border:2px solid var(--rule-strong);
+}
+.ms.done .pip{background:var(--ok); border-color:var(--ok)}
+.ms.now .pip{background:var(--accent); border-color:var(--accent); box-shadow:0 0 0 4px var(--accent-soft)}
+.ms.hard .pip{border-color:var(--crit); border-width:3px}
+.ms-top{display:flex; align-items:baseline; gap:.5rem; flex-wrap:wrap}
+.ms-id{font-family:var(--f-mono); font-size:.74rem; font-weight:600; color:var(--ink-3)}
+.ms-date{font-family:var(--f-mono); font-size:.74rem; color:var(--ink-2); font-variant-numeric:tabular-nums}
+.ms-title{font-family:var(--f-display); font-weight:600; font-size:.95rem; display:block; margin-top:.1rem}
+.ms.hard .ms-title{color:var(--crit)}
+.ms-note{font-size:.88rem; color:var(--ink-3); display:block; margin-top:.1rem}
+
+/* chips */
+.chip{
+  display:inline-flex; align-items:center; gap:.3rem; font-family:var(--f-display);
+  font-size:.62rem; font-weight:600; letter-spacing:.07em; text-transform:uppercase;
+  padding:.13rem .42rem; border-radius:4px; border:1px solid;
+  background:var(--surface-2); border-color:var(--rule); color:var(--ink-3);
+}
+.chip.ok{background:var(--ok-soft); border-color:var(--ok); color:var(--ok)}
+.chip.warn{background:var(--warn-soft); border-color:var(--warn); color:var(--warn)}
+.chip.crit{background:var(--crit-soft); border-color:var(--crit); color:var(--crit)}
+.chip.acc{background:var(--accent-soft); border-color:var(--accent); color:var(--accent)}
+
+/* cards + checklists */
+.card{
+  background:var(--surface); border:1px solid var(--rule); border-radius:9px;
+  padding:.85rem .9rem; box-shadow:var(--shadow); margin-bottom:.7rem;
+}
+.card-head{display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; margin-bottom:.5rem}
+.card-head h3{font-size:.9rem; font-weight:700}
+.card-head .when{font-family:var(--f-mono); font-size:.72rem; color:var(--ink-3); margin-left:auto; font-variant-numeric:tabular-nums}
+.checks{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:.05rem}
+.checks li{display:flex; gap:.55rem; align-items:flex-start; padding:.28rem 0; border-top:1px solid var(--rule)}
+.checks li:first-child{border-top:0}
+.checks input{
+  appearance:none; flex:none; width:17px; height:17px; margin-top:.24rem; border-radius:4px;
+  border:1.5px solid var(--rule-strong); background:var(--surface-2); cursor:pointer; position:relative;
+}
+.checks input:checked{background:var(--accent); border-color:var(--accent)}
+.checks input:checked::after{
+  content:""; position:absolute; left:5px; top:1px; width:4px; height:9px;
+  border:solid var(--surface); border-width:0 2px 2px 0; transform:rotate(42deg);
+}
+:root[data-theme="dark"] .checks input:checked::after,
+.checks input:checked::after{border-color:var(--paper)}
+.checks input:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+.checks label{font-size:.9rem; color:var(--ink-2); cursor:pointer; line-height:1.45}
+.checks input:checked + label{color:var(--ink-3); text-decoration:line-through; text-decoration-color:var(--rule-strong)}
+
+/* data tables */
+.scroll-x{overflow-x:auto; -webkit-overflow-scrolling:touch}
+table{border-collapse:collapse; width:100%; font-size:.85rem; font-family:var(--f-display)}
+th,td{text-align:left; padding:.42rem .55rem; border-bottom:1px solid var(--rule); vertical-align:top}
+th{
+  font-size:.63rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--ink-3); border-bottom:1px solid var(--rule-strong); white-space:nowrap;
+}
+td.mono,.mono{font-family:var(--f-mono); font-variant-numeric:tabular-nums; white-space:nowrap}
+tbody tr:hover{background:var(--surface-2)}
+
+/* ---------- rendered documents ---------- */
+.doc-nav{
+  background:var(--surface); border:1px solid var(--rule); border-radius:9px;
+  margin-bottom:1.3rem; overflow:hidden;
+}
+.doc-nav summary{
+  cursor:pointer; padding:.6rem .85rem; font-family:var(--f-display); font-weight:600;
+  font-size:.82rem; color:var(--ink-2); list-style:none; display:flex; align-items:center; gap:.5rem;
+}
+.doc-nav summary::-webkit-details-marker{display:none}
+.doc-nav summary::before{content:"▸"; color:var(--accent); font-size:.7rem; transition:transform .15s}
+.doc-nav[open] summary::before{transform:rotate(90deg)}
+.doc-nav ol{margin:0; padding:0 .85rem .7rem 2.2rem; font-family:var(--f-display); font-size:.82rem}
+.doc-nav li{margin:.2rem 0}
+.doc-nav li.sub{list-style:none; margin-left:-.9rem; font-size:.78rem}
+.doc-nav a{color:var(--ink-2); text-decoration:none}
+.doc-nav a:hover{color:var(--accent); text-decoration:underline}
+
+.prose{max-width:var(--measure)}
+.prose > table,.prose .scroll-x{max-width:100%}
+.prose h1{font-size:1.42rem; font-weight:800; letter-spacing:-.02em; margin:0 0 .2rem}
+.prose h2{
+  font-size:1.08rem; font-weight:800; margin:2.2rem 0 .55rem; padding-top:.8rem;
+  border-top:1px solid var(--rule); letter-spacing:-.012em; scroll-margin-top:100px;
+}
+.prose h3{font-size:.96rem; font-weight:700; color:var(--accent); margin:1.5rem 0 .4rem; scroll-margin-top:100px}
+.prose h4{font-size:.88rem; font-weight:700; margin:1.1rem 0 .3rem; color:var(--ink-2)}
+.prose p{margin:0 0 .85rem}
+.prose ul,.prose ol{margin:0 0 .9rem; padding-left:1.25rem}
+.prose li{margin:.22rem 0}
+.prose li::marker{color:var(--ink-3)}
+.prose strong{font-weight:600; color:var(--ink)}
+.prose a{color:var(--accent); text-decoration-thickness:1px; text-underline-offset:2px}
+.prose hr{border:0; border-top:1px solid var(--rule); margin:2rem 0}
+.prose blockquote{
+  margin:1rem 0; padding:.7rem .9rem; background:var(--warn-soft);
+  border-left:3px solid var(--warn); border-radius:0 6px 6px 0; font-size:.94rem;
+}
+.prose blockquote p:last-child{margin-bottom:0}
+.prose code{
+  font-family:var(--f-mono); font-size:.85em; background:var(--surface-2);
+  border:1px solid var(--rule); border-radius:4px; padding:.05em .32em;
+}
+.prose pre{
+  font-family:var(--f-mono); font-size:.72rem; line-height:1.5; background:var(--surface-2);
+  border:1px solid var(--rule); border-radius:8px; padding:.8rem .9rem; margin:1rem 0;
+  overflow-x:auto; -webkit-overflow-scrolling:touch;
+}
+.prose pre code{background:none; border:0; padding:0; font-size:inherit}
+.prose .scroll-x{margin:1rem 0; border:1px solid var(--rule); border-radius:8px; background:var(--surface)}
+.prose .scroll-x table{font-size:.8rem}
+.prose .scroll-x th,.prose .scroll-x td{padding:.45rem .6rem}
+.prose .scroll-x tr:last-child td{border-bottom:0}
+.prose .scroll-x th:first-child,.prose .scroll-x td:first-child{padding-left:.8rem}
+.prose figure{margin:1.4rem 0; padding:0}
+.prose figure svg{display:block; width:100%; height:auto; color:var(--ink-2)}
+.prose figure .fig-frame{
+  border:1px solid var(--rule); border-radius:9px; background:var(--surface);
+  padding:.7rem; overflow-x:auto;
+}
+.prose figcaption{
+  margin-top:.5rem; padding-top:.5rem; border-top:1px solid var(--rule);
+  font-family:var(--f-display); font-size:.76rem; line-height:1.5; color:var(--ink-3);
+}
+.doc-meta{
+  font-family:var(--f-display); font-size:.74rem; color:var(--ink-3);
+  border-bottom:1px solid var(--rule); padding-bottom:.7rem; margin-bottom:1.2rem;
+}
+
+footer{
+  max-width:1080px; margin:0 auto; padding:1.2rem 1rem 2.5rem;
+  border-top:1px solid var(--rule); font-family:var(--f-display);
+  font-size:.74rem; color:var(--ink-3); display:flex; gap:.8rem; flex-wrap:wrap; align-items:center;
+}
+.totop{
+  margin-left:auto; appearance:none; background:var(--surface-2); border:1px solid var(--rule);
+  border-radius:6px; padding:.3rem .6rem; font-family:inherit; font-size:.72rem;
+  font-weight:600; color:var(--ink-2); cursor:pointer;
+}
+.totop:hover{border-color:var(--accent); color:var(--accent)}
+
+@media (min-width:760px){
+  body{font-size:17.5px}
+  .masthead-in{padding:1rem 1.5rem .7rem}
+  .masthead h1{font-size:1.5rem}
+  .tabs-in,main,footer{padding-left:1.5rem; padding-right:1.5rem}
+  main{padding-top:1.6rem}
+  .grid-2{display:grid; grid-template-columns:1fr 1fr; gap:.7rem}
+  .grid-2 .card{margin-bottom:0}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important; animation:none!important}}
+</style>
+
+<header class="masthead">
+  <div class="masthead-in">
+    <div class="eyebrow-row">
+      <div class="eyebrow"><span class="dot"></span>Rhenium Group · SUNU Assurances Vie Burkina Faso</div>
+      <div class="langsw" role="group" aria-label="Document language">
+        <button id="lang-en" aria-pressed="true">EN</button>
+        <button id="lang-fr" aria-pressed="false">FR</button>
+      </div>
+    </div>
+    <h1>Premium Collection on POS <span class="thin">— project dossier</span></h1>
+    <div class="counters" id="counters"></div>
+  </div>
+</header>
+
+<nav class="tabs" role="tablist" aria-label="Sections">
+  <div class="tabs-in">
+    <button class="tab" role="tab" id="tab-status" aria-controls="panel-status" aria-selected="true">Status</button>
+    <button class="tab" role="tab" id="tab-doc1" aria-controls="panel-doc1" aria-selected="false">1 · Architecture</button>
+    <button class="tab" role="tab" id="tab-doc2" aria-controls="panel-doc2" aria-selected="false">2 · Security</button>
+    <button class="tab" role="tab" id="tab-doc3" aria-controls="panel-doc3" aria-selected="false">3 · User Guide</button>
+    <button class="tab" role="tab" id="tab-doc4" aria-controls="panel-doc4" aria-selected="false">4 · Plan</button>
+  </div>
+</nav>
+
+<main>
+  <section class="panel" id="panel-status" role="tabpanel" aria-labelledby="tab-status"></section>
+
+  <section class="panel" id="panel-doc1" role="tabpanel" aria-labelledby="tab-doc1" hidden></section>
+  <section class="panel" id="panel-doc2" role="tabpanel" aria-labelledby="tab-doc2" hidden></section>
+  <section class="panel" id="panel-doc3" role="tabpanel" aria-labelledby="tab-doc3" hidden></section>
+  <section class="panel" id="panel-doc4" role="tabpanel" aria-labelledby="tab-doc4" hidden></section>
+</main>
+
+<footer>
+  <span id="footnote">Prepared by Rhenium Group Ltd. · v1.0 draft · 31 August 2026</span>
+  <button class="totop" id="totop">Back to top</button>
+</footer>
+
+<script type="text/plain" id="src-doc1-en">__DOC1__</script>
+<script type="text/plain" id="src-doc2-en">__DOC2__</script>
+<script type="text/plain" id="src-doc3-en">__DOC3__</script>
+<script type="text/plain" id="src-doc4-en">__DOC4__</script>
+<script type="text/plain" id="src-doc1-fr">__DOC1FR__</script>
+<script type="text/plain" id="src-doc2-fr">__DOC2FR__</script>
+<script type="text/plain" id="src-doc3-fr">__DOC3FR__</script>
+<script type="text/plain" id="src-doc4-fr">__DOC4FR__</script>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------- persistence (per-viewer convenience only) ---------- */
+var KEY="sunu-tpe-checks-v1";
+function loadChecks(){try{return JSON.parse(localStorage.getItem(KEY))||{}}catch(e){return{}}}
+function saveChecks(o){try{localStorage.setItem(KEY,JSON.stringify(o))}catch(e){}}
+var checks=loadChecks();
+
+/* ---------- dates ---------- */
+function d(s){return new Date(s+"T00:00:00")}
+function daysTo(t){return Math.ceil((t-new Date().setHours(0,0,0,0))/86400000)}
+
+/* ---------- bilingual content ---------- */
+var DATA={
+en:{
+ loc:"en-GB",
+ lede:'Four documents answering SUNU’s Terms of Reference of 12 August 2026 and the requirements e-mail of 21 August. <strong>The pilot must be live in the field on 30 September</strong>, presented to General Management on 1 October, and in production by early November. Tick items as they close — your marks are saved on this device.',
+ counters:[["Pilot live","2026-09-30"],["Mgmt meeting","2026-10-01"],["Production","2026-11-02"]],
+ day:"day", days:"days", today:"today", past:"passed",
+ heads:{ms:["Milestones","red ring = SUNU hard requirement"],
+        gates:["Gates","every box must be true to pass"],
+        deps:["Waiting on SUNU","dated dependencies — Doc 4 §6"],
+        ops:["Decisions outstanding","Doc 1 §12.2"],
+        risks:["What threatens the date","Doc 4 §7"],
+        hard:["Security items blocking go-live","Doc 2 §12"],
+        del:["Deliverables",""]},
+ th:{deps:["#","Dependency","Due","Owner","Blocks"],
+     ops:["#","Open point","Needed","If unresolved"],
+     del:["#","Deliverable","Due","State"]},
+ chip:{done:"delivered",next:"next up",hard:"hard date",pending:"pending",blocking:"blocking",
+       delivered:"EN delivered"},
+ totop:"Back to top",
+ foot:"Prepared by Rhenium Group Ltd. · v1.0 draft · 31 August 2026",
+ ms:[["M0","31 Aug 2026","Documentation delivered for SUNU review","Architecture, security, user guide, deployment plan — English and French","done"],
+     ["M1","14 Sep 2026","UAT environment open to SUNU","Prerequisite for acceptance testing and training","next"],
+     ["M2","25 Sep 2026","UAT completed and signed","18 acceptance scenarios executed by SUNU",""],
+     ["M3","30 Sep 2026","Initial deployment — pilot live in the field","15 collectors, real transactions","hard"],
+     ["M4","01 Oct 2026","Presentation to SUNU General Management","Live demonstration; SUNULIFE access decided at this meeting","hard"],
+     ["M5","1–31 Oct 2026","Pilot operation, Mobile Money, QR card, hardening","SUNULIFE Phase 1 if the API is available",""],
+     ["M6","28 Oct 2026","Production go / no-go","Three clean reconciliation weeks required",""],
+     ["M7","early Nov 2026","Effective production launch","Progressive extension of the collector population","hard"]],
+ gates:[["G1","06 Sep","Decisions and procurement",
+   ["Hosting decided and environments provisioned (OP-5)","Card technology decided — magnetic or contactless (OP-3)","Mobile Money route decided, onboarding started (OP-4)","Hardware ordered: 15 terminals, 5 000 cards, personalisation station","SUNULIFE questionnaire sent to the editor"]],
+  ["G2","13 Sep","Core build demonstrable",
+   ["End-to-end flow works: subscribe → collect → receipt → back office → export","Phase 0 customer and policy extract received from SUNU","Security items H-1, H-2, H-3, H-4, H-6 implemented","Products, tariffs, caps and receipt templates configured"]],
+  ["G3","20 Sep","UAT and training complete",
+   ["No blocking defect open","15 terminals received, hardened, registered and assigned","Personalisation station installed and tested end to end","All six profiles trained","Vulnerability scan run"]],
+  ["G4","27 Sep","Pilot GO / NO-GO",
+   ["UAT signed by SUNU","Security checklist signed — H-1, H-4, H-6 closed","Production environment live, backup running, restore tested","Phase 0 data loaded and validated by SUNU","Collector briefings signed","Support contacts published, rollback documented"]],
+  ["M6","28 Oct","Production GO / NO-GO",
+   ["Pilot ran 3 weeks with no critical incident","All hardening items closed","Mobile Money in production or formally deferred by SUNU","SUNULIFE Phase 1 live, or file fallback accepted and operating","Reconciliation clean 3 consecutive weeks","French documentation delivered","Second restore test passed"]]],
+ deps:[["D1","Hosting decision and environment provisioning","2026-09-05","SUNU IT","M1, then everything"],
+  ["D2","Card technology decision","2026-09-08","SUNU Ops","Card order, M3"],
+  ["D3","Mobile Money route, onboarding started","2026-09-08","SUNU Finance","MoMo in Oct, M7"],
+  ["D4","Hardware ordered — terminals, cards, printer","2026-09-08","SUNU Procurement","M3 — longest lead time"],
+  ["D5","Customer and policy extract (Phase 0 import)","2026-09-10","SUNU IT","SUNULIFE need at pilot"],
+  ["D6","Pilot products, tariffs, policy-cost rules","2026-09-10","SUNU Ops","Configuration, UAT"],
+  ["D7","Receipt content and legal mentions","2026-09-10","SUNU Ops + Legal","Receipt templates"],
+  ["D8","Answers to the SUNULIFE questionnaire","2026-09-15","SUNU IT + editor","SUNULIFE Phase 1"],
+  ["D9","Collector cap amounts","2026-09-15","SUNU Ops","Configuration, UAT"],
+  ["D10","Pay-in bank account and cash office named","2026-09-15","SUNU Finance","Pay-in flow"],
+  ["D11","Named testers available 14–25 Sep","2026-09-14","SUNU","M2"],
+  ["D12","Collectors available for training","2026-09-14","SUNU HR + Ops","M3"],
+  ["D13","Pilot perimeter defined","2026-09-21","SUNU Ops","M3"],
+  ["D14","UAT sign-off","2026-09-25","SUNU","M3"],
+  ["D15","CIL declaration filed","2026-10-30","SUNU (controller)","M7"],
+  ["D16","Data-processing agreement signed","2026-10-30","Both","M7"]],
+ ops:[["OP-1","SUNULIFE API: exists? documented? test access?","15 Sep","Phase 1 impossible; file fallback applies"],
+  ["OP-2","Customer/policy extract for Phase 0 import","10 Sep","Agents cannot see existing customers at the pilot"],
+  ["OP-3","Card technology: magnetic stripe or contactless","08 Sep","Card lead time; multi-policy capability; clone resistance"],
+  ["OP-4","Mobile Money: aggregator or direct; merchant account holder","08 Sep","Longest external lead time before November"],
+  ["OP-5","Hosting location and who provides it","05 Sep","Blocks UAT, therefore everything"],
+  ["OP-6","Collector cap amounts, uniform or per collector","15 Sep","Configuration and UAT scenarios"],
+  ["OP-7","Pilot product list, premium and policy-cost rules","10 Sep","Product catalogue"],
+  ["OP-8","Receipt content and Burkina legal mentions","10 Sep","Receipt templates, printer testing"],
+  ["OP-9","Biometric identification of the insured wanted?","01 Oct","Scope and CIL declaration"],
+  ["OP-10","Bank accounts and cash offices for pay-ins","15 Sep","Pay-in configuration"]],
+ risks:[["R1","Hardware not delivered for 30 September","high","Order in week 1. Fallback: pilot on fewer terminals — even 5 — to hold the date on real transactions.","SUNU"],
+  ["R11","Scope expansion during September","high","Scope frozen at G1. Additions are scheduled for October, never absorbed silently into the pilot.","Both"],
+  ["R5","SUNU staff unavailable for UAT or training","high","Name the participants in week 1. Training material ready in advance.","SUNU"],
+  ["R3","Mobile Money onboarding runs long","medium","Start immediately; aggregator is the faster route. Threatens November, not September.","SUNU"],
+  ["R2","SUNULIFE API unavailable or undocumented","medium","Phase 0 extract import plus the Excel export already meet the need. The pilot date does not depend on it.","Both"],
+  ["R10","Hosting decision late","medium","Fallback: temporary Rhenium-provided hosting for UAT so nothing is blocked.","Both"],
+  ["R8","Magnetic cards ordered, then cannot hold the multi-policy payload","medium","Contactless recommended in Doc 1 §7.2. Decide before ordering.","SUNU"]],
+ harden:[["H-1","Transport security","blocking","POS default URL is plaintext HTTP and the API accepts it. Enforce HTTPS end to end, pin the certificate, enable HSTS.","before UAT"],
+  ["H-4","Mobile cryptography","blocking","A hardcoded AES key ships inside the APK, in ECB mode. Replace with per-device keys in the Android keystore, AES-GCM, and server-side PIN verification.","before pilot"],
+  ["H-6","Plaintext logging switch","blocking","A flag can log one-time codes in clear. Disable and remove it from the production configuration.","before UAT"],
+  ["H-2","Collector session token","","Login returns no bounded token. Issue short-lived, revocable per-agent tokens.","before pilot"],
+  ["H-3","API rate limiting","","API routes are unthrottled. Add limits per key, per agent and per IP.","before pilot"],
+  ["H-5","MFA for privileged profiles","","Back-office login is single-factor. Require TOTP or SMS for Administrator and IT.","before production"],
+  ["H-7","API key lookup","","Verification iterates every active key. Index on a key prefix, then one constant-time comparison.","before production"],
+  ["H-8","Security headers","","CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy.","before production"],
+  ["H-9","Secrets management","","Restrict permissions, exclude from the repository, document rotation.","before production"],
+  ["H-10","Dependency and patch management","","Monthly vulnerability scan; critical fixes inside 7 days.","from go-live"]],
+ delivs:[["L1","Doc 1 — Technical Architecture","31 Aug EN / FR","done"],
+  ["L2","Doc 2 — Security","31 Aug EN / FR","done"],
+  ["L3","Doc 3 — User Guide","31 Aug EN / FR","done"],
+  ["L4","Doc 4 — Deployment Plan","31 Aug EN / FR","done"],
+  ["L5","UAT environment","14 Sep",""],
+  ["L6","Customised POS application (APK)","14 Sep UAT / 28 Sep prod",""],
+  ["L7","Customised back-office platform","14 Sep UAT / 28 Sep prod",""],
+  ["L8","UAT test book and results","25 Sep",""],
+  ["L9","Signed security checklist","27 Sep",""],
+  ["L10","Training material and pocket cards","14 Sep",""],
+  ["L11","Operating procedures","27 Sep",""],
+  ["L12","Pilot assessment report","26 Oct",""],
+  ["L13","Production handover file","November",""]]
+},
+fr:{
+ loc:"fr-FR",
+ lede:'Quatre documents répondant aux Termes de Référence de SUNU du 12 août 2026 et au courriel d’exigences du 21 août. <strong>Le pilote doit être en service sur le terrain le 30 septembre</strong>, présenté à la Direction Générale le 1er octobre, et en production début novembre. Cochez les points à mesure qu’ils se clôturent — vos coches sont enregistrées sur cet appareil.',
+ counters:[["Pilote en service","2026-09-30"],["Réunion direction","2026-10-01"],["Production","2026-11-02"]],
+ day:"jour", days:"jours", today:"aujourd’hui", past:"passé",
+ heads:{ms:["Jalons","anneau rouge = exigence ferme de SUNU"],
+        gates:["Points de passage","chaque case doit être vraie pour franchir"],
+        deps:["En attente de SUNU","dépendances datées — Doc 4 §6"],
+        ops:["Décisions en attente","Doc 1 §12.2"],
+        risks:["Ce qui menace l’échéance","Doc 4 §7"],
+        hard:["Points de sécurité bloquant la mise en service","Doc 2 §12"],
+        del:["Livrables",""]},
+ th:{deps:["#","Dépendance","Échéance","Responsable","Bloque"],
+     ops:["#","Point ouvert","Attendu","Si non tranché"],
+     del:["#","Livrable","Échéance","État"]},
+ chip:{done:"livré",next:"à suivre",hard:"date ferme",pending:"à venir",blocking:"bloquant",
+       delivered:"livré"},
+ totop:"Haut de page",
+ foot:"Établi par Rhenium Group Ltd. · v1.0 projet · 31 août 2026",
+ ms:[["M0","31 août 2026","Documentation remise à SUNU pour revue","Architecture, sécurité, guide utilisateur, plan de déploiement — français et anglais","done"],
+     ["M1","14 sept. 2026","Environnement de recette ouvert à SUNU","Prérequis des tests de réception et de la formation","next"],
+     ["M2","25 sept. 2026","Recette achevée et signée","18 scénarios de réception exécutés par SUNU",""],
+     ["M3","30 sept. 2026","Déploiement initial — pilote en service sur le terrain","15 collecteurs, transactions réelles","hard"],
+     ["M4","01 oct. 2026","Présentation à la Direction Générale de SUNU","Démonstration en direct ; accès SUNULIFE tranché lors de cette réunion","hard"],
+     ["M5","1–31 oct. 2026","Exploitation du pilote, Mobile Money, carte QR, durcissement","SUNULIFE phase 1 si l’API est disponible",""],
+     ["M6","28 oct. 2026","Go / no-go de production","Trois semaines de rapprochement conforme requises",""],
+     ["M7","début nov. 2026","Lancement effectif en production","Extension progressive de la population de collecteurs","hard"]],
+ gates:[["G1","06 sept.","Décisions et achats",
+   ["Hébergement tranché et environnements mis à disposition (OP-5)","Technologie de carte tranchée — magnétique ou sans contact (OP-3)","Voie Mobile Money tranchée, enrôlement démarré (OP-4)","Matériel commandé : 15 terminaux, 5 000 cartes, station de personnalisation","Questionnaire SUNULIFE transmis à l’éditeur"]],
+  ["G2","13 sept.","Construction du cœur démontrable",
+   ["Parcours de bout en bout : souscrire → encaisser → reçu → back-office → export","Extraction clients et polices de phase 0 reçue de SUNU","Points de sécurité H-1, H-2, H-3, H-4, H-6 implémentés","Produits, tarifs, plafonds et modèles de reçus paramétrés"]],
+  ["G3","20 sept.","Recette et formation achevées",
+   ["Aucune anomalie bloquante ouverte","15 terminaux reçus, durcis, enregistrés et affectés","Station de personnalisation installée et testée de bout en bout","Les six profils formés","Analyse de vulnérabilité effectuée"]],
+  ["G4","27 sept.","GO / NO-GO du pilote",
+   ["Recette signée par SUNU","Liste de contrôle sécurité signée — H-1, H-4, H-6 clôturés","Environnement de production en service, sauvegarde active, restauration testée","Données de phase 0 chargées et validées par SUNU","Briefings des collecteurs signés","Contacts de support publiés, retour arrière documenté"]],
+  ["M6","28 oct.","GO / NO-GO de production",
+   ["Pilote exploité 3 semaines sans incident critique","Tous les points de durcissement clôturés","Mobile Money en production ou formellement reporté par SUNU","SUNULIFE phase 1 en service, ou repli fichier accepté et opérationnel","Rapprochement conforme 3 semaines consécutives","Documentation française livrée","Second test de restauration réussi"]]],
+ deps:[["D1","Décision d’hébergement et mise à disposition des environnements","2026-09-05","DSI SUNU","M1, donc tout le reste"],
+  ["D2","Décision sur la technologie de carte","2026-09-08","Opérations SUNU","Commande des cartes, M3"],
+  ["D3","Voie Mobile Money, enrôlement démarré","2026-09-08","Finance SUNU","MoMo en oct., M7"],
+  ["D4","Matériel commandé — terminaux, cartes, imprimante","2026-09-08","Achats SUNU","M3 — le plus long délai"],
+  ["D5","Extraction clients et polices (import phase 0)","2026-09-10","DSI SUNU","Exigence SUNULIFE au pilote"],
+  ["D6","Produits du pilote, tarifs, règles de frais de police","2026-09-10","Opérations SUNU","Paramétrage, recette"],
+  ["D7","Contenu du reçu et mentions légales","2026-09-10","Opérations + Juridique","Modèles de reçus"],
+  ["D8","Réponses au questionnaire SUNULIFE","2026-09-15","DSI SUNU + éditeur","SUNULIFE phase 1"],
+  ["D9","Montants des plafonds des collecteurs","2026-09-15","Opérations SUNU","Paramétrage, recette"],
+  ["D10","Compte bancaire et caisse de versement désignés","2026-09-15","Finance SUNU","Flux de versement"],
+  ["D11","Testeurs nommés disponibles 14–25 sept.","2026-09-14","SUNU","M2"],
+  ["D12","Collecteurs disponibles pour la formation","2026-09-14","RH + Opérations","M3"],
+  ["D13","Périmètre du pilote défini","2026-09-21","Opérations SUNU","M3"],
+  ["D14","Signature de la recette","2026-09-25","SUNU","M3"],
+  ["D15","Déclaration CIL effectuée","2026-10-30","SUNU (responsable)","M7"],
+  ["D16","Contrat de sous-traitance signé","2026-10-30","Les deux","M7"]],
+ ops:[["OP-1","API SUNULIFE : existe ? documentée ? accès de test ?","15 sept.","Phase 1 impossible ; repli par fichiers"],
+  ["OP-2","Extraction clients/polices pour l’import phase 0","10 sept.","Les agents ne verraient pas les clients existants au pilote"],
+  ["OP-3","Technologie de carte : piste magnétique ou sans contact","08 sept.","Délai carte ; capacité multi-polices ; résistance au clonage"],
+  ["OP-4","Mobile Money : agrégateur ou direct ; détenteur du compte marchand","08 sept.","Le plus long délai externe avant novembre"],
+  ["OP-5","Lieu d’hébergement et fournisseur","05 sept.","Bloque la recette, donc tout le reste"],
+  ["OP-6","Montants des plafonds, uniformes ou par collecteur","15 sept.","Paramétrage et scénarios de recette"],
+  ["OP-7","Liste des produits du pilote, règles de prime et de frais","10 sept.","Catalogue produits"],
+  ["OP-8","Contenu du reçu et mentions légales burkinabè","10 sept.","Modèles de reçus, tests d’impression"],
+  ["OP-9","Identification biométrique de l’assuré souhaitée ?","01 oct.","Périmètre et déclaration CIL"],
+  ["OP-10","Comptes bancaires et caisses pour les versements","15 sept.","Paramétrage des versements"]],
+ risks:[["R1","Matériel non livré pour le 30 septembre","élevé","Commander en semaine 1. Repli : pilote sur moins de terminaux — même 5 — pour tenir la date sur des transactions réelles.","SUNU"],
+  ["R11","Élargissement du périmètre en septembre","élevé","Périmètre gelé à G1. Les ajouts sont planifiés pour octobre, jamais absorbés silencieusement dans le pilote.","Les deux"],
+  ["R5","Personnel SUNU indisponible pour la recette ou la formation","élevé","Nommer les participants en semaine 1. Supports de formation prêts à l’avance.","SUNU"],
+  ["R3","Enrôlement Mobile Money plus long que prévu","moyen","Démarrer immédiatement ; l’agrégateur est la voie la plus rapide. Menace novembre, pas septembre.","SUNU"],
+  ["R2","API SUNULIFE indisponible ou non documentée","moyen","L’import d’extraction de phase 0 et l’export Excel répondent déjà au besoin. La date du pilote n’en dépend pas.","Les deux"],
+  ["R10","Décision d’hébergement tardive","moyen","Repli : hébergement temporaire fourni par Rhenium pour la recette, afin de ne rien bloquer.","Les deux"],
+  ["R8","Cartes magnétiques commandées, puis incapables de porter le multi-polices","moyen","Sans contact recommandé au Doc 1 §7.2. Trancher avant de commander.","SUNU"]],
+ harden:[["H-1","Sécurité du transport","blocking","L’URL par défaut du TPE est en HTTP en clair et l’API l’accepte. Imposer HTTPS de bout en bout, épingler le certificat, activer HSTS.","avant la recette"],
+  ["H-4","Cryptographie mobile","blocking","Une clé AES codée en dur est livrée dans l’APK, en mode ECB. Remplacer par des clés par appareil dans le keystore Android, AES-GCM, et vérification du code côté serveur.","avant le pilote"],
+  ["H-6","Commutateur de journalisation en clair","blocking","Un indicateur peut journaliser les codes à usage unique en clair. Le désactiver et le retirer de la configuration de production.","avant la recette"],
+  ["H-2","Jeton de session du collecteur","","La connexion n’émet aucun jeton borné. Émettre des jetons révocables et de courte durée par agent.","avant le pilote"],
+  ["H-3","Limitation de débit des API","","Les routes d’API ne sont pas limitées. Ajouter des limites par clé, par agent et par IP.","avant le pilote"],
+  ["H-5","MFA pour les profils privilégiés","","La connexion back-office est à facteur unique. Exiger TOTP ou SMS pour Administrateur et DSI.","avant la production"],
+  ["H-7","Recherche de clé d’API","","La vérification parcourt toutes les clés actives. Indexer sur un préfixe, puis une comparaison à temps constant.","avant la production"],
+  ["H-8","En-têtes de sécurité","","CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy.","avant la production"],
+  ["H-9","Gestion des secrets","","Restreindre les permissions, exclure du dépôt, documenter la rotation.","avant la production"],
+  ["H-10","Gestion des dépendances et correctifs","","Analyse mensuelle de vulnérabilité ; correctifs critiques sous 7 jours.","dès la mise en service"]],
+ delivs:[["L1","Doc 1 — Architecture technique","31 août EN / FR","done"],
+  ["L2","Doc 2 — Sécurité","31 août EN / FR","done"],
+  ["L3","Doc 3 — Guide utilisateur","31 août EN / FR","done"],
+  ["L4","Doc 4 — Plan de déploiement","31 août EN / FR","done"],
+  ["L5","Environnement de recette","14 sept.",""],
+  ["L6","Application TPE personnalisée (APK)","14 sept. recette / 28 sept. prod",""],
+  ["L7","Plateforme back-office personnalisée","14 sept. recette / 28 sept. prod",""],
+  ["L8","Cahier de recette et résultats","25 sept.",""],
+  ["L9","Liste de contrôle sécurité signée","27 sept.",""],
+  ["L10","Supports de formation et fiches de poche","14 sept.",""],
+  ["L11","Procédures d’exploitation","27 sept.",""],
+  ["L12","Rapport de bilan du pilote","26 oct.",""],
+  ["L13","Dossier de transfert en production","novembre",""]]
+}};
+
+/* ---------- status view (rebuilt on language change) ---------- */
+function el(tag,cls,html){var e=document.createElement(tag); if(cls)e.className=cls;
+  if(html!==undefined)e.innerHTML=html; return e}
+
+function section(key,L){
+  var s=el("div","sec");
+  var h=el("div","sec-head");
+  h.appendChild(el("h2",null,L.heads[key][0]));
+  if(L.heads[key][1]) h.appendChild(el("span","note",L.heads[key][1]));
+  s.appendChild(h);
+  return s;
+}
+
+function dataTable(headers,rows){
+  var card=el("div","card"); card.style.padding="0"; card.style.overflow="hidden";
+  var wrap=el("div","scroll-x"); var t=document.createElement("table");
+  var thead=document.createElement("thead"); var tr=document.createElement("tr");
+  headers.forEach(function(h){var th=document.createElement("th"); th.textContent=h; tr.appendChild(th)});
+  thead.appendChild(tr); t.appendChild(thead);
+  var tb=document.createElement("tbody");
+  rows.forEach(function(cells){
+    var r=document.createElement("tr");
+    cells.forEach(function(c){var td=document.createElement("td");
+      if(c && c.html!==undefined){td.innerHTML=c.html; if(c.cls)td.className=c.cls}
+      else {td.textContent=c===null?"":c}
+      r.appendChild(td)});
+    tb.appendChild(r)});
+  t.appendChild(tb); wrap.appendChild(t); card.appendChild(wrap);
+  return card;
+}
+
+function buildStatus(lg){
+  var L=DATA[lg], root=document.getElementById("panel-status");
+  root.innerHTML="";
+  function fmt(t){return t.toLocaleDateString(L.loc,{day:"2-digit",month:"short"})}
+
+  /* countdown strip lives in the masthead */
+  var cEl=document.getElementById("counters"); cEl.innerHTML="";
+  L.counters.forEach(function(c){
+    var t=d(c[1]), n=daysTo(t), cls="ctr";
+    if(n<0)cls+=" is-past"; else if(n<=14)cls+=" is-near";
+    var v = n<0 ? L.past : (n===0 ? L.today : n+" "+(n===1?L.day:L.days));
+    cEl.appendChild(el("div",cls,'<span class="lbl">'+c[0]+' · '+fmt(t)+
+      '</span><span class="val">'+v+'</span>'));
+  });
+
+  root.appendChild(el("p","lede",L.lede));
+
+  /* milestones */
+  var s=section("ms",L), rail=el("ol","rail");
+  L.ms.forEach(function(m){
+    var li=el("li","ms"+(m[4]==="done"?" done":"")+(m[4]==="next"?" now":"")+(m[4]==="hard"?" hard":""));
+    var chip = m[4]==="done" ? '<span class="chip ok">'+L.chip.done+'</span>'
+             : m[4]==="next" ? '<span class="chip acc">'+L.chip.next+'</span>'
+             : m[4]==="hard" ? '<span class="chip crit">'+L.chip.hard+'</span>' : "";
+    li.innerHTML='<span class="pip"></span><div class="ms-top"><span class="ms-id">'+m[0]+
+      '</span><span class="ms-date">'+m[1]+'</span>'+chip+
+      '</div><span class="ms-title">'+m[2]+'</span><span class="ms-note">'+m[3]+'</span>';
+    rail.appendChild(li);
+  });
+  s.appendChild(rail); root.appendChild(s);
+
+  /* gates — the checkboxes keep index-based keys so ticks survive a language switch */
+  s=section("gates",L);
+  L.gates.forEach(function(g,gi){
+    var c=el("div","card");
+    var h='<div class="card-head"><span class="chip acc">'+g[0]+'</span><h3>'+g[2]+
+          '</h3><span class="when">'+g[1]+'</span></div><ul class="checks">';
+    g[3].forEach(function(it,i){
+      var k=g[0]+":"+i, on=checks[k]?" checked":"";
+      h+='<li><input type="checkbox" id="'+k+'" data-k="'+k+'"'+on+'><label for="'+k+'">'+it+'</label></li>';
+    });
+    c.innerHTML=h+"</ul>"; s.appendChild(c);
+  });
+  root.appendChild(s);
+
+  /* dependencies */
+  s=section("deps",L);
+  s.appendChild(dataTable(L.th.deps, L.deps.map(function(r){
+    var n=daysTo(d(r[2])), cls = n<0?"crit":(n<=7?"warn":"");
+    return [{html:r[0],cls:"mono"}, r[1],
+            {html:'<span class="chip '+cls+'">'+fmt(d(r[2]))+'</span>',cls:"mono"},
+            r[3], {html:'<span style="color:var(--ink-3)">'+r[4]+'</span>'}];
+  })));
+  root.appendChild(s);
+
+  /* open points */
+  s=section("ops",L);
+  s.appendChild(dataTable(L.th.ops, L.ops.map(function(r){
+    return [{html:r[0],cls:"mono"}, r[1], {html:r[2],cls:"mono"},
+            {html:'<span style="color:var(--ink-3)">'+r[3]+'</span>'}];
+  })));
+  root.appendChild(s);
+
+  /* risks */
+  s=section("risks",L);
+  L.risks.forEach(function(r){
+    var hi = r[2]==="high"||r[2]==="élevé";
+    s.appendChild(el("div","card",
+      '<div class="card-head"><span class="chip '+(hi?"crit":"warn")+'">'+r[2]+'</span>'+
+      '<h3>'+r[1]+'</h3><span class="when">'+r[0]+' · '+r[4]+'</span></div>'+
+      '<p style="margin:0;font-size:.9rem;color:var(--ink-2)">'+r[3]+'</p>'));
+  });
+  root.appendChild(s);
+
+  /* hardening */
+  s=section("hard",L);
+  L.harden.forEach(function(h){
+    var blocking=h[2]==="blocking";
+    s.appendChild(el("div","card",
+      '<div class="card-head"><span class="chip '+(blocking?"crit":"")+'">'+h[0]+'</span>'+
+      '<h3>'+h[1]+'</h3><span class="when">'+(blocking?L.chip.blocking.toUpperCase()+" · ":"")+h[4]+'</span></div>'+
+      '<p style="margin:0;font-size:.9rem;color:var(--ink-2)">'+h[3]+'</p>'));
+  });
+  root.appendChild(s);
+
+  /* deliverables */
+  s=section("del",L);
+  s.appendChild(dataTable(L.th.del, L.delivs.map(function(r){
+    var st = r[3]==="done" ? '<span class="chip ok">'+L.chip.delivered+'</span>'
+                           : '<span class="chip">'+L.chip.pending+'</span>';
+    return [{html:r[0],cls:"mono"}, r[1], {html:r[2],cls:"mono"}, {html:st}];
+  })));
+  root.appendChild(s);
+
+  document.getElementById("totop").textContent=L.totop;
+  document.getElementById("footnote").textContent=L.foot;
+}
+
+/* ---------- checkbox persistence ---------- */
+document.addEventListener("change",function(e){
+  var k=e.target.getAttribute&&e.target.getAttribute("data-k");
+  if(!k)return;
+  if(e.target.checked)checks[k]=1; else delete checks[k];
+  saveChecks(checks);
+});
+
+/* ---------- documents (bilingual, rendered on first view) ---------- */
+marked.setOptions({gfm:true,breaks:false,headerIds:false,mangle:false});
+
+var META={
+ en:[{meta:"Overall and detailed architecture, including the SUNULIFE integration design · answers e-mail \u00a71 and \u00a72"},
+     {meta:"Security architecture, procedures and controls · answers e-mail \u00a72"},
+     {meta:"User guide for all six profiles · answers e-mail \u00a73"},
+     {meta:"Deployment plan and schedule · answers e-mail \u00a75 and \u00a76"}],
+ fr:[{meta:"Architecture globale et d\u00e9taill\u00e9e, y compris l\u2019int\u00e9gration SUNULIFE · r\u00e9pond au courriel \u00a71 et \u00a72"},
+     {meta:"Architecture, proc\u00e9dures et dispositifs de s\u00e9curit\u00e9 · r\u00e9pond au courriel \u00a72"},
+     {meta:"Guide utilisateur pour les six profils · r\u00e9pond au courriel \u00a73"},
+     {meta:"Plan et calendrier de d\u00e9ploiement · r\u00e9pond au courriel \u00a75 et \u00a76"}]
+};
+var TOC_LABEL={en:"Contents",fr:"Sommaire"};
+var TAB_LABEL={
+ en:["Status","1 · Architecture","2 · Security","3 · User Guide","4 · Plan"],
+ fr:["Suivi","1 · Architecture","2 · S\u00e9curit\u00e9","3 · Guide","4 · Plan"]
+};
+
+var LANGKEY="sunu-tpe-lang";
+var lang="en";
+try{var st=localStorage.getItem(LANGKEY); if(st==="fr"||st==="en")lang=st}catch(e){}
+var rendered={};
+
+function renderDoc(n,lg){
+  var key="doc"+n+"-"+lg;
+  if(rendered[key])return;
+  var src=document.getElementById("src-"+key);
+  if(!src)return;
+  var panel=document.getElementById("panel-doc"+n);
+  panel.innerHTML="";
+
+  var meta=document.createElement("div");
+  meta.className="doc-meta"; meta.textContent=META[lg][n-1].meta;
+
+  var nav=document.createElement("details"); nav.className="doc-nav";
+  nav.innerHTML='<summary>'+TOC_LABEL[lg]+'</summary><ol></ol>';
+
+  var body=document.createElement("div"); body.className="prose";
+  body.innerHTML=marked.parse(src.textContent);
+
+  /* wide content scrolls inside its own box so the page never scrolls sideways */
+  Array.prototype.forEach.call(body.querySelectorAll("table"),function(t){
+    var w=document.createElement("div"); w.className="scroll-x";
+    t.parentNode.insertBefore(w,t); w.appendChild(t);
+  });
+
+  var ol=nav.querySelector("ol"), i=0;
+  Array.prototype.forEach.call(body.querySelectorAll("h2,h3"),function(h){
+    var id="d"+n+lg+"-h"+(i++); h.id=id;
+    var li=document.createElement("li");
+    if(h.tagName==="H3")li.className="sub";
+    li.innerHTML='<a href="#'+id+'">'+h.textContent+"</a>";
+    ol.appendChild(li);
+  });
+
+  panel.appendChild(meta); panel.appendChild(nav); panel.appendChild(body);
+  rendered[key]=true;
+}
+
+function setLang(lg){
+  lang=lg;
+  try{localStorage.setItem(LANGKEY,lg)}catch(e){}
+  document.getElementById("lang-en").setAttribute("aria-pressed",lg==="en"?"true":"false");
+  document.getElementById("lang-fr").setAttribute("aria-pressed",lg==="fr"?"true":"false");
+  document.documentElement.lang=lg;
+
+  buildStatus(lg);
+
+  rendered={};
+  for(var n=1;n<=4;n++){
+    document.getElementById("panel-doc"+n).innerHTML="";
+    document.getElementById("tab-doc"+n).textContent=TAB_LABEL[lg][n];
+  }
+  document.getElementById("tab-status").textContent=TAB_LABEL[lg][0];
+
+  var open=document.querySelector('.tab[aria-selected="true"]');
+  if(open && /^tab-doc(\d)$/.test(open.id)) renderDoc(+RegExp.$1,lg);
+}
+
+document.getElementById("lang-en").addEventListener("click",function(){setLang("en")});
+document.getElementById("lang-fr").addEventListener("click",function(){setLang("fr")});
+
+/* ---------- tabs ---------- */
+var tabs=Array.prototype.slice.call(document.querySelectorAll(".tab"));
+function show(id){
+  tabs.forEach(function(t){
+    var on=t.id===id;
+    t.setAttribute("aria-selected",on?"true":"false");
+    document.getElementById(t.getAttribute("aria-controls")).hidden=!on;
+  });
+  window.scrollTo(0,0);
+}
+tabs.forEach(function(t){t.addEventListener("click",function(){
+  if(/^tab-doc(\d)$/.test(t.id)) renderDoc(+RegExp.$1, lang);
+  show(t.id);
+})});
+document.getElementById("totop").addEventListener("click",function(){window.scrollTo({top:0,behavior:"smooth"})});
+
+setLang(lang);
+})();
+</script>

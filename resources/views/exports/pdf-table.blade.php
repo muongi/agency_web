@@ -52,13 +52,14 @@
     <h1>{{ $title }}</h1>
     
     <div class="meta">
-        <div>Exported on: {{ $exportDate }}</div>
+        <div>{{ __('common.export_exported_on') }} {{ $exportDate }}</div>
         @if(!empty($filters))
             <div class="filters">
-                Filters:
+                {{ __('common.export_filters') }}
                 @foreach($filters as $key => $value)
                     @if($value)
-                        <strong>{{ ucfirst(str_replace('_', ' ', $key)) }}:</strong> {{ $value }}@if(!$loop->last), @endif
+                        @php($filterKey = 'common.export_filter_'.$key)
+                        <strong>{{ __($filterKey) !== $filterKey ? __($filterKey) : ucfirst(str_replace('_', ' ', $key)) }}:</strong> {{ $value }}@if(!$loop->last), @endif
                     @endif
                 @endforeach
             </div>
@@ -92,8 +93,8 @@
         </tbody>
     </table>
 
-    <div style="margin-top: 20px; font-size: 8px; color: #666; text-align: center;">
-        Total Records: {{ count($data) }}
+    <div style="margin-top: 20px; font-size: 8px; color: var(--text-muted); text-align: center;">
+        {{ __('common.export_total_records') }} {{ count($data) }}
     </div>
 </body>
 </html>

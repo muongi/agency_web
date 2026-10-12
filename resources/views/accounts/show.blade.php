@@ -5,9 +5,9 @@
 
 @section('content')
 <div class="card">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-        <h1 style="color: var(--accent-color);">{{ __('common.account_details') }}</h1>
-        <div style="display: flex; gap: 10px;">
+    <div class="toolbar">
+        <h1 class="text-accent">{{ __('common.account_details') }}</h1>
+        <div class="btn-row">
             @php
                 $user = auth()->user();
                 $businessUnit = $user->currentBusinessUnit;
@@ -27,32 +27,32 @@
             
             <div style="display: grid; gap: 15px;">
                 <div>
-                    <strong style="color: var(--accent-color);">{{ __('common.account_number') }}:</strong>
+                    <strong class="text-accent">{{ __('common.account_number') }}:</strong>
                     <p style="color: var(--text-primary); margin-top: 5px;"><code style="background: var(--bg-tertiary); padding: 8px 12px; border-radius: 4px; font-size: 16px;">{{ $account->account_number }}</code></p>
                 </div>
 
                 <div>
-                    <strong style="color: var(--accent-color);">{{ __('common.account_type') }}:</strong>
+                    <strong class="text-accent">{{ __('common.account_type') }}:</strong>
                     <p style="color: var(--text-primary); margin-top: 5px; text-transform: capitalize;">{{ $account->account_type }}</p>
                 </div>
 
                 <div>
-                    <strong style="color: var(--accent-color);">{{ __('common.balance') }}:</strong>
+                    <strong class="text-accent">{{ __('common.balance') }}:</strong>
                     <p style="color: var(--text-primary); margin-top: 5px; font-size: 24px; font-weight: bold;">{{ number_format($account->balance, 2) }} {{ $account->currency }}</p>
                 </div>
 
                 <div>
-                    <strong style="color: var(--accent-color);">{{ __('common.currency') }}:</strong>
+                    <strong class="text-accent">{{ __('common.currency') }}:</strong>
                     <p style="color: var(--text-primary); margin-top: 5px;">{{ $account->currency }}</p>
                 </div>
 
                 <div>
-                    <strong style="color: var(--accent-color);">{{ __('common.status') }}:</strong>
+                    <strong class="text-accent">{{ __('common.status') }}:</strong>
                     <p style="color: var(--text-primary); margin-top: 5px;">
                         <span style="text-transform: capitalize; padding: 6px 12px; border-radius: 4px; font-size: 14px; 
                             @if($account->status === 'active') background: var(--success-bg); color: var(--success-text);
                             @elseif($account->status === 'inactive') background: var(--bg-tertiary); color: var(--text-muted);
-                            @elseif($account->status === 'suspended') background: #ff9800; color: white;
+                            @elseif($account->status === 'suspended') background: var(--warning-bg); color: var(--warning-text);
                             @else background: var(--error-bg); color: var(--error-text);
                             @endif">
                             {{ $account->status }}
@@ -61,27 +61,27 @@
                 </div>
 
                 <div>
-                    <strong style="color: var(--accent-color);">{{ __('common.opening_date') }}:</strong>
+                    <strong class="text-accent">{{ __('common.opening_date') }}:</strong>
                     <p style="color: var(--text-primary); margin-top: 5px;">{{ $account->opening_date->format('Y-m-d') }}</p>
                 </div>
 
                 @if($account->closing_date)
                 <div>
-                    <strong style="color: var(--accent-color);">{{ __('common.closing_date') }}:</strong>
+                    <strong class="text-accent">{{ __('common.closing_date') }}:</strong>
                     <p style="color: var(--text-primary); margin-top: 5px;">{{ $account->closing_date->format('Y-m-d') }}</p>
                 </div>
                 @endif
 
                 @if($account->description)
                 <div>
-                    <strong style="color: var(--accent-color);">{{ __('common.description') }}:</strong>
+                    <strong class="text-accent">{{ __('common.description') }}:</strong>
                     <p style="color: var(--text-primary); margin-top: 5px;">{{ $account->description }}</p>
                 </div>
                 @endif
 
                 @if($account->isRequired())
                 <div style="padding: 10px; background: var(--bg-tertiary); border-radius: 4px; border-left: 3px solid var(--accent-color);">
-                    <small style="color: var(--text-muted);">{{ __('common.required_account_note') }}</small>
+                    <small class="muted">{{ __('common.required_account_note') }}</small>
                     <br>
                     <small style="color: var(--text-muted); margin-top: 5px; display: block;">{{ __('common.account_number_cbs_note') }}</small>
                 </div>
@@ -101,38 +101,38 @@
             
             <div style="display: grid; gap: 15px;">
                 <div>
-                    <strong style="color: var(--accent-color);">{{ __('common.name') }}:</strong>
+                    <strong class="text-accent">{{ __('common.name') }}:</strong>
                     <p style="color: var(--text-primary); margin-top: 5px;">{{ $account->accountable->full_name ?? 'N/A' }}</p>
                 </div>
 
                 @if($account->isForClient())
                     @if($account->accountable->email)
                     <div>
-                        <strong style="color: var(--accent-color);">{{ __('common.email') }}:</strong>
+                        <strong class="text-accent">{{ __('common.email') }}:</strong>
                         <p style="color: var(--text-primary); margin-top: 5px;">{{ $account->accountable->email }}</p>
                     </div>
                     @endif
 
                     @if($account->accountable->phone_number)
                     <div>
-                        <strong style="color: var(--accent-color);">{{ __('common.phone_number') }}:</strong>
+                        <strong class="text-accent">{{ __('common.phone_number') }}:</strong>
                         <p style="color: var(--text-primary); margin-top: 5px;">{{ $account->accountable->phone_number }}</p>
                     </div>
                     @endif
                 @else
                     <div>
-                        <strong style="color: var(--accent-color);">{{ __('common.username') }}:</strong>
+                        <strong class="text-accent">{{ __('common.username') }}:</strong>
                         <p style="color: var(--text-primary); margin-top: 5px;">{{ $account->accountable->username ?? 'N/A' }}</p>
                     </div>
 
                     <div>
-                        <strong style="color: var(--accent-color);">{{ __('common.email') }}:</strong>
+                        <strong class="text-accent">{{ __('common.email') }}:</strong>
                         <p style="color: var(--text-primary); margin-top: 5px;">{{ $account->accountable->email ?? 'N/A' }}</p>
                     </div>
 
                     @if($account->accountable->phone_number)
                     <div>
-                        <strong style="color: var(--accent-color);">{{ __('common.phone_number') }}:</strong>
+                        <strong class="text-accent">{{ __('common.phone_number') }}:</strong>
                         <p style="color: var(--text-primary); margin-top: 5px;">{{ $account->accountable->phone_number }}</p>
                     </div>
                     @endif
@@ -140,9 +140,9 @@
 
                 <div style="margin-top: 15px;">
                     @if($account->isForClient())
-                        <a href="{{ route('clients.show', $account->accountable_id) }}" class="btn" style="padding: 8px 16px; font-size: 12px;">{{ __('common.view_client') }}</a>
+                        <a href="{{ route('clients.show', $account->accountable_id) }}" class="btn btn-sm">{{ __('common.view_client') }}</a>
                     @else
-                        <a href="{{ route('agents.show', $account->accountable_id) }}" class="btn" style="padding: 8px 16px; font-size: 12px;">{{ __('common.view_agent') }}</a>
+                        <a href="{{ route('agents.show', $account->accountable_id) }}" class="btn btn-sm">{{ __('common.view_agent') }}</a>
                     @endif
                 </div>
             </div>

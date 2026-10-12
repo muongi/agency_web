@@ -50,14 +50,14 @@
                 <input type="date" name="date_to" id="filter-date-to" class="form-control" value="{{ request('date_to') }}">
             </div>
         </div>
-        <div style="display: flex; gap: 10px;">
+        <div class="btn-row">
             <button type="submit" class="btn">{{ __('common.filter') }}</button>
             <a href="{{ route('business.sms.history') }}" class="btn btn-secondary">{{ __('common.clear') }}</a>
         </div>
     </form>
 
     <!-- SMS History Table -->
-    <div style="overflow-x: auto;">
+    <div class="data-table">
         <table id="sms-history-table" style="width: 100%; border-collapse: collapse;">
             <thead>
                 <tr style="background: var(--bg-tertiary); border-bottom: 2px solid var(--border-color);">
@@ -140,13 +140,13 @@ function loadSmsHistory() {
                             ${message.message_preview}
                             ${message.message.length > 50 ? '<button onclick="showMessageDetails(' + JSON.stringify(message).replace(/"/g, '&quot;') + ')" style="background: none; border: none; color: var(--accent-color); cursor: pointer; text-decoration: underline; margin-left: 5px;">{{ __("common.view_full") }}</button>' : ''}
                         </td>
-                        <td style="padding: 12px;">
+                        <td>
                             <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; background: ${statusColor.bg}; color: ${statusColor.text};">
                                 ${message.status_label}
                             </span>
                         </td>
                         <td style="padding: 12px; color: var(--text-secondary);">${message.sent_by}</td>
-                        <td style="padding: 12px;">
+                        <td>
                             ${message.error_message ? '<button onclick="showErrorDetails(\'' + message.error_message.replace(/'/g, "\\'") + '\')" class="btn btn-secondary" style="padding: 5px 10px; font-size: 12px;">{{ __("common.view_error") }}</button>' : ''}
                         </td>
                     `;
@@ -199,7 +199,7 @@ function showErrorDetails(errorMessage) {
     
     content.innerHTML = `
         <div style="margin-bottom: 15px;">
-            <strong style="color: var(--error-text);">{{ __('common.error_message') }}:</strong>
+            <strong class="text-error">{{ __('common.error_message') }}:</strong>
         </div>
         <div style="padding: 15px; background: var(--error-bg); border-radius: 4px; color: var(--error-text); white-space: pre-wrap;">${errorMessage}</div>
     `;

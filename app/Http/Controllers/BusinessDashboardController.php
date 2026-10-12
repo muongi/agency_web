@@ -28,6 +28,14 @@ class BusinessDashboardController extends Controller
         // Eager load relationships
         $businessUnit->load(['users', 'roles']);
 
+        // SUNU deployment: insurance figures instead of banking transactions
+        if (! config('sunu.core_banking')) {
+            return view('business.sunu.dashboard', [
+                'businessUnit' => $businessUnit,
+                'd' => app(\App\Services\SunuReportService::class)->dashboard($businessUnit->id),
+            ]);
+        }
+
         // Get current month date range
         $startOfMonth = now()->startOfMonth();
         $endOfMonth = now()->endOfMonth();

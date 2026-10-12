@@ -12,7 +12,7 @@
             @csrf
 
             <div class="form-group">
-                <label class="form-label" for="transaction_type_id">{{ __('common.select_transaction_type') }} <span style="color: #ff6b6b;">*</span></label>
+                <label class="form-label" for="transaction_type_id">{{ __('common.select_transaction_type') }} <span class="text-error">*</span></label>
                 <select id="transaction_type_id" name="transaction_type_id" class="form-select" required>
                     <option value="">{{ __('common.select_transaction_type') }}</option>
                     @foreach($assignedTransactionTypes as $transactionType)
@@ -25,25 +25,25 @@
                     {{ __('common.select_from_assigned_types') }}
                 </small>
                 @error('transaction_type_id')
-                    <div style="color: #ff6b6b; margin-top: 5px; font-size: 14px;">{{ $message }}</div>
+                    <div class="field-error">{{ $message }}</div>
                 @enderror
             </div>
 
             <!-- Display selected transaction type details -->
-            <div id="transaction_type_details" style="display: none; margin-top: 20px; padding: 15px; background: #2d2d2d; border-radius: 4px;">
+            <div id="transaction_type_details" style="display: none; margin-top: 20px; padding: 15px; background: var(--bg-secondary); border-radius: 4px;">
                 <h3 style="color: var(--accent-color); margin-bottom: 10px;" id="selected_name"></h3>
                 <p style="margin-bottom: 5px;"><strong>{{ __('common.code') }}:</strong> <code id="selected_code"></code></p>
                 <p id="selected_description" style="margin-top: 10px;"></p>
             </div>
 
-            <div style="display: flex; gap: 10px; margin-top: 30px;">
+            <div class="btn-row mt-30">
                 <button type="submit" class="btn">{{ __('common.add') }}</button>
                 <a href="{{ route('business.config.transaction-types.index') }}" class="btn btn-secondary">{{ __('common.cancel') }}</a>
             </div>
         </form>
     @else
-        <div style="text-align: center; padding: 40px; color: var(--text-muted);">
-            <p style="margin-bottom: 20px;">{{ __('common.no_assigned_transaction_types') }}</p>
+        <div class="muted-center">
+            <p class="mb-20">{{ __('common.no_assigned_transaction_types') }}</p>
             <p style="margin-bottom: 20px; font-size: 14px;">{{ __('common.contact_superadmin_to_assign_types') }}</p>
             <a href="{{ route('business.config.transaction-types.index') }}" class="btn btn-secondary">{{ __('common.back') }}</a>
         </div>

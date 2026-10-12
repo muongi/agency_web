@@ -1,0 +1,22 @@
+# Allow muongi to deploy the Laravel app without a sudo password prompt.
+#
+# One-time install (root SSH disabled — use muongi + interactive sudo):
+#   ./scripts/install-muongi-deploy-sudoers.sh
+#
+# Manual alternative:
+#   scp -P 2223 scripts/muongi-deploy.sudoers muongi@213.136.64.220:/tmp/muongi-deploy.sudoers
+#   ssh -tt -p 2223 muongi@213.136.64.220
+#   sudo visudo -cf /tmp/muongi-deploy.sudoers
+#   sudo cp /tmp/muongi-deploy.sudoers /etc/sudoers.d/muongi-deploy
+#   sudo chmod 440 /etc/sudoers.d/muongi-deploy
+#
+# Verify (must print OK, no password prompt):
+#   ssh -p 2223 muongi@213.136.64.220 'sudo -n chown -R muongi:apache /var/www/html/agency/ && echo OK'
+#
+# If php is not /usr/bin/php: ssh -tt -p 2223 muongi@213.136.64.220 'sudo which php'
+
+muongi ALL=(root) NOPASSWD: /usr/bin/chown -R muongi\:apache /var/www/html/agency/
+muongi ALL=(root) NOPASSWD: /usr/bin/chown -R apache\:apache /var/www/html/agency/
+muongi ALL=(root) NOPASSWD: /usr/bin/chmod -R g+w /var/www/html/agency/
+muongi ALL=(apache) NOPASSWD: /usr/bin/php
+muongi ALL=(root) NOPASSWD: /usr/bin/systemctl restart php-fpm

@@ -43,6 +43,7 @@ class Kernel extends HttpKernel
             // \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
             'throttle:api',
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            \App\Http\Middleware\LogDeviceSerial::class,
         ],
     ];
 
@@ -66,10 +67,12 @@ class Kernel extends HttpKernel
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'superadmin' => \App\Http\Middleware\SuperAdmin::class,
         'business.access' => \App\Http\Middleware\BusinessAccess::class,
+        'core.banking' => \App\Http\Middleware\EnsureCoreBanking::class,
         'api.key' => \App\Http\Middleware\ApiKeyAuth::class,
         'log.card.api' => \App\Http\Middleware\LogCardApiRequest::class,
         'log.transaction.api' => \App\Http\Middleware\LogTransactionApiRequest::class,
         'log.otp.api' => \App\Http\Middleware\LogOtpApiRequest::class,
         'cnss.member.search' => \App\Http\Middleware\CnssMemberSearchAuth::class,
+        'cnss.module' => \App\Http\Middleware\EnsureCnssModuleEnabled::class,
     ];
 }

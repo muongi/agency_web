@@ -20,8 +20,8 @@
         </div>
     </div>
 @else
-<div class="card" style="margin-bottom: 20px;">
-    <div style="margin-bottom: 20px;">
+<div class="card mb-20">
+    <div class="mb-20">
         <h1 style="color: var(--accent-color); margin: 0 0 8px 0;">{{ __('common.cnss_dashboard') }}</h1>
         <p style="color: var(--text-muted); margin: 0;">
             {{ __('common.cnss_dashboard_scope_note') }}
@@ -54,8 +54,8 @@
             @if($topContributors->isEmpty())
                 <p style="color: var(--text-muted); margin: 0;">{{ __('common.cnss_no_contributors_ranked') }}</p>
             @else
-                <div style="overflow-x: auto;">
-                    <table style="width: 100%; border-collapse: collapse;">
+                <div class="data-table">
+                    <table>
                         <thead>
                             <tr style="border-bottom: 2px solid var(--border-color);">
                                 <th style="padding: 10px; text-align: left; color: var(--accent-color);">{{ __('common.cnss_member') }}</th>
@@ -93,8 +93,8 @@
             @if($topAgents->isEmpty())
                 <p style="color: var(--text-muted); margin: 0;">{{ __('common.cnss_no_agents_ranked') }}</p>
             @else
-                <div style="overflow-x: auto;">
-                    <table style="width: 100%; border-collapse: collapse;">
+                <div class="data-table">
+                    <table>
                         <thead>
                             <tr style="border-bottom: 2px solid var(--border-color);">
                                 <th style="padding: 10px; text-align: left; color: var(--accent-color);">{{ __('common.agent') }}</th>

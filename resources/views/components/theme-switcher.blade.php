@@ -6,9 +6,9 @@
     <input type="hidden" name="theme" value="{{ $currentTheme === 'dark' ? 'light' : 'dark' }}">
     <button type="submit" class="theme-toggle-btn" title="{{ $currentTheme === 'dark' ? __('common.switch_to_light') : __('common.switch_to_dark') }}">
         @if($currentTheme === 'dark')
-            <span style="font-size: 18px;">☀️</span>
+            <x-icon name="sun" :size="18" />
         @else
-            <span style="font-size: 18px;">🌙</span>
+            <x-icon name="moon" :size="18" />
         @endif
     </button>
 </form>

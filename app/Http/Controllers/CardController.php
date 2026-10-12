@@ -8,19 +8,24 @@ use App\Models\Account;
 use App\Models\CardSettings;
 use App\Services\CardNumberGeneratorService;
 use App\Services\ExportService;
+use App\Services\SunuSubscriptionService;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 class CardController extends Controller
 {
     protected $exportService;
+    protected $subscriptions;
 
-    public function __construct(ExportService $exportService)
+    public function __construct(ExportService $exportService, SunuSubscriptionService $subscriptions)
     {
         $this->middleware(['auth', 'business.access'])
             ->except(['getByUid', 'markAsWritten']);
         $this->exportService = $exportService;
+        $this->subscriptions = $subscriptions;
     }
 
     /**
@@ -41,37 +46,15 @@ class CardController extends Controller
         }
 
         $query = Card::where('business_unit_id', $businessUnit->id)
-            ->with(['account.accountable', 'replacedByCard']);
+            ->with(['replacedByCard', 'sunuPolicies.client', 'sunuPolicies.product', 'sunuProposals.client', 'sunuProposals.product']);
 
-        // Filters
-        if ($request->filled('card_number')) {
-            $query->where('card_number', 'like', '%' . $request->card_number . '%');
-        }
+        $this->applyIndexFilters($query, $request);
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
+        $cards = $query->latest()->paginate(15)->withQueryString();
 
-        if ($request->filled('account_id')) {
-            $query->where('account_id', $request->account_id);
-        }
+        $clients = $this->subscriptions->registeredClients($businessUnit->id);
 
-        if ($request->filled('client_id')) {
-            $query->whereHas('account', function($q) use ($request) {
-                $q->where('accountable_type', \App\Models\Client::class)
-                  ->where('accountable_id', $request->client_id);
-            });
-        }
-
-        $cards = $query->latest()->paginate(15);
-        
-        // Get accounts for filter dropdown
-        $accounts = Account::where('business_unit_id', $businessUnit->id)
-            ->where('accountable_type', \App\Models\Client::class)
-            ->with('accountable')
-            ->get();
-
-        return view('cards.index', compact('cards', 'accounts', 'businessUnit'));
+        return view('cards.index', compact('cards', 'clients', 'businessUnit'));
     }
 
     /**
@@ -91,20 +74,12 @@ class CardController extends Controller
             abort(403, __('common.unauthorized_access'));
         }
 
-        // Get card settings
-        $cardSettings = CardSettings::getOrCreateForBusinessUnit($businessUnit->id);
-        
-        // Get client accounts for dropdown
-        $accounts = Account::where('business_unit_id', $businessUnit->id)
-            ->where('accountable_type', \App\Models\Client::class)
-            ->where('status', 'active')
-            ->with('accountable')
-            ->get();
+        // SUNU: cards are issued to registered customers (policy or pending proposal), not accounts
+        $clients = $this->subscriptions->registeredClients($businessUnit->id);
+        $stockUids = $this->stockCards($businessUnit->id)->pluck('card_serial');
+        $prefillUid = $this->subscriptions->normalizeUid(request('uid'));
 
-        // Preview next card number
-        $nextCardNumber = CardNumberGeneratorService::previewNext($businessUnit->id);
-
-        return view('cards.create', compact('accounts', 'cardSettings', 'nextCardNumber', 'businessUnit'));
+        return view('cards.create', compact('clients', 'businessUnit', 'stockUids', 'prefillUid'));
     }
 
     /**
@@ -125,56 +100,56 @@ class CardController extends Controller
         }
 
         $validated = $request->validate([
-            'account_id' => 'required|exists:accounts,id',
-            'card_serial' => 'nullable|string|max:32|unique:cards,card_serial',
-            'expiration_date' => 'nullable|date|after:today',
-            'daily_transaction_limit' => 'nullable|numeric|min:0',
-            'daily_withdrawal_limit' => 'nullable|numeric|min:0',
-            'pin' => 'nullable|string|min:4|max:6',
+            'client_id' => [
+                'required', 'integer',
+                Rule::exists('clients', 'id')->where('business_unit_id', $businessUnit->id),
+            ],
+            'card_uid' => ['required', 'string', 'max:64', 'regex:/^[0-9A-Fa-f:\-\s]+$/'],
             'description' => 'nullable|string|max:500',
         ]);
 
-        // Verify account belongs to business unit
-        $account = Account::where('id', $validated['account_id'])
-            ->where('business_unit_id', $businessUnit->id)
-            ->firstOrFail();
-
-        // Get card settings
-        $cardSettings = CardSettings::getOrCreateForBusinessUnit($businessUnit->id);
-
-        // Generate card number
-        try {
-            $cardNumber = CardNumberGeneratorService::generate($businessUnit->id);
-        } catch (\Exception $e) {
+        $uid = $this->subscriptions->normalizeUid($validated['card_uid']);
+        if ($uid === null) {
             return redirect()->back()
                 ->withInput()
-                ->with('error', $e->getMessage());
+                ->withErrors(['card_uid' => __('common.sunu_card_uid_invalid')]);
         }
 
-        // Set expiration date if not provided
-        $expirationDate = $validated['expiration_date'] ?? $cardSettings->getDefaultExpirationDate();
+        $found = $this->subscriptions->forClient($businessUnit->id, (int) $validated['client_id']);
+        if ($found['policies']->isEmpty() && $found['proposals']->isEmpty()) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', __('common.sunu_card_client_no_subscription'));
+        }
 
-        // Set limits from defaults if not provided
-        $dailyTransactionLimit = $validated['daily_transaction_limit'] ?? $cardSettings->default_daily_transaction_limit;
-        $dailyWithdrawalLimit = $validated['daily_withdrawal_limit'] ?? $cardSettings->default_daily_withdrawal_limit;
+        // Reuses the card if the UID already exists in this BU; refuses another customer's card
+        try {
+            $card = $this->subscriptions->linkCardToAll($businessUnit->id, $uid, $found);
+        } catch (\InvalidArgumentException $e) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', __('common.sunu_flash_card_link_conflict') . ' ' . $e->getMessage());
+        }
 
-        // Create card
-        $card = Card::create([
-            'business_unit_id' => $businessUnit->id,
-            'account_id' => $validated['account_id'],
-            'card_number' => $cardNumber,
-            'card_serial' => $validated['card_serial'] ?? null,
-            'prefix' => $cardSettings->card_prefix,
-            'status' => 'inactive',
-            'expiration_date' => $expirationDate,
-            'daily_transaction_limit' => $dailyTransactionLimit,
-            'daily_withdrawal_limit' => $dailyWithdrawalLimit,
-            'pin_hash' => $validated['pin'] ? Hash::make($validated['pin']) : null,
-            'description' => $validated['description'] ?? null,
+        if ($card->status === 'unassigned') {
+            $card->status = 'active';
+            $card->activated_at = now();
+        }
+        if (! empty($validated['description'])) {
+            $card->description = $validated['description'];
+        }
+        $card->save();
+
+        Log::info('SUNU_CARD_WEB_ASSIGN', [
+            'card_id' => $card->id,
+            'card_uid' => $card->card_serial,
+            'client_id' => (int) $validated['client_id'],
+            'count' => $found['policies']->count() + $found['proposals']->count(),
+            'user_id' => auth()->id(),
         ]);
 
         return redirect()->route('cards.show', $card->id)
-            ->with('success', __('common.card_created_successfully'));
+            ->with('success', __('common.sunu_flash_card_linked', ['uid' => $card->card_serial ?? $card->card_number]));
     }
 
     /**
@@ -195,10 +170,13 @@ class CardController extends Controller
         }
 
         $card = Card::where('business_unit_id', $businessUnit->id)
-            ->with(['account.accountable', 'replacedByCard', 'replacedCard'])
+            ->with(['replacedByCard', 'replacedCard', 'sunuPolicies.client', 'sunuProposals.client'])
             ->findOrFail($id);
 
-        return view('cards.show', compact('card', 'businessUnit'));
+        // Everything the TPE shows for this card (all payable policies + pending proposals of the customer)
+        $subscriptions = $this->subscriptions->forCard($businessUnit->id, $card);
+
+        return view('cards.show', compact('card', 'businessUnit', 'subscriptions'));
     }
 
     /**
@@ -455,6 +433,29 @@ class CardController extends Controller
             ->with('success', __('common.card_replaced_successfully'));
     }
 
+    /** Card list filters shared by index and export: number/UID, status, SUNU client. */
+    protected function applyIndexFilters($query, Request $request): void
+    {
+        if ($request->filled('card_number')) {
+            $term = '%' . $request->card_number . '%';
+            $query->where(function ($q) use ($term) {
+                $q->where('card_number', 'like', $term)->orWhere('card_serial', 'like', $term);
+            });
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('client_id')) {
+            $clientId = (int) $request->client_id;
+            $query->where(function ($q) use ($clientId) {
+                $q->whereHas('sunuPolicies', fn ($p) => $p->where('client_id', $clientId))
+                  ->orWhereHas('sunuProposals', fn ($p) => $p->where('client_id', $clientId));
+            });
+        }
+    }
+
     /**
      * Export cards.
      */
@@ -474,53 +475,38 @@ class CardController extends Controller
 
         $format = $request->get('format', 'csv');
         $query = Card::where('business_unit_id', $businessUnit->id)
-            ->with(['account.accountable', 'replacedByCard']);
-
-        // Apply same filters as index
-        if ($request->filled('card_number')) {
-            $query->where('card_number', 'like', '%' . $request->card_number . '%');
-        }
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-        if ($request->filled('account_id')) {
-            $query->where('account_id', $request->account_id);
-        }
-        if ($request->filled('client_id')) {
-            $query->whereHas('account', function($q) use ($request) {
-                $q->where('accountable_type', \App\Models\Client::class)
-                  ->where('accountable_id', $request->client_id);
-            });
-        }
+            ->with(['sunuPolicies.client', 'sunuPolicies.product', 'sunuProposals.client', 'sunuProposals.product']);
+        $this->applyIndexFilters($query, $request);
 
         $cards = $query->latest()->get();
 
         // Transform data for export
         $data = $cards->map(function ($card) {
+            $client = $card->sunuClient();
+            $numbers = $card->sunuPolicies->pluck('policy_number')
+                ->merge($card->sunuProposals->pluck('proposal_number'));
+
             return [
-                'Card Number' => $card->card_number,
-                'Account Number' => $card->account->account_number ?? '-',
-                'Client' => ($card->account->accountable_type == 'App\Models\Client' && $card->account->accountable) 
-                    ? $card->account->accountable->full_name 
-                    : '-',
-                'Status' => ucfirst($card->status),
-                'Expiration Date' => $card->expiration_date->format('Y-m-d'),
-                'Daily Transaction Limit' => $card->daily_transaction_limit ? number_format($card->daily_transaction_limit, 2) : '-',
-                'Daily Withdrawal Limit' => $card->daily_withdrawal_limit ? number_format($card->daily_withdrawal_limit, 2) : '-',
-                'Issued At' => $card->issued_at ? $card->issued_at->format('Y-m-d H:i') : '-',
-                'Activated At' => $card->activated_at ? $card->activated_at->format('Y-m-d H:i') : '-',
+                __('common.export_col_card_number') => $card->card_number,
+                __('common.export_col_card_uid') => $card->card_serial ?? '-',
+                __('common.export_col_client') => $client ? trim($client->last_name . ' ' . $client->first_name) : '-',
+                __('common.export_col_phone') => $client->phone_number ?? '-',
+                __('common.export_col_policies_proposals') => $numbers->isNotEmpty() ? $numbers->implode(', ') : '-',
+                __('common.export_col_status') => $this->exportService->valueLabel($card->status, ''),
+                __('common.export_col_issued_at') => $card->issued_at ? $card->issued_at->format('Y-m-d H:i') : '-',
+                __('common.export_col_written_on_tpe') => $card->written_at ? $card->written_at->format('Y-m-d H:i') : '-',
             ];
         });
 
-        $headers = ['Card Number', 'Account Number', 'Client', 'Status', 'Expiration Date', 'Daily Transaction Limit', 'Daily Withdrawal Limit', 'Issued At', 'Activated At'];
+        $headers = array_map(fn ($k) => __('common.export_col_'.$k), ['card_number', 'card_uid', 'client', 'phone', 'policies_proposals', 'status', 'issued_at', 'written_on_tpe']);
         $filters = $request->only(['card_number', 'status', 'search']);
         $filename = $this->exportService->generateFilename('cards', $filters);
 
         switch ($format) {
             case 'excel':
-                return $this->exportService->exportExcel($data, $headers, $filename, 'Cards');
+                return $this->exportService->exportExcel($data, $headers, $filename, __('common.cards'));
             case 'pdf':
-                return $this->exportService->exportPdf($data, $headers, $filename, 'Cards Export', $filters);
+                return $this->exportService->exportPdf($data, $headers, $filename, __('common.cards'), $filters);
             case 'csv':
             default:
                 return $this->exportService->exportCsv($data, $headers, $filename);
@@ -762,96 +748,141 @@ class CardController extends Controller
     }
 
     /**
-     * Import card UIDs from Excel
+     * Free card stock: imported/unknown UIDs not yet linked to any SUNU policy or proposal.
+     */
+    protected function stockCards(int $businessUnitId)
+    {
+        return Card::where('business_unit_id', $businessUnitId)
+            ->where('status', 'unassigned')
+            ->whereNotNull('card_serial')
+            ->doesntHave('sunuPolicies')
+            ->doesntHave('sunuProposals')
+            ->orderBy('card_serial')
+            ->get(['id', 'card_serial', 'card_number', 'description']);
+    }
+
+    /**
+     * Import the manufacturer's card list (CSV/XLSX: uid, card_number?, batch?) as unassigned stock.
+     * UIDs are normalised to what the F20 reads (uppercase hex) according to the chosen format.
      */
     public function importUids(Request $request)
     {
         $businessUnit = auth()->user()->currentBusinessUnit;
-        
+
         if (!$businessUnit) {
             return redirect()->back()
                 ->with('error', __('common.no_business_unit_assigned'));
         }
 
-        // Check permission
         if (!auth()->user()->hasPermission('create-card', $businessUnit->id)) {
             abort(403, __('common.unauthorized_access'));
         }
 
         $validated = $request->validate([
-            'file' => 'required|mimes:xlsx,xls,csv',
+            'file' => 'required|file|mimes:csv,txt,xlsx,xls|max:5120',
+            'uid_format' => ['nullable', Rule::in(SunuSubscriptionService::UID_FORMATS)],
         ]);
+        $format = $validated['uid_format'] ?? 'hex';
 
         try {
-            // Parse Excel file
-            // Note: This requires Maatwebsite\Excel package
-            // Install with: composer require maatwebsite/excel
-            $imported = 0;
-            $errors = [];
-            
-            $file = $request->file('file');
-            $data = \Maatwebsite\Excel\Facades\Excel::toArray([], $file);
-            
-            if (empty($data) || empty($data[0])) {
-                return redirect()->back()
-                    ->with('error', 'Excel file is empty');
-            }
-            
-            $cardSettings = CardSettings::getOrCreateForBusinessUnit($businessUnit->id);
-            
-            foreach ($data[0] as $index => $row) {
-                if ($index === 0) continue; // Skip header row
-                
-                $cardSerial = trim($row[0] ?? ''); // UID column
-                $cardNumber = trim($row[1] ?? ''); // Optional card number
-                
-                if (empty($cardSerial)) {
-                    $errors[] = "Row " . ($index + 1) . ": UID is empty";
+            $sheets = \Maatwebsite\Excel\Facades\Excel::toArray([], $request->file('file'));
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('error', __('common.sunu_card_import_unreadable') . ' ' . $e->getMessage());
+        }
+        $rows = $sheets[0] ?? [];
+        if (count($rows) < 2) {
+            return redirect()->back()->with('error', __('common.sunu_card_import_empty'));
+        }
+
+        $settings = CardSettings::getOrCreateForBusinessUnit($businessUnit->id);
+        $imported = 0;
+        $skipped = 0;
+        $errors = [];
+        $seen = [];
+
+        DB::transaction(function () use ($rows, $format, $businessUnit, $settings, &$imported, &$skipped, &$errors, &$seen) {
+            foreach ($rows as $index => $row) {
+                if ($index === 0) {
+                    continue; // header
+                }
+                $line = $index + 1;
+                $raw = trim((string) ($row[0] ?? ''));
+                if ($raw === '' && trim(implode('', array_map('strval', $row))) === '') {
+                    continue; // blank line
+                }
+
+                $uid = $this->subscriptions->normalizeUid($raw, $format);
+                if ($uid === null) {
+                    $errors[] = __('common.sunu_card_import_row_invalid', ['row' => $line, 'uid' => $raw]);
                     continue;
                 }
-                
-                // Check if UID already exists
-                $existing = Card::where('card_serial', $cardSerial)
-                    ->where('business_unit_id', $businessUnit->id)
-                    ->first();
-                    
+                if (isset($seen[$uid])) {
+                    $skipped++;
+                    continue;
+                }
+                $seen[$uid] = true;
+
+                $existing = Card::withTrashed()->where('card_serial', $uid)->first();
                 if ($existing) {
-                    $errors[] = "Row " . ($index + 1) . ": UID $cardSerial already exists";
+                    if ((int) $existing->business_unit_id === (int) $businessUnit->id) {
+                        $skipped++;
+                    } else {
+                        $errors[] = __('common.sunu_card_import_row_other_bu', ['row' => $line, 'uid' => $uid]);
+                    }
                     continue;
                 }
-                
-                // Generate card number if not provided
-                if (empty($cardNumber)) {
-                    try {
-                        $cardNumber = CardNumberGeneratorService::generate($businessUnit->id);
-                    } catch (\Exception $e) {
-                        $errors[] = "Row " . ($index + 1) . ": Failed to generate card number - " . $e->getMessage();
-                        continue;
-                    }
+
+                $cardNumber = trim((string) ($row[1] ?? ''));
+                if ($cardNumber !== '' && Card::withTrashed()->where('card_number', $cardNumber)->exists()) {
+                    $errors[] = __('common.sunu_card_import_row_number_taken', ['row' => $line, 'number' => $cardNumber]);
+                    continue;
                 }
-                
-                // Create unassigned card with UID
+                $batch = trim((string) ($row[2] ?? ''));
+
                 Card::create([
                     'business_unit_id' => $businessUnit->id,
-                    'card_serial' => $cardSerial,
-                    'card_number' => $cardNumber,
+                    'card_serial' => $uid,
+                    'card_number' => $cardNumber !== '' ? $cardNumber : CardNumberGeneratorService::generate($businessUnit->id),
                     'status' => 'unassigned',
-                    'prefix' => $cardSettings->card_prefix,
-                    'expiration_date' => $cardSettings->getDefaultExpirationDate(),
-                    'daily_transaction_limit' => $cardSettings->default_daily_transaction_limit,
-                    'daily_withdrawal_limit' => $cardSettings->default_daily_withdrawal_limit,
+                    'prefix' => $settings->card_prefix,
+                    'expiration_date' => $settings->getDefaultExpirationDate(),
+                    'daily_transaction_limit' => $settings->default_daily_transaction_limit,
+                    'daily_withdrawal_limit' => $settings->default_daily_withdrawal_limit,
+                    'description' => $batch !== '' ? __('common.sunu_card_import_batch', ['batch' => $batch]) : null,
                 ]);
-                
                 $imported++;
             }
-            
-            return redirect()->back()
-                ->with('success', "Imported $imported cards")
-                ->with('errors', $errors);
-        } catch (\Exception $e) {
-            return redirect()->back()
-                ->with('error', 'Failed to import: ' . $e->getMessage());
-        }
+        });
+
+        Log::info('SUNU_CARD_STOCK_IMPORT', [
+            'business_unit_id' => $businessUnit->id,
+            'format' => $format,
+            'imported' => $imported,
+            'skipped' => $skipped,
+            'errors' => count($errors),
+            'user_id' => auth()->id(),
+        ]);
+
+        return redirect()->route('cards.index', ['status' => 'unassigned'])
+            ->with($imported > 0 ? 'success' : 'error', __('common.sunu_card_import_summary', [
+                'imported' => $imported,
+                'skipped' => $skipped,
+                'errors' => count($errors),
+            ]))
+            ->with('import_errors', array_slice($errors, 0, 50));
+    }
+
+    /**
+     * Sample file for the manufacturer card list import.
+     */
+    public function downloadSampleTemplate()
+    {
+        $csv = "uid,card_number,batch\n04A1B2C3D4E580,,LOT-2026-01\n1A2B3C4D,,LOT-2026-01\n";
+
+        return response($csv, 200, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="sunu_cards_uid_sample.csv"',
+        ]);
     }
 
     /**

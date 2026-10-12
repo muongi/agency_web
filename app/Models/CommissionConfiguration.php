@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use App\Models\TransactionCostConfiguration;
 
 class CommissionConfiguration extends Model
 {
@@ -51,8 +50,15 @@ class CommissionConfiguration extends Model
     }
 
     /**
+     * Whether this configuration uses tiered commission.
+     */
+    public function isTieredCommission(): bool
+    {
+        return in_array($this->commission_type, ['tiered', 'tiered_percentage', 'tiered_fixed'], true);
+    }
+
+    /**
      * Calculate commission based on transaction cost (not transaction amount).
-     * Commission is now calculated from the transaction cost, not the original amount.
      *
      * @param float $transactionCost The transaction cost (calculated from transaction amount)
      * @return float
@@ -62,22 +68,23 @@ class CommissionConfiguration extends Model
         switch ($this->commission_type) {
             case 'fixed':
                 return $this->fixed_amount ?? 0;
-            
+
             case 'percentage':
                 return $transactionCost * ($this->percentage_rate / 100);
-            
+
             case 'tiered':
             case 'tiered_percentage':
             case 'tiered_fixed':
                 return $this->calculateTieredCommission($transactionCost);
-            
+
             default:
                 return 0;
         }
     }
 
     /**
-     * Calculate commission for tiered type based on transaction cost.
+     * Calculate commission for tiered type based on transaction cost bands.
+     * Used only for legacy configs; new tiered commissions inherit cost tiers via calculateFromTransactionAmount().
      *
      * @param float $transactionCost The transaction cost
      * @return float
@@ -85,39 +92,21 @@ class CommissionConfiguration extends Model
     protected function calculateTieredCommission($transactionCost)
     {
         $tiers = $this->tiers()->orderBy('order')->get();
-        
+
         foreach ($tiers as $tier) {
             $minAmount = $tier->min_amount ?? 0;
             $maxAmount = $tier->max_amount;
-            
-            // Check if transaction cost falls within this tier
+
             if ($transactionCost >= $minAmount && ($maxAmount === null || $transactionCost <= $maxAmount)) {
-                // For tiered_percentage, always use rate
-                if ($this->commission_type === 'tiered_percentage' && $tier->rate !== null) {
-                    return $transactionCost * ($tier->rate / 100);
-                }
-                
-                // For tiered_fixed, always use amount
-                if ($this->commission_type === 'tiered_fixed' && $tier->amount !== null) {
-                    return $tier->amount;
-                }
-                
-                // For legacy 'tiered' type, check both rate and amount
-                if ($this->commission_type === 'tiered') {
-                    if ($tier->rate !== null) {
-                        return $transactionCost * ($tier->rate / 100);
-                    }
-                    return $tier->amount ?? 0;
-                }
+                return $this->applyCommissionTier($tier, $transactionCost);
             }
         }
-        
+
         return 0;
     }
 
     /**
      * Calculate commission from transaction amount (full flow: amount → cost → commission).
-     * This is a convenience method that calculates cost first, then commission.
      *
      * @param float $transactionAmount The original transaction amount
      * @param int|null $transactionTypeId Optional transaction type ID (uses current if not provided)
@@ -126,22 +115,61 @@ class CommissionConfiguration extends Model
     public function calculateFromTransactionAmount($transactionAmount, $transactionTypeId = null)
     {
         $transactionTypeId = $transactionTypeId ?? $this->transaction_type_id;
-        
-        // Get transaction cost configuration
+
         $costConfig = TransactionCostConfiguration::where('transaction_type_id', $transactionTypeId)
             ->where('business_unit_id', $this->business_unit_id)
             ->where('is_active', true)
+            ->with('tiers')
             ->first();
-        
+
         if (!$costConfig) {
-            // If no cost configuration, return 0 (no cost = no commission)
             return 0;
         }
-        
-        // Calculate transaction cost
+
         $transactionCost = $costConfig->calculateCost($transactionAmount);
-        
-        // Calculate commission from cost
+
+        if ($this->isTieredCommission()) {
+            if (!$costConfig->isTiered()) {
+                return 0;
+            }
+
+            $tierOrder = $costConfig->findTierOrderForAmount($transactionAmount);
+            if ($tierOrder === null) {
+                return 0;
+            }
+
+            $commissionTier = $this->tiers()->where('order', $tierOrder)->first();
+            if (!$commissionTier) {
+                return 0;
+            }
+
+            return $this->applyCommissionTier($commissionTier, $transactionCost);
+        }
+
         return $this->calculateCommission($transactionCost);
+    }
+
+    /**
+     * Apply a commission tier rate or amount to a transaction cost.
+     */
+    protected function applyCommissionTier(CommissionTier $tier, float $transactionCost): float
+    {
+        if ($this->commission_type === 'tiered_percentage' && $tier->rate !== null) {
+            return $transactionCost * ($tier->rate / 100);
+        }
+
+        if ($this->commission_type === 'tiered_fixed' && $tier->amount !== null) {
+            return $tier->amount;
+        }
+
+        if ($this->commission_type === 'tiered') {
+            if ($tier->rate !== null) {
+                return $transactionCost * ($tier->rate / 100);
+            }
+
+            return $tier->amount ?? 0;
+        }
+
+        return 0;
     }
 }

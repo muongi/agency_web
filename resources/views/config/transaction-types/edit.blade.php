@@ -13,27 +13,27 @@
 
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
             <div class="form-group">
-                <label class="form-label" for="name">{{ __('common.name') }} <span style="color: #ff6b6b;">*</span></label>
+                <label class="form-label" for="name">{{ __('common.name') }} <span class="text-error">*</span></label>
                 <input type="text" id="name" name="name" class="form-control" value="{{ old('name', $transactionType->name) }}" required>
                 @error('name')
-                    <div style="color: #ff6b6b; margin-top: 5px; font-size: 14px;">{{ $message }}</div>
+                    <div class="field-error">{{ $message }}</div>
                 @enderror
             </div>
 
             <div class="form-group">
-                <label class="form-label" for="code">{{ __('common.code') }} <span style="color: #ff6b6b;">*</span></label>
+                <label class="form-label" for="code">{{ __('common.code') }} <span class="text-error">*</span></label>
                 <input type="text" id="code" name="code" class="form-control" value="{{ old('code', $transactionType->code) }}" required maxlength="50" style="text-transform: uppercase;">
-                <small style="color: var(--text-muted); font-size: 12px;">{{ __('common.code_help') }}</small>
+                <small class="text-muted-sm">{{ __('common.code_help') }}</small>
                 @error('code')
-                    <div style="color: #ff6b6b; margin-top: 5px; font-size: 14px;">{{ $message }}</div>
+                    <div class="field-error">{{ $message }}</div>
                 @enderror
             </div>
 
-            <div class="form-group" style="grid-column: 1 / -1;">
+            <div class="form-group detail-full">
                 <label class="form-label" for="description">{{ __('common.description') }}</label>
                 <textarea id="description" name="description" class="form-control" rows="3">{{ old('description', $transactionType->description) }}</textarea>
                 @error('description')
-                    <div style="color: #ff6b6b; margin-top: 5px; font-size: 14px;">{{ $message }}</div>
+                    <div class="field-error">{{ $message }}</div>
                 @enderror
             </div>
 
@@ -43,12 +43,12 @@
                     <label for="is_active">{{ __('common.is_active') }}</label>
                 </div>
                 @error('is_active')
-                    <div style="color: #ff6b6b; margin-top: 5px; font-size: 14px;">{{ $message }}</div>
+                    <div class="field-error">{{ $message }}</div>
                 @enderror
             </div>
         </div>
 
-        <div style="display: flex; gap: 10px; margin-top: 30px;">
+        <div class="btn-row mt-30">
             <button type="submit" class="btn">{{ __('common.update') }}</button>
             <a href="{{ route('business.config.transaction-types.index') }}" class="btn btn-secondary">{{ __('common.cancel') }}</a>
         </div>

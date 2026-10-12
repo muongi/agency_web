@@ -19,22 +19,22 @@
     </div>
 @else
 <div class="card">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-        <h1 style="color: var(--accent-color);">{{ __('common.transaction_details') }}</h1>
+    <div class="toolbar">
+        <h1 class="text-accent">{{ __('common.transaction_details') }}</h1>
         <a href="{{ route('transactions.index') }}" class="btn btn-secondary">{{ __('common.back') }}</a>
     </div>
 
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px;">
         <div>
-            <label style="color: var(--text-muted); font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">{{ __('common.transaction_date') }}</label>
-            <p style="color: var(--text-primary); font-size: 16px; margin-top: 5px;">
+            <label class="section-label">{{ __('common.transaction_date') }}</label>
+            <p class="detail-value">
                 {{ $transaction->transaction_date->format('Y-m-d H:i:s') }}
             </p>
         </div>
 
         <div>
-            <label style="color: var(--text-muted); font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">{{ __('common.transaction_type') }}</label>
-            <p style="color: var(--text-primary); font-size: 16px; margin-top: 5px;">
+            <label class="section-label">{{ __('common.transaction_type') }}</label>
+            <p class="detail-value">
                 <strong>{{ $transaction->transactionType->name }}</strong>
                 <br>
                 <code style="background: var(--bg-tertiary); padding: 4px 8px; border-radius: 4px;">{{ $transaction->transactionType->code }}</code>
@@ -42,24 +42,24 @@
         </div>
 
         <div>
-            <label style="color: var(--text-muted); font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">{{ __('common.status') }}</label>
-            <p style="color: var(--text-primary); font-size: 16px; margin-top: 5px;">
+            <label class="section-label">{{ __('common.status') }}</label>
+            <p class="detail-value">
                 @if($transaction->status === 'completed')
-                    <span style="color: var(--success-text);">{{ __('common.completed') }}</span>
+                    <span class="badge badge-success">{{ __('common.completed') }}</span>
                 @elseif($transaction->status === 'pending')
-                    <span style="color: var(--warning-text);">{{ __('common.pending') }}</span>
+                    <span class="badge badge-warning">{{ __('common.pending') }}</span>
                 @elseif($transaction->status === 'failed')
-                    <span style="color: var(--error-text);">{{ __('common.failed') }}</span>
+                    <span class="text-error">{{ __('common.failed') }}</span>
                 @else
-                    <span style="color: var(--text-muted);">{{ __('common.cancelled') }}</span>
+                    <span class="muted">{{ __('common.cancelled') }}</span>
                 @endif
             </p>
         </div>
 
         @if($transaction->reference)
         <div>
-            <label style="color: var(--text-muted); font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">{{ __('common.transaction_reference') }}</label>
-            <p style="color: var(--text-primary); font-size: 16px; margin-top: 5px;">
+            <label class="section-label">{{ __('common.transaction_reference') }}</label>
+            <p class="detail-value">
                 <code style="background: var(--bg-tertiary); padding: 4px 8px; border-radius: 4px;">{{ $transaction->reference }}</code>
             </p>
         </div>
@@ -71,25 +71,25 @@
         <h2 style="color: var(--accent-color); margin-bottom: 20px;">{{ __('common.transaction_breakdown') }}</h2>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
             <div>
-                <label style="color: var(--text-muted); font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">{{ __('common.transaction_amount') }}</label>
+                <label class="section-label">{{ __('common.transaction_amount') }}</label>
                 <p style="color: var(--text-primary); font-size: 24px; font-weight: bold; margin-top: 5px;">
                     {{ number_format($transaction->transaction_amount, 2) }}
                 </p>
             </div>
             <div>
-                <label style="color: var(--text-muted); font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">{{ __('common.transaction_cost') }}</label>
+                <label class="section-label">{{ __('common.transaction_cost') }}</label>
                 <p style="color: var(--text-primary); font-size: 24px; font-weight: bold; margin-top: 5px;">
                     {{ number_format($transaction->transaction_cost, 2) }}
                 </p>
             </div>
             <div>
-                <label style="color: var(--text-muted); font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">{{ __('common.transaction_commission') }}</label>
+                <label class="section-label">{{ __('common.transaction_commission') }}</label>
                 <p style="color: var(--success-text); font-size: 24px; font-weight: bold; margin-top: 5px;">
                     {{ number_format($transaction->commission, 2) }}
                 </p>
             </div>
             <div>
-                <label style="color: var(--text-muted); font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">{{ __('common.business_share') }}</label>
+                <label class="section-label">{{ __('common.business_share') }}</label>
                 <p style="color: var(--accent-color); font-size: 24px; font-weight: bold; margin-top: 5px;">
                     {{ number_format($transaction->business_share, 2) }}
                 </p>
@@ -101,33 +101,33 @@
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px;">
         @if($transaction->agent)
         <div>
-            <label style="color: var(--text-muted); font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">{{ __('common.agent') }}</label>
-            <p style="color: var(--text-primary); font-size: 16px; margin-top: 5px;">
+            <label class="section-label">{{ __('common.agent') }}</label>
+            <p class="detail-value">
                 <strong>{{ $transaction->agent->full_name }}</strong>
                 <br>
-                <small style="color: var(--text-muted);">{{ $transaction->agent->phone_number }}</small>
+                <small class="muted">{{ $transaction->agent->phone_number }}</small>
             </p>
         </div>
         @endif
 
         @if($transaction->terminal)
         <div>
-            <label style="color: var(--text-muted); font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">{{ __('common.terminal') }}</label>
-            <p style="color: var(--text-primary); font-size: 16px; margin-top: 5px;">
+            <label class="section-label">{{ __('common.terminal') }}</label>
+            <p class="detail-value">
                 <strong>{{ $transaction->terminal->serial_number }}</strong>
                 <br>
-                <small style="color: var(--text-muted);">{{ $transaction->terminal->device_alias }}</small>
+                <small class="muted">{{ $transaction->terminal->device_alias }}</small>
             </p>
         </div>
         @endif
 
         @if($transaction->client)
         <div>
-            <label style="color: var(--text-muted); font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">{{ __('common.client') }}</label>
-            <p style="color: var(--text-primary); font-size: 16px; margin-top: 5px;">
+            <label class="section-label">{{ __('common.client') }}</label>
+            <p class="detail-value">
                 <strong>{{ $transaction->client->name }}</strong>
                 <br>
-                <small style="color: var(--text-muted);">{{ $transaction->client->phone_number ?? '' }}</small>
+                <small class="muted">{{ $transaction->client->phone_number ?? '' }}</small>
             </p>
         </div>
         @endif

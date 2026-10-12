@@ -24,6 +24,13 @@ class KatoIntegrationTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // Core banking is hidden by default (SUNU deployment); these tests cover the banking pages.
+        config(['sunu.core_banking' => true]);
+    }
+
     private const KATO_BASE = 'https://kato.test/api/v2/agency';
 
     protected function createKatoCbs(): CoreBankingSystem
@@ -258,6 +265,176 @@ class KatoIntegrationTest extends TestCase
         });
     }
 
+    public function test_register_agent_formats_spaced_phone_and_multiline_location(): void
+    {
+        Http::fake([
+            self::KATO_BASE.'/onboarding/register' => Http::response([
+                'success' => true,
+                'message' => 'Agency registered successfully. Your Agent ID is: AGT26070001',
+                'data' => [
+                    'agentId' => 'AGT26070001',
+                    'businessName' => 'faso credit Business',
+                    'accounts' => [],
+                ],
+            ], 200),
+        ]);
+
+        $bu = $this->createKatoBusinessUnit();
+        $agent = Agent::create([
+            'business_unit_id' => $bu->id,
+            'first_name' => 'faso',
+            'second_name' => 'credit',
+            'email' => 'agent@example.com',
+            'phone_number' => '+226 25 33 35 50',
+            'id_passport' => 'fc123001',
+            'physical_address' => "Av. Houari Boumediene\n\nQuartier Koulouba\n\nOuagadougou",
+            'username' => 'faso_agent_'.uniqid(),
+            'password' => Hash::make('password123'),
+        ]);
+
+        $result = (new KatoService())->registerAgent($agent, $bu);
+
+        $this->assertTrue($result['success']);
+
+        Http::assertSent(function ($request) {
+            if ($request->url() !== self::KATO_BASE.'/onboarding/register') {
+                return false;
+            }
+
+            $body = $request->data();
+            $location = $body['location'] ?? '';
+
+            return ($body['phoneNumber'] ?? null) === '+22625333550'
+                && $location === 'Av. Houari Boumediene Quartier Koulouba Ouagadougou'
+                && mb_strlen($location) <= 100;
+        });
+    }
+
+    public function test_register_member_formats_spaced_phone_and_multiline_town(): void
+    {
+        Http::fake([
+            self::KATO_BASE.'/members/register' => Http::response(
+                $this->katoMemberRegisterPayload('8801'),
+                200
+            ),
+        ]);
+
+        $bu = $this->createKatoBusinessUnit();
+        $bu->update([
+            'address' => "Av. Houari Boumediene\n\nQuartier Koulouba\n\nOuagadougou",
+        ]);
+
+        $agent = $this->createKatoRegistrationAgent($bu, 'AGT8801');
+
+        $client = Client::create([
+            'business_unit_id' => $bu->id,
+            'first_name' => 'DROGBA',
+            'last_name' => 'DIDIER',
+            'phone_number' => '78 24 85 83 83',
+            'id_passport' => 'B234456667',
+            'gender' => 'Male',
+            'year_of_birth' => '1990',
+        ]);
+
+        $result = (new KatoService())->registerMember($client, $bu, $agent);
+
+        $this->assertTrue($result['success']);
+
+        Http::assertSent(function ($request) {
+            if ($request->url() !== self::KATO_BASE.'/members/register') {
+                return false;
+            }
+
+            $body = $request->data();
+            $town = $body['town'] ?? '';
+
+            return ($body['agentAccountNumber'] ?? null) === 'AGT8801FLOAT'
+                && ($body['phoneNumber'] ?? null) === '7824858383'
+                && $town === 'Av. Houari Boumediene Quartier Koulouba Ouagadougo'
+                && mb_strlen($town) <= 50;
+        });
+    }
+
+    public function test_register_member_prefers_client_location_over_business_unit_address(): void
+    {
+        Http::fake([
+            self::KATO_BASE.'/members/register' => Http::response(
+                $this->katoMemberRegisterPayload('8802'),
+                200
+            ),
+        ]);
+
+        $bu = $this->createKatoBusinessUnit();
+        $bu->update([
+            'address' => 'Av. Houari Boumediene Quartier Koulouba Ouagadougou',
+        ]);
+
+        $agent = $this->createKatoRegistrationAgent($bu, 'AGT8802');
+
+        $client = Client::create([
+            'business_unit_id' => $bu->id,
+            'first_name' => 'COUGAR',
+            'last_name' => 'CHARLES',
+            'phone_number' => '0721634545',
+            'id_passport' => 'B1344556',
+            'gender' => 'Male',
+            'year_of_birth' => '2026',
+            'location' => 'Ouga',
+        ]);
+
+        $result = (new KatoService())->registerMember($client, $bu, $agent);
+
+        $this->assertTrue($result['success']);
+
+        Http::assertSent(function ($request) {
+            if ($request->url() !== self::KATO_BASE.'/members/register') {
+                return false;
+            }
+
+            $body = $request->data();
+
+            return ($body['town'] ?? null) === 'Ouga'
+                && ($body['dob'] ?? null) === '2026-01-01';
+        });
+    }
+
+    public function test_register_member_uses_date_of_birth_when_provided(): void
+    {
+        Http::fake([
+            self::KATO_BASE.'/members/register' => Http::response(
+                $this->katoMemberRegisterPayload('8803'),
+                200
+            ),
+        ]);
+
+        $bu = $this->createKatoBusinessUnit();
+        $agent = $this->createKatoRegistrationAgent($bu, 'AGT8803');
+
+        $client = Client::create([
+            'business_unit_id' => $bu->id,
+            'first_name' => 'DOB',
+            'last_name' => 'TEST',
+            'phone_number' => '0721634545',
+            'id_passport' => 'B1344999',
+            'gender' => 'Male',
+            'year_of_birth' => '2026',
+            'date_of_birth' => '2026-07-01',
+            'location' => 'Ouga',
+        ]);
+
+        $result = (new KatoService())->registerMember($client, $bu, $agent);
+
+        $this->assertTrue($result['success']);
+
+        Http::assertSent(function ($request) {
+            if ($request->url() !== self::KATO_BASE.'/members/register') {
+                return false;
+            }
+
+            return ($request->data()['dob'] ?? null) === '2026-07-01';
+        });
+    }
+
     public function test_super_admin_store_business_unit_persists_kato_credentials(): void
     {
         Http::fake([
@@ -458,12 +635,14 @@ class KatoIntegrationTest extends TestCase
         ]);
 
         $bu = $this->createKatoBusinessUnit();
+        $agent = $this->createKatoRegistrationAgent($bu, 'AGT5678');
         $user = User::factory()->create([
             'is_super_admin' => true,
             'current_business_unit_id' => $bu->id,
         ]);
 
         $this->actingAs($user)->post(route('clients.store'), [
+            'agent_id' => $agent->id,
             'first_name' => 'Jane',
             'last_name' => 'Wanjiku',
             'phone_number' => '0798765432',
@@ -518,6 +697,7 @@ class KatoIntegrationTest extends TestCase
         ]);
 
         $bu = $this->createKatoBusinessUnit();
+        $agent = $this->createKatoRegistrationAgent($bu, 'AGTGEND');
         $client = Client::create([
             'business_unit_id' => $bu->id,
             'first_name' => 'Test',
@@ -528,7 +708,7 @@ class KatoIntegrationTest extends TestCase
             'year_of_birth' => '1985',
         ]);
 
-        $result = (new KatoService())->registerMember($client, $bu);
+        $result = (new KatoService())->registerMember($client, $bu, $agent);
 
         $this->assertFalse($result['success']);
         $this->assertStringContainsString('Gender', $result['error']);
@@ -540,6 +720,7 @@ class KatoIntegrationTest extends TestCase
         Http::fake();
 
         $bu = $this->createKatoBusinessUnit();
+        $agent = $this->createKatoRegistrationAgent($bu, 'AGTNogen');
         $client = Client::create([
             'business_unit_id' => $bu->id,
             'first_name' => 'No',
@@ -549,9 +730,43 @@ class KatoIntegrationTest extends TestCase
             'year_of_birth' => '1990',
         ]);
 
-        $result = (new KatoService())->registerMember($client, $bu);
+        $result = (new KatoService())->registerMember($client, $bu, $agent);
 
         $this->assertFalse($result['success']);
+        Http::assertNothingSent();
+    }
+
+    public function test_register_member_without_synced_agent_float_account_fails(): void
+    {
+        Http::fake();
+
+        $bu = $this->createKatoBusinessUnit();
+        $agent = Agent::create([
+            'business_unit_id' => $bu->id,
+            'first_name' => 'No',
+            'second_name' => 'Float',
+            'email' => 'nofloat-'.uniqid().'@test.local',
+            'username' => 'nofloat'.substr(uniqid(), 0, 8),
+            'phone_number' => '+22670000002',
+            'id_passport' => 'ID-'.uniqid(),
+            'password' => Hash::make('password'),
+            'kato_agent_id' => 'AGTNOFLOAT',
+        ]);
+
+        $client = Client::create([
+            'business_unit_id' => $bu->id,
+            'first_name' => 'Client',
+            'last_name' => 'One',
+            'phone_number' => '0722000002',
+            'id_passport' => 'ID100',
+            'gender' => 'Male',
+            'year_of_birth' => '1990',
+        ]);
+
+        $result = (new KatoService())->registerMember($client, $bu, $agent);
+
+        $this->assertFalse($result['success']);
+        $this->assertStringContainsString('float account is not synced', strtolower($result['error']));
         Http::assertNothingSent();
     }
 
@@ -565,6 +780,7 @@ class KatoIntegrationTest extends TestCase
         ]);
 
         $bu = $this->createKatoBusinessUnit();
+        $agent = $this->createKatoRegistrationAgent($bu, 'AGT9901');
         $client = Client::create([
             'business_unit_id' => $bu->id,
             'first_name' => 'Sync',
@@ -581,7 +797,9 @@ class KatoIntegrationTest extends TestCase
         ]);
 
         $this->actingAs($user)
-            ->post(route('clients.sync-kato', $client->id))
+            ->post(route('clients.sync-kato', $client->id), [
+                'agent_id' => $agent->id,
+            ])
             ->assertRedirect();
 
         $client->refresh();
@@ -639,6 +857,7 @@ class KatoIntegrationTest extends TestCase
         ]);
 
         $bu = $this->createKatoBusinessUnit();
+        $agent = $this->createKatoRegistrationAgent($bu, 'AGT42');
         $client = Client::create([
             'business_unit_id' => $bu->id,
             'first_name' => 'Acc',
@@ -649,7 +868,7 @@ class KatoIntegrationTest extends TestCase
             'year_of_birth' => '1990',
         ]);
 
-        $result = (new KatoService())->registerMember($client, $bu);
+        $result = (new KatoService())->registerMember($client, $bu, $agent);
 
         $this->assertTrue($result['success']);
         $this->assertCount(2, $result['data']['accounts']);
@@ -666,6 +885,7 @@ class KatoIntegrationTest extends TestCase
         ]);
 
         $bu = $this->createKatoBusinessUnit();
+        $agent = $this->createKatoRegistrationAgent($bu, 'AGTBULK');
 
         $synced = Client::create([
             'business_unit_id' => $bu->id,
@@ -694,6 +914,7 @@ class KatoIntegrationTest extends TestCase
         ]);
 
         $this->actingAs($user)->post(route('clients.sync-kato-bulk'), [
+            'agent_id' => $agent->id,
             'client_ids' => [$synced->id, $pending->id],
         ])->assertRedirect(route('clients.index'));
 
@@ -993,8 +1214,19 @@ class KatoIntegrationTest extends TestCase
         $this->assertNull(Transaction::where('reference', $ref)->first());
     }
 
-    public function test_biometric_withdraw_kato_requires_member_pin(): void
+    public function test_biometric_withdraw_kato_succeeds_without_member_pin(): void
     {
+        Http::fake([
+            self::KATO_BASE.'/transactions/withdraw' => Http::response([
+                'success' => true,
+                'transactionId' => 'AGW-NOPIN-001',
+            ], 200),
+            self::KATO_BASE.'/members/5555/balances' => Http::response([
+                'success' => true,
+                'data' => ['memberNo' => '5555', 'balances' => []],
+            ], 200),
+        ]);
+
         $bu = $this->createKatoBusinessUnit();
         $this->seedWithdrawalType($bu);
 
@@ -1008,6 +1240,7 @@ class KatoIntegrationTest extends TestCase
             'id_passport' => 'ID3-'.uniqid(),
             'password' => Hash::make('123456'),
         ]);
+        $this->seedAgentKatoAccounts($agent, 'AGT5555');
 
         $terminal = Terminal::create([
             'business_unit_id' => $bu->id,
@@ -1036,6 +1269,7 @@ class KatoIntegrationTest extends TestCase
             'balance' => 50000,
         ]);
 
+        $ref = 'REF-NOPIN-'.uniqid();
         $res = $this->postJson('/api/v1/transactions/biometric-withdraw', [
             'business_unit_id' => $bu->id,
             'account_number' => $account->account_number,
@@ -1043,11 +1277,26 @@ class KatoIntegrationTest extends TestCase
             'transaction_type_code' => '0110000',
             'device_serial' => $terminal->serial_number,
             'verification_method' => 'biometric',
-            'reference' => 'REF-NOPIN-'.uniqid(),
+            'reference' => $ref,
         ]);
 
-        $res->assertStatus(422);
-        $res->assertJsonPath('message', 'Member PIN is required for KATO withdrawal');
+        $res->assertStatus(201);
+
+        Http::assertSent(function ($request) use ($account) {
+            if (! str_contains($request->url(), '/transactions/withdraw')) {
+                return false;
+            }
+            $body = $request->data();
+
+            return ($body['accountNumber'] ?? null) === $account->account_number
+                && ($body['agentAccountNumber'] ?? null) === 'AGT5555FLOAT'
+                && ($body['amount'] ?? null) == 1000
+                && ! array_key_exists('memberPin', $body);
+        });
+
+        $tx = Transaction::where('reference', $ref)->first();
+        $this->assertNotNull($tx);
+        $this->assertSame('AGW-NOPIN-001', $tx->kato_transaction_id);
     }
 
     public function test_member_balances_endpoint_returns_kato_data(): void
@@ -1611,6 +1860,24 @@ class KatoIntegrationTest extends TestCase
         $agent->commissionAccount()?->update(['account_number' => $katoAgentId.'COMM']);
     }
 
+    protected function createKatoRegistrationAgent(BusinessUnit $bu, string $katoAgentId = 'AGTREG'): Agent
+    {
+        $agent = Agent::create([
+            'business_unit_id' => $bu->id,
+            'first_name' => 'Reg',
+            'second_name' => 'Agent',
+            'email' => 'reg-'.uniqid().'@test.local',
+            'username' => 'reg'.substr(uniqid(), 0, 8),
+            'phone_number' => '+22670000999',
+            'id_passport' => 'ID-'.uniqid(),
+            'password' => Hash::make('password'),
+            'kato_agent_id' => $katoAgentId,
+        ]);
+        $this->seedAgentKatoAccounts($agent, $katoAgentId);
+
+        return $agent;
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -1855,8 +2122,146 @@ class KatoIntegrationTest extends TestCase
             }
         });
 
-        $this->assertSame(2, $loginCount);
-        $this->assertSame(1, $withdrawCount);
+        $this->assertSame(1, $loginCount);
+        $this->assertSame(0, $withdrawCount);
+    }
+
+    public function test_kato_deposit_fails_fast_when_refresh_credentials_missing(): void
+    {
+        Http::fake([
+            self::KATO_BASE.'/transactions/deposit' => Http::response([
+                'success' => true,
+                'transactionId' => 'SHOULD-NOT-REACH',
+            ], 200),
+        ]);
+
+        $bu = $this->createKatoBusinessUnit('expired-jwt');
+        $bu->update([
+            'kato_token_expires_at' => now()->subHour(),
+            'kato_admin_username' => 'admin1',
+            'kato_admin_password' => null,
+            'kato_api_response' => [
+                'success' => true,
+                'data' => [
+                    'adminUsername' => 'admin1',
+                    'companyId' => $bu->kato_company_id,
+                ],
+            ],
+        ]);
+
+        $service = new KatoService();
+        $result = $service->deposit($bu, [
+            'agentAccountNumber' => 'AGT4FLOAT',
+            'accountNumber' => '2001',
+            'amount' => 1000,
+        ]);
+
+        $this->assertFalse($result['success']);
+        $this->assertSame(401, $result['http_status']);
+        $this->assertStringContainsString('credentials not configured', $result['error'] ?? '');
+
+        Http::assertNothingSent();
+    }
+
+    public function test_kato_refresh_tokens_command_refreshes_expiring_tokens(): void
+    {
+        Http::fake([
+            self::KATO_BASE.'/company/login' => Http::response([
+                'success' => true,
+                'data' => [
+                    'token' => 'scheduled-fresh-jwt',
+                    'expiresIn' => 3600,
+                ],
+            ], 200),
+        ]);
+
+        $bu = $this->createKatoBusinessUnit('expired-jwt');
+        $bu->update([
+            'kato_token_expires_at' => now()->subMinutes(5),
+            'kato_admin_username' => 'admin1',
+            'kato_admin_password' => 'Pass123456',
+        ]);
+
+        $this->artisan('kato:refresh-tokens')
+            ->assertSuccessful();
+
+        $bu->refresh();
+        $this->assertSame('scheduled-fresh-jwt', $bu->kato_token);
+
+        Http::assertSent(function ($request) {
+            return $request->url() === self::KATO_BASE.'/company/login';
+        });
+    }
+
+    public function test_kato_refresh_tokens_command_skips_valid_tokens(): void
+    {
+        Http::fake();
+
+        $bu = $this->createKatoBusinessUnit('valid-jwt');
+        $bu->update([
+            'kato_token_expires_at' => now()->addHours(2),
+            'kato_admin_username' => 'admin1',
+            'kato_admin_password' => 'Pass123456',
+        ]);
+
+        $this->artisan('kato:refresh-tokens', ['--business-unit' => $bu->id])
+            ->assertSuccessful();
+
+        Http::assertNothingSent();
+    }
+
+    public function test_kato_refresh_tokens_dry_run_lists_candidates(): void
+    {
+        Http::fake();
+
+        $bu = $this->createKatoBusinessUnit('expired-jwt');
+        $bu->update([
+            'kato_token_expires_at' => now()->subHour(),
+            'kato_admin_username' => 'admin1',
+            'kato_admin_password' => 'Pass123456',
+        ]);
+
+        $this->artisan('kato:refresh-tokens', ['--dry-run' => true])
+            ->expectsOutputToContain("BU {$bu->id}")
+            ->assertSuccessful();
+
+        Http::assertNothingSent();
+    }
+
+    public function test_proactive_refresh_when_token_expiry_unknown(): void
+    {
+        Http::fake([
+            self::KATO_BASE.'/company/login' => Http::response([
+                'success' => true,
+                'data' => [
+                    'token' => 'unknown-expiry-jwt',
+                    'expiresIn' => 3600,
+                ],
+            ], 200),
+            self::KATO_BASE.'/transactions/deposit' => Http::response([
+                'success' => true,
+                'transactionId' => 'DEP-UNKNOWN-EXP',
+            ], 200),
+        ]);
+
+        $bu = $this->createKatoBusinessUnit('legacy-jwt');
+        $bu->update([
+            'kato_token_expires_at' => null,
+            'kato_admin_username' => 'admin1',
+            'kato_admin_password' => 'Pass123456',
+        ]);
+
+        $service = new KatoService();
+        $result = $service->deposit($bu, [
+            'agentAccountNumber' => 'AGT4FLOAT',
+            'accountNumber' => '2001',
+            'amount' => 500,
+        ]);
+
+        $this->assertTrue($result['success']);
+        Http::assertSent(function ($request) {
+            return $request->url() === self::KATO_BASE.'/company/login';
+        });
     }
 
     public function test_register_company_parses_flat_legacy_response(): void
@@ -1973,7 +2378,9 @@ class KatoIntegrationTest extends TestCase
                 'data' => [
                     'memberNo' => '1234',
                     'balances' => [
-                        ['accountCode' => '001', 'product' => 'Savings', 'balance' => 1500.00],
+                        // KATO often returns Savings (0) before the enquired Share Capital account
+                        ['accountNumber' => '2004', 'accountCode' => '004', 'product' => 'Savings', 'balance' => 0.0],
+                        ['accountNumber' => '0100101000001', 'accountCode' => '001', 'product' => 'Share Capital', 'balance' => 1500.00],
                     ],
                     'enquiryCommission' => 5.00,
                     'commissionRef' => 'AGE-001',
@@ -2035,11 +2442,15 @@ class KatoIntegrationTest extends TestCase
         ]);
 
         $res->assertStatus(201)
-            ->assertJsonPath('data.balances.0.balance', 1500);
+            ->assertJsonPath('data.balances.0.accountNumber', '0100101000001')
+            ->assertJsonPath('data.balances.0.balance', 1500)
+            ->assertJsonPath('data.balance', 1500)
+            ->assertJsonPath('data.amount', 1500);
 
         $tx = Transaction::where('reference', $ref)->first();
         $this->assertNotNull($tx);
         $this->assertSame('AGE-001', $tx->kato_transaction_id);
+        $this->assertEquals(1500.00, (float) $tx->transaction_amount);
 
         Http::assertSent(function ($request) {
             if (! str_contains($request->url(), '/transactions/balance-enquiry')) {
@@ -2277,5 +2688,131 @@ class KatoIntegrationTest extends TestCase
             '/<form[^>]+action="[^"]*refresh-kato-token/',
             $content
         );
+    }
+
+    public function test_sync_agent_float_balances_from_kato_updates_local_accounts(): void
+    {
+        Http::fake([
+            self::KATO_BASE.'/float*' => Http::response([
+                'success' => true,
+                'data' => [
+                    'agentId' => 'AGTFLOAT1',
+                    'floatAccountNumber' => 'AGTFLOAT1FLOAT',
+                    'floatAccountBalance' => 50000.00,
+                    'commissionAccountNumber' => 'AGTFLOAT1COMM',
+                    'commissionAccountBalance' => 1250.00,
+                ],
+            ], 200),
+        ]);
+
+        $bu = $this->createKatoBusinessUnit();
+        $agent = Agent::create([
+            'business_unit_id' => $bu->id,
+            'first_name' => 'Float',
+            'second_name' => 'Sync',
+            'email' => 'float-'.uniqid().'@test.local',
+            'username' => 'float'.substr(uniqid(), 0, 8),
+            'phone_number' => '+22670000001',
+            'id_passport' => 'ID-'.uniqid(),
+            'password' => Hash::make('password'),
+            'kato_agent_id' => 'AGTFLOAT1',
+        ]);
+        $this->seedAgentKatoAccounts($agent, 'AGTFLOAT1');
+
+        $agent->floatAccount()?->update(['balance' => 0]);
+        $agent->commissionAccount()?->update(['balance' => 0]);
+
+        $result = (new KatoService())->syncAgentFloatBalancesFromKato($agent, $bu);
+
+        $this->assertTrue($result['success']);
+        $this->assertSame(50000.0, (float) $agent->floatAccount()->fresh()->balance);
+        $this->assertSame(1250.0, (float) $agent->commissionAccount()->fresh()->balance);
+
+        Http::assertSent(function ($request) {
+            return str_contains($request->url(), self::KATO_BASE.'/float')
+                && ($request->data()['agentAccountNumber'] ?? null) === 'AGTFLOAT1FLOAT';
+        });
+    }
+
+    public function test_agent_show_accounts_tab_syncs_float_from_kato(): void
+    {
+        Http::fake([
+            self::KATO_BASE.'/float*' => Http::response([
+                'success' => true,
+                'data' => [
+                    'agentId' => 'AGTUI01',
+                    'floatAccountNumber' => 'AGTUI01FLOAT',
+                    'floatAccountBalance' => 42000.00,
+                    'commissionAccountNumber' => 'AGTUI01COMM',
+                    'commissionAccountBalance' => 900.00,
+                ],
+            ], 200),
+        ]);
+
+        $bu = $this->createKatoBusinessUnit();
+        $user = User::factory()->create([
+            'is_super_admin' => true,
+            'current_business_unit_id' => $bu->id,
+        ]);
+
+        $agent = Agent::create([
+            'business_unit_id' => $bu->id,
+            'first_name' => 'UI',
+            'second_name' => 'Float',
+            'email' => 'ui-float-'.uniqid().'@test.local',
+            'username' => 'uifloat'.substr(uniqid(), 0, 8),
+            'phone_number' => '+22670000002',
+            'id_passport' => 'ID-'.uniqid(),
+            'password' => Hash::make('password'),
+            'kato_agent_id' => 'AGTUI01',
+        ]);
+        $this->seedAgentKatoAccounts($agent, 'AGTUI01');
+        $agent->floatAccount()?->update(['balance' => 100]);
+
+        $response = $this->actingAs($user)
+            ->get(route('agents.show', ['agent' => $agent->id, 'tab' => 'accounts']));
+
+        $response->assertOk();
+        $response->assertSee(__('common.kato_balances_synced'), false);
+        $this->assertSame(42000.0, (float) $agent->floatAccount()->fresh()->balance);
+
+        Http::assertSent(function ($request) {
+            return str_contains($request->url(), self::KATO_BASE.'/float');
+        });
+    }
+
+    public function test_agent_show_accounts_tab_does_not_call_kato_when_not_kato_bu(): void
+    {
+        Http::fake();
+
+        $bu = BusinessUnit::create([
+            'name' => 'Non KATO BU',
+            'slug' => 'non-kato-'.uniqid(),
+            'is_active' => true,
+        ]);
+
+        $user = User::factory()->create([
+            'is_super_admin' => true,
+            'current_business_unit_id' => $bu->id,
+        ]);
+
+        $agent = Agent::create([
+            'business_unit_id' => $bu->id,
+            'first_name' => 'Local',
+            'second_name' => 'Only',
+            'email' => 'local-'.uniqid().'@test.local',
+            'username' => 'local'.substr(uniqid(), 0, 8),
+            'phone_number' => '+22670000003',
+            'id_passport' => 'ID-'.uniqid(),
+            'password' => Hash::make('password'),
+        ]);
+
+        $response = $this->actingAs($user)
+            ->get(route('agents.show', ['agent' => $agent->id, 'tab' => 'accounts']));
+
+        $response->assertOk();
+        $response->assertDontSee(__('common.kato_balances_synced'), false);
+
+        Http::assertNothingSent();
     }
 }

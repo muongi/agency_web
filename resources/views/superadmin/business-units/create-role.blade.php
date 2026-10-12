@@ -4,13 +4,13 @@
 
 @section('content')
 <div class="card">
-    <h1 style="margin-bottom: 24px; color: #4a9eff;">{{ __('common.create_role') }} - {{ $businessUnit->name }}</h1>
+    <h1 style="margin-bottom: 24px; color: var(--accent);">{{ __('common.create_role') }} - {{ $businessUnit->name }}</h1>
     
     <form method="POST" action="{{ route('superadmin.business-units.store-role', $businessUnit->id) }}">
         @csrf
 
         <div class="form-group">
-            <label class="form-label" for="name">{{ __('common.role_name') }} <span style="color: #ff6b6b;">*</span></label>
+            <label class="form-label" for="name">{{ __('common.role_name') }} <span class="text-error">*</span></label>
             <input 
                 type="text" 
                 id="name" 
@@ -22,7 +22,7 @@
                 placeholder="e.g., Manager, Employee, Admin"
             >
             @error('name')
-                <div style="color: #ff6b6b; margin-top: 5px; font-size: 14px;">{{ $message }}</div>
+                <div class="field-error">{{ $message }}</div>
             @enderror
         </div>
 
@@ -35,11 +35,11 @@
                 rows="4"
             >{{ old('description') }}</textarea>
             @error('description')
-                <div style="color: #ff6b6b; margin-top: 5px; font-size: 14px;">{{ $message }}</div>
+                <div class="field-error">{{ $message }}</div>
             @enderror
         </div>
 
-        <div style="display: flex; gap: 10px; margin-top: 24px;">
+        <div class="btn-row mt-24">
             <button type="submit" class="btn">{{ __('common.create') }}</button>
             <a href="{{ route('superadmin.business-units.users', $businessUnit->id) }}" class="btn btn-secondary">{{ __('common.cancel') }}</a>
         </div>

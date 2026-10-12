@@ -11,21 +11,21 @@
         </p>
     </div>
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 15px;">
-        <h1 style="color: var(--accent-color);">{{ __('common.commission_setup') }}</h1>
+        <h1 class="text-accent">{{ __('common.commission_setup') }}</h1>
         @if($transactionTypes->count() > 0)
             <a href="{{ route('business.config.commissions.create') }}" class="btn">+ {{ __('common.add_commission') }}</a>
         @endif
     </div>
 
     @if($transactionTypes->count() === 0)
-        <div style="text-align: center; padding: 40px; color: var(--text-muted);">
-            <p style="margin-bottom: 20px;">{{ __('common.no_transaction_types_available') }}</p>
-            <a href="{{ route('business.config.transaction-types.create') }}" class="btn">{{ __('common.create_transaction_type_first') }}</a>
+        <div class="muted-center">
+            <p class="mb-20">{{ __('common.no_assigned_transaction_types') }}</p>
+            <p style="margin-bottom: 20px; font-size: 14px;">{{ __('common.contact_superadmin_to_assign_types') }}</p>
         </div>
     @else
         <!-- Search Form -->
-        <form method="GET" action="{{ route('business.config.commissions.index') }}" style="margin-bottom: 20px;">
-            <div style="display: flex; gap: 10px;">
+        <form method="GET" action="{{ route('business.config.commissions.index') }}" class="mb-20">
+            <div class="btn-row">
                 <input 
                     type="text" 
                     name="search" 
@@ -42,33 +42,33 @@
         </form>
 
         @if($commissions->count() > 0)
-            <div style="overflow-x: auto;">
-                <table style="width: 100%; border-collapse: collapse;">
+            <div class="data-table">
+                <table>
                     <thead>
                         <tr style="border-bottom: 2px solid var(--border-color);">
-                            <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.transaction_type') }}</th>
-                            <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.commission_type') }}</th>
-                            <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.commission_value') }}</th>
-                            <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.status') }}</th>
-                            <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.actions') }}</th>
+                            <th>{{ __('common.transaction_type') }}</th>
+                            <th>{{ __('common.commission_type') }}</th>
+                            <th>{{ __('common.commission_value') }}</th>
+                            <th>{{ __('common.status') }}</th>
+                            <th>{{ __('common.actions') }}</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach($commissions as $commission)
                             <tr style="border-bottom: 1px solid var(--border-color);">
-                                <td style="padding: 12px;">
+                                <td>
                                     <strong>{{ $commission->transactionType->name }}</strong>
                                     <br>
                                     <code style="background: var(--bg-tertiary); padding: 2px 6px; border-radius: 4px; font-size: 11px;">{{ $commission->transactionType->code }}</code>
                                 </td>
-                                <td style="padding: 12px;">
+                                <td>
                                     <span style="text-transform: capitalize;">{{ str_replace('_', ' ', $commission->commission_type) }}</span>
                                     @if(in_array($commission->commission_type, ['tiered', 'tiered_percentage', 'tiered_fixed']))
                                         <br>
-                                        <small style="color: var(--text-muted);">({{ $commission->tiers->count() }} {{ __('common.tiers') }})</small>
+                                        <small class="muted">({{ $commission->tiers->count() }} {{ __('common.tiers') }})</small>
                                     @endif
                                 </td>
-                                <td style="padding: 12px;">
+                                <td>
                                     @if($commission->commission_type === 'fixed')
                                         {{ number_format($commission->fixed_amount, 2) }}
                                     @elseif($commission->commission_type === 'percentage')
@@ -77,21 +77,21 @@
                                         {{ __('common.tiered_structure') }}
                                     @endif
                                 </td>
-                                <td style="padding: 12px;">
+                                <td>
                                     @if($commission->is_active)
-                                        <span style="color: var(--success-text);">{{ __('common.active') }}</span>
+                                        <span class="badge badge-success">{{ __('common.active') }}</span>
                                     @else
-                                        <span style="color: var(--error-text);">{{ __('common.inactive') }}</span>
+                                        <span class="text-error">{{ __('common.inactive') }}</span>
                                     @endif
                                 </td>
-                                <td style="padding: 12px;">
+                                <td>
                                     <div style="display: flex; gap: 5px;">
-                                        <a href="{{ route('business.config.commissions.show', $commission->id) }}" class="btn" style="padding: 6px 12px; font-size: 12px;">{{ __('common.view') }}</a>
-                                        <a href="{{ route('business.config.commissions.edit', $commission->id) }}" class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">{{ __('common.edit') }}</a>
+                                        <a href="{{ route('business.config.commissions.show', $commission->id) }}" class="btn btn-sm">{{ __('common.view') }}</a>
+                                        <a href="{{ route('business.config.commissions.edit', $commission->id) }}" class="btn btn-secondary btn-sm">{{ __('common.edit') }}</a>
                                         <form action="{{ route('business.config.commissions.destroy', $commission->id) }}" method="POST" style="display: inline;" onsubmit="return confirm('{{ __('common.confirm_delete') }}');">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="btn btn-danger" style="padding: 6px 12px; font-size: 12px;">{{ __('common.delete') }}</button>
+                                            <button type="submit" class="btn btn-danger btn-sm">{{ __('common.delete') }}</button>
                                         </form>
                                     </div>
                                 </td>
@@ -101,12 +101,12 @@
                 </table>
             </div>
 
-            <div style="margin-top: 20px;">
+            <div class="mt-20">
                 {{ $commissions->links() }}
             </div>
         @else
-            <div style="text-align: center; padding: 40px; color: var(--text-muted);">
-                <p style="margin-bottom: 20px;">{{ __('common.no_commissions') }}</p>
+            <div class="muted-center">
+                <p class="mb-20">{{ __('common.no_commissions') }}</p>
                 <a href="{{ route('business.config.commissions.create') }}" class="btn">{{ __('common.add_commission') }}</a>
             </div>
         @endif

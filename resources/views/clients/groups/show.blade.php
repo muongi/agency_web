@@ -6,8 +6,8 @@
 @section('content')
 <div class="card">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 15px;">
-        <h1 style="color: var(--accent-color);">{{ $group->name }}</h1>
-        <div style="display: flex; gap: 10px;">
+        <h1 class="text-accent">{{ $group->name }}</h1>
+        <div class="btn-row">
             <a href="{{ route('clients.groups.edit', $group->id) }}" class="btn">{{ __('common.edit') }}</a>
             <form method="POST" action="{{ route('clients.groups.destroy', $group->id) }}" style="display: inline;" onsubmit="return confirm('{{ __('common.confirm_delete') }}');">
                 @csrf
@@ -26,7 +26,7 @@
         </div>
 
         @if($group->description)
-        <div style="grid-column: 1 / -1;">
+        <div class="detail-full">
             <label style="color: var(--text-muted); font-size: 14px;">{{ __('common.description') }}</label>
             <div style="padding: 10px; background: var(--bg-tertiary); border-radius: 4px; margin-top: 5px; color: var(--text-primary);">
                 {{ $group->description }}
@@ -46,7 +46,7 @@
         <h2 style="color: var(--accent-color); margin-bottom: 20px;">{{ __('common.group_members') }}</h2>
         
         @if($group->clients->count() > 0)
-            <div style="overflow-x: auto;">
+            <div class="data-table">
                 <table>
                     <thead>
                         <tr>
@@ -71,9 +71,9 @@
                 </table>
             </div>
         @else
-            <div style="text-align: center; padding: 40px; color: var(--text-muted);">
+            <div class="muted-center">
                 <p>{{ __('common.no_members_in_group') }}</p>
-                <a href="{{ route('clients.groups.edit', $group->id) }}" class="btn" style="margin-top: 20px;">{{ __('common.add_members') }}</a>
+                <a href="{{ route('clients.groups.edit', $group->id) }}" class="btn mt-20">{{ __('common.add_members') }}</a>
             </div>
         @endif
     </div>

@@ -54,43 +54,25 @@ class BackfillKatoAgentAccounts extends Command
             }
 
             try {
-                $result = $katoService->getAgentFloat($businessUnit, $floatAccountNumber);
+                $result = $katoService->syncAgentFloatBalancesFromKato($agent, $businessUnit);
 
                 if (! $result['success']) {
-                    $this->warn("Agent {$agent->id}: {$result['error']}");
+                    $this->warn("Agent {$agent->id}: ".($result['error'] ?? 'Sync failed'));
                     $failed++;
                     continue;
                 }
 
-                $accounts = [
-                    [
-                        'accountNumber' => $result['data']['floatAccountNumber'] ?? $floatAccountNumber,
-                        'code' => 'FLOAT',
-                        'description' => 'Agent Float Account',
-                        'balance' => $result['data']['floatAccountBalance'] ?? 0,
-                    ],
-                ];
+                $updated = (int) ($result['sync']['updated'] ?? 0);
 
-                if (! empty($result['data']['commissionAccountNumber'])) {
-                    $accounts[] = [
-                        'accountNumber' => $result['data']['commissionAccountNumber'],
-                        'code' => 'COMM',
-                        'description' => 'Agent Commission Account',
-                        'balance' => $result['data']['commissionAccountBalance'] ?? 0,
-                    ];
-                }
-
-                $sync = $katoService->syncAgentAccountsFromKato($agent, $businessUnit, $accounts);
-
-                if ($sync['updated'] > 0) {
-                    $this->info("Agent {$agent->id}: synced {$sync['updated']} KATO account(s)");
+                if ($updated > 0) {
+                    $this->info("Agent {$agent->id}: synced {$updated} KATO account(s)");
                     $synced++;
                 } else {
                     $this->warn("Agent {$agent->id}: no accounts updated");
                     $failed++;
                 }
 
-                foreach ($sync['errors'] as $error) {
+                foreach ($result['sync']['errors'] ?? [] as $error) {
                     $this->warn("Agent {$agent->id}: {$error}");
                 }
             } catch (\Throwable $e) {

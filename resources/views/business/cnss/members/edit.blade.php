@@ -5,7 +5,7 @@
 
 @section('content')
 <div class="card">
-    <div style="margin-bottom: 20px;">
+    <div class="mb-20">
         <h1 style="color: var(--accent-color); margin-bottom: 8px;">{{ __('common.cnss_edit_member') }}</h1>
         <p style="color: var(--text-muted); margin: 0;">
             <a href="{{ route('business.cnss.members.show', $enrollment->id) }}">{{ __('common.cnss_member_detail') }}</a>
@@ -87,7 +87,7 @@
                 <input type="email" name="identification[email]" class="form-control" value="{{ old('identification.email', $identification['email'] ?? '') }}">
                 @error('identification.email')<div style="color: var(--error-text); font-size: 12px;">{{ $message }}</div>@enderror
             </div>
-            <div class="form-group" style="grid-column: 1 / -1;">
+            <div class="form-group detail-full">
                 <label class="form-label">{{ __('common.cnss_address') }}</label>
                 <textarea name="identification[address]" class="form-control" rows="2">{{ old('identification.address', $identification['address'] ?? $identification['postal_address'] ?? '') }}</textarea>
             </div>
@@ -148,23 +148,23 @@
                 <input type="text" name="beneficiary[emergency_contact_phone]" class="form-control" value="{{ old('beneficiary.emergency_contact_phone', $beneficiary['emergency_contact_phone'] ?? $enrollment->emergency_contact_phone) }}">
             </div>
             <div class="form-group">
-                <label class="form-label">Father name</label>
+                <label class="form-label">{{ __('common.cnss_father_name') }}</label>
                 <input type="text" name="beneficiary[father_name]" class="form-control" value="{{ old('beneficiary.father_name', $beneficiary['father_name'] ?? '') }}">
             </div>
             <div class="form-group">
-                <label class="form-label">Mother name</label>
+                <label class="form-label">{{ __('common.cnss_mother_name') }}</label>
                 <input type="text" name="beneficiary[mother_name]" class="form-control" value="{{ old('beneficiary.mother_name', $beneficiary['mother_name'] ?? '') }}">
             </div>
             <div class="form-group">
-                <label class="form-label">Spouse name</label>
+                <label class="form-label">{{ __('common.cnss_spouse_name') }}</label>
                 <input type="text" name="beneficiary[spouse_name]" class="form-control" value="{{ old('beneficiary.spouse_name', $beneficiary['spouse_name'] ?? $beneficiary['spouse_full_name'] ?? '') }}">
             </div>
-            <div class="form-group" style="grid-column: 1 / -1;">
-                <label class="form-label">Children / dependents</label>
+            <div class="form-group detail-full">
+                <label class="form-label">{{ __('common.cnss_children_dependents') }}</label>
                 <textarea name="beneficiary[children]" class="form-control" rows="2">{{ old('beneficiary.children', $beneficiary['children'] ?? $beneficiary['dependent_children'] ?? '') }}</textarea>
             </div>
-            <div class="form-group" style="grid-column: 1 / -1;">
-                <label class="form-label">Beneficiary address</label>
+            <div class="form-group detail-full">
+                <label class="form-label">{{ __('common.cnss_beneficiary_address') }}</label>
                 <textarea name="beneficiary[address]" class="form-control" rows="2">{{ old('beneficiary.address', $beneficiary['address'] ?? $beneficiary['beneficiary_address'] ?? '') }}</textarea>
             </div>
         </div>

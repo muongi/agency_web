@@ -33,6 +33,7 @@ class CnssApiTest extends TestCase
             'name' => 'Test BU CNSS',
             'slug' => 'test-bu-cnss-'.uniqid(),
             'is_active' => true,
+            'cnss_enabled' => true,
         ]);
     }
 
@@ -469,6 +470,7 @@ class CnssApiTest extends TestCase
             'code' => $code,
             'description' => null,
             'is_active' => true,
+            'cnss_enabled' => true,
         ]);
         $tt->businessUnits()->syncWithoutDetaching([$this->businessUnit->id]);
 
@@ -540,6 +542,7 @@ class CnssApiTest extends TestCase
             'name' => 'CNSS ledger test 2',
             'code' => $code,
             'is_active' => true,
+            'cnss_enabled' => true,
         ]);
         $tt->businessUnits()->syncWithoutDetaching([$this->businessUnit->id]);
 
@@ -607,6 +610,7 @@ class CnssApiTest extends TestCase
             'code' => $code,
             'description' => null,
             'is_active' => true,
+            'cnss_enabled' => true,
         ]);
         $tt->businessUnits()->syncWithoutDetaching([$this->businessUnit->id]);
 
@@ -663,6 +667,7 @@ class CnssApiTest extends TestCase
             'code' => $code,
             'description' => null,
             'is_active' => true,
+            'cnss_enabled' => true,
         ]);
         $tt->businessUnits()->syncWithoutDetaching([$this->businessUnit->id]);
 
@@ -715,6 +720,7 @@ class CnssApiTest extends TestCase
             'name' => 'Second BU contrib',
             'slug' => 'test-bu-cnss-contrib-2-'.uniqid(),
             'is_active' => true,
+            'cnss_enabled' => true,
         ]);
 
         $r1 = $this->postJson('/api/v1/cnss/voluntary-enrollments', $this->enrollmentPayload());
@@ -748,6 +754,7 @@ class CnssApiTest extends TestCase
             'code' => $code,
             'description' => null,
             'is_active' => true,
+            'cnss_enabled' => true,
         ]);
         $tt->businessUnits()->syncWithoutDetaching([$this->businessUnit->id]);
 
@@ -809,6 +816,7 @@ class CnssApiTest extends TestCase
             'name' => 'Second BU CNSS',
             'slug' => 'test-bu-cnss-2-'.uniqid(),
             'is_active' => true,
+            'cnss_enabled' => true,
         ]);
 
         $r1 = $this->postJson('/api/v1/cnss/voluntary-enrollments', $this->enrollmentPayload());
@@ -906,6 +914,7 @@ class CnssApiTest extends TestCase
             'name' => 'Second BU CNSS search',
             'slug' => 'test-bu-cnss-search-2-'.uniqid(),
             'is_active' => true,
+            'cnss_enabled' => true,
         ]);
 
         $r1 = $this->postJson('/api/v1/cnss/voluntary-enrollments', $this->enrollmentPayload());
@@ -934,6 +943,7 @@ class CnssApiTest extends TestCase
             'name' => 'Other BU CNSS',
             'slug' => 'test-bu-cnss-other-'.uniqid(),
             'is_active' => true,
+            'cnss_enabled' => true,
         ]);
 
         $r1 = $this->postJson('/api/v1/cnss/voluntary-enrollments', $this->enrollmentPayload());
@@ -974,5 +984,15 @@ class CnssApiTest extends TestCase
             ->assertJsonPath('ambiguous', false)
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.business_unit_id', $this->businessUnit->id);
+    }
+
+    public function test_enrollment_forbidden_when_cnss_module_disabled(): void
+    {
+        $this->businessUnit->update(['cnss_enabled' => false]);
+
+        $this->postJson('/api/v1/cnss/voluntary-enrollments', $this->enrollmentPayload())
+            ->assertStatus(403)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('message', __('common.cnss_module_disabled'));
     }
 }

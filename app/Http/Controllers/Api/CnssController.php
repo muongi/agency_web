@@ -45,6 +45,13 @@ class CnssController extends Controller
                 ], 404);
             }
 
+            if (! $businessUnit->isCnssEnabled()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => __('common.cnss_module_disabled'),
+                ], 403);
+            }
+
             $resolvedTerminalId = null;
             $resolvedAgentId = null;
 
@@ -230,14 +237,39 @@ class CnssController extends Controller
      */
     protected function resolveEnrollmentTerminalFromSerial(int $businessUnitId, string $serial, string $fieldLabel): array|JsonResponse
     {
-        $terminal = Terminal::where('serial_number', $serial)
-            ->where('business_unit_id', $businessUnitId)
+        $serial = trim($serial);
+        $registered = Terminal::where('business_unit_id', $businessUnitId)
+            ->orderBy('id')
+            ->pluck('serial_number')
+            ->all();
+
+        Log::info('CNSS_TERMINAL_LOOKUP', [
+            'received_serial' => $serial,
+            'field' => $fieldLabel,
+            'business_unit_id' => $businessUnitId,
+            'registered_serials' => $registered,
+        ]);
+
+        $terminal = Terminal::where('business_unit_id', $businessUnitId)
+            ->where(function ($q) use ($serial) {
+                $q->where('serial_number', $serial)
+                    ->orWhereRaw('LOWER(serial_number) = ?', [strtolower($serial)]);
+            })
             ->first();
 
         if (! $terminal) {
+            Log::warning('CNSS_TERMINAL_NOT_FOUND', [
+                'received_serial' => $serial,
+                'field' => $fieldLabel,
+                'business_unit_id' => $businessUnitId,
+                'registered_serials' => $registered,
+            ]);
+
             return response()->json([
                 'success' => false,
                 'message' => "Terminal with {$fieldLabel} '{$serial}' not found for business unit {$businessUnitId}",
+                'received_serial' => $serial,
+                'registered_serials' => $registered,
             ], 422);
         }
 
@@ -246,6 +278,7 @@ class CnssController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => "Terminal '{$serial}' has no active agent assignment",
+                'received_serial' => $serial,
             ], 422);
         }
 
@@ -460,6 +493,13 @@ class CnssController extends Controller
                 ], 404);
             }
 
+            if (! $businessUnit->isCnssEnabled()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => __('common.cnss_module_disabled'),
+                ], 403);
+            }
+
             $mode = $request->input('mode', CnssContribution::MODE_RECORD);
             if (! in_array($mode, [CnssContribution::MODE_RECORD, CnssContribution::MODE_LEDGER], true)) {
                 $mode = CnssContribution::MODE_RECORD;
@@ -543,7 +583,11 @@ class CnssController extends Controller
             ], 422);
         }
 
-        if (! Hash::check($pin, $agent->password)) {
+        // Collection PIN when the agent has one (with lockout), else the legacy login password
+        $pinOk = $agent->hasCollectionPin()
+            ? $agent->checkCollectionPin((string) $pin) === 'ok'
+            : Hash::check($pin, $agent->password);
+        if (! $pinOk) {
             Log::warning('API_CNSS_LEDGER_INVALID_PIN', [
                 'agent_id' => $agent->id,
                 'business_unit_id' => $businessUnitId,

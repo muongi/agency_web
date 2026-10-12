@@ -28,9 +28,8 @@ class BusinessRoleController extends Controller
     public function create()
     {
         $businessUnit = auth()->user()->currentBusinessUnit;
-        // Get all permissions except super admin only permissions
-        $superAdminOnlyPermissions = ['view-business-unit', 'edit-business-unit', 'configure-sms', 'load-sms-credits', 'view-all-sms-balances'];
-        $permissions = Permission::whereNotIn('slug', $superAdminOnlyPermissions)
+        // Assignable permissions only (no super admin / hidden banking or CNSS groups)
+        $permissions = Permission::assignable()
             ->orderBy('group')
             ->orderBy('name')
             ->get()
@@ -50,11 +49,7 @@ class BusinessRoleController extends Controller
             'permissions.*' => 'exists:permissions,id',
         ]);
 
-        // Filter out super admin only permissions
-        $superAdminOnlyPermissions = Permission::whereIn('slug', ['view-business-unit', 'edit-business-unit', 'configure-sms', 'load-sms-credits', 'view-all-sms-balances'])->pluck('id')->toArray();
-        $filteredPermissions = $request->has('permissions') 
-            ? array_diff($request->permissions, $superAdminOnlyPermissions)
-            : [];
+        $filteredPermissions = Permission::syncIdsForRole(null, $request->input('permissions', []));
 
         $validated['slug'] = Str::slug($validated['name']);
         $validated['business_unit_id'] = $businessUnit->id;
@@ -73,9 +68,8 @@ class BusinessRoleController extends Controller
     {
         $businessUnit = auth()->user()->currentBusinessUnit;
         $role = $businessUnit->roles()->with('permissions')->findOrFail($id);
-        // Get all permissions except super admin only permissions
-        $superAdminOnlyPermissions = ['view-business-unit', 'edit-business-unit', 'configure-sms', 'load-sms-credits', 'view-all-sms-balances'];
-        $permissions = Permission::whereNotIn('slug', $superAdminOnlyPermissions)
+        // Assignable permissions only (no super admin / hidden banking or CNSS groups)
+        $permissions = Permission::assignable()
             ->orderBy('group')
             ->orderBy('name')
             ->get()
@@ -98,15 +92,8 @@ class BusinessRoleController extends Controller
 
         $role->update($validated);
 
-        // Filter out super admin only permissions
-        $superAdminOnlyPermissions = Permission::whereIn('slug', ['view-business-unit', 'edit-business-unit', 'configure-sms', 'load-sms-credits', 'view-all-sms-balances'])->pluck('id')->toArray();
-        if ($request->has('permissions')) {
-            $filteredPermissions = array_diff($request->permissions, $superAdminOnlyPermissions);
-            $role->permissions()->sync($filteredPermissions);
-        } else {
-            // If no permissions selected, remove all (including super admin ones)
-            $role->permissions()->detach();
-        }
+        // Ticked assignable permissions + hidden ones the role already has (kept for core banking / CNSS)
+        $role->permissions()->sync(Permission::syncIdsForRole($role, $request->input('permissions', [])));
 
         return redirect()->route('business.roles.index')
             ->with('success', __('common.updated_successfully'));

@@ -18,7 +18,7 @@
         </div>
     </div>
 @else
-<div class="card" style="margin-bottom: 20px;">
+<div class="card mb-20">
     <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; margin-bottom: 20px;">
         <div>
             <h1 style="color: var(--accent-color); margin-bottom: 8px;">{{ __('common.cnss_member_detail') }}</h1>
@@ -158,33 +158,33 @@
     <h2 style="color: var(--accent-color); margin-bottom: 16px;">{{ __('common.cnss_contributions') }}</h2>
 
     @if($enrollment->contributions->isEmpty())
-        <p style="color: var(--text-muted);">{{ __('common.cnss_no_contributions') }}</p>
+        <p class="muted">{{ __('common.cnss_no_contributions') }}</p>
     @else
-        <div style="overflow-x: auto;">
-            <table style="width: 100%; border-collapse: collapse;">
+        <div class="data-table">
+            <table>
                 <thead>
                     <tr style="border-bottom: 2px solid var(--border-color);">
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.cnss_mode') }}</th>
+                        <th>{{ __('common.cnss_mode') }}</th>
                         <th style="padding: 12px; text-align: right; color: var(--accent-color);">{{ __('common.cnss_amount') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.cnss_reference_period') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.cnss_payment_frequency') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.transaction_reference') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.created_at') }}</th>
-                        <th style="padding: 12px; text-align: left; color: var(--accent-color);">{{ __('common.actions') }}</th>
+                        <th>{{ __('common.cnss_reference_period') }}</th>
+                        <th>{{ __('common.cnss_payment_frequency') }}</th>
+                        <th>{{ __('common.transaction_reference') }}</th>
+                        <th>{{ __('common.created_at') }}</th>
+                        <th>{{ __('common.actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach($enrollment->contributions as $c)
                         <tr style="border-bottom: 1px solid var(--border-color);">
-                            <td style="padding: 12px;">{{ $c->mode }}</td>
+                            <td>{{ $c->mode }}</td>
                             <td style="padding: 12px; text-align: right; font-weight: bold;">{{ number_format((float) $c->amount, 2) }}</td>
-                            <td style="padding: 12px;">{{ $c->reference_period }}</td>
-                            <td style="padding: 12px;">{{ $c->payment_frequency }}</td>
-                            <td style="padding: 12px;">{{ $c->reference ?? '—' }}</td>
-                            <td style="padding: 12px;">{{ $c->created_at?->format('Y-m-d H:i') }}</td>
-                            <td style="padding: 12px;">
+                            <td>{{ $c->reference_period }}</td>
+                            <td>{{ $c->payment_frequency }}</td>
+                            <td>{{ $c->reference ?? '—' }}</td>
+                            <td>{{ $c->created_at?->format('Y-m-d H:i') }}</td>
+                            <td>
                                 @if($canViewTransactions && $c->transaction_id)
-                                    <a href="{{ route('transactions.show', $c->transaction_id) }}" class="btn" style="padding: 6px 12px; font-size: 12px;">{{ __('common.view_transaction') }}</a>
+                                    <a href="{{ route('transactions.show', $c->transaction_id) }}" class="btn btn-sm">{{ __('common.view_transaction') }}</a>
                                 @else
                                     —
                                 @endif

@@ -14,6 +14,7 @@ class Client extends Model
 
     protected $fillable = [
         'business_unit_id',
+        'insured_number',
         'salutation',
         'first_name',
         'middle_name',
@@ -26,6 +27,9 @@ class Client extends Model
         'gender',
         'marital_status',
         'year_of_birth',
+        'date_of_birth',
+        'place_of_birth',
+        'location',
         'region',
         'home_town',
         'nationality',
@@ -47,6 +51,7 @@ class Client extends Model
 
     protected $casts = [
         'year_of_birth' => 'string',
+        'date_of_birth' => 'date',
         'biometrics_status' => 'boolean',
         'kato_api_response' => 'array',
     ];
