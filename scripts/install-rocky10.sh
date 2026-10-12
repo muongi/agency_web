@@ -50,6 +50,10 @@ warn() { printf '\033[1;33m[warn] %s\033[0m\n' "$*"; }
 die()  { printf '\033[1;31m[error] %s\033[0m\n' "$*" >&2; exit 1; }
 
 [[ $EUID -eq 0 ]] || die "Run as root (sudo $0)"
+
+# sudo on Rocky resets PATH to secure_path, which leaves out /usr/local/bin (where Composer goes)
+export PATH="/usr/local/bin:$PATH"
+COMPOSER_BIN=/usr/local/bin/composer
 grep -q 'release 10' /etc/rocky-release 2>/dev/null || warn "Not Rocky 10 — continuing anyway"
 
 FIRST_INSTALL=no
@@ -203,18 +207,18 @@ cd "$APP_DIR"
 
 # The package ships vendor/, so Composer (and internet) is only needed for git installs
 install_composer_deps() {
-  if ! command -v composer >/dev/null 2>&1; then
+  if [[ ! -x "$COMPOSER_BIN" ]]; then
     log "Installing Composer"
     local expected actual
     expected="$(curl -fsSL https://composer.github.io/installer.sig)" || return 1
     php -r "copy('https://getcomposer.org/installer', '/tmp/composer-setup.php');" || return 1
     actual="$(php -r "echo hash_file('sha384', '/tmp/composer-setup.php');")" || return 1
     [[ "$expected" == "$actual" ]] || { warn "Composer installer checksum mismatch"; return 1; }
-    php /tmp/composer-setup.php --install-dir=/usr/local/bin --filename=composer --quiet || return 1
+    php /tmp/composer-setup.php --install-dir="$(dirname "$COMPOSER_BIN")" --filename=composer --quiet || return 1
     rm -f /tmp/composer-setup.php
   fi
   log "Installing PHP dependencies"
-  COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --optimize-autoloader --no-interaction || return 1
+  COMPOSER_ALLOW_SUPERUSER=1 php "$COMPOSER_BIN" install --no-dev --optimize-autoloader --no-interaction || return 1
 }
 if [[ "$SOURCE" == git ]] && ! install_composer_deps; then
   if [[ -d "$PKG_DIR/code/vendor" ]]; then
