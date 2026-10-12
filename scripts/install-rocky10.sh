@@ -10,9 +10,10 @@
 # Safe to re-run: a second run does `git pull`, composer install,
 # migrate and cache clear (an update), and never overwrites .env or the DB.
 #
-# Offline fallback: if GitHub cannot be reached, the code comes from the
-# install package zip (sunu_agency_<date>.zip) instead. Copy it to /tmp/,
-# either as the .zip or unzipped. On a first install the package also
+# Zip fallback: if anything git-related fails (no access, missing branch,
+# clone/fetch error, composer error), the code comes from the install
+# package sunu_agency_<date>.zip instead. Copy it to /tmp/, either as the
+# .zip or unzipped; the newest /tmp/sunu_agency_* is picked automatically. On a first install the package also
 # provides the database dump and the uploaded files, even when git works.
 #
 # Usage (as root on the server):
@@ -39,7 +40,7 @@ DB_NAME="${DB_NAME:-sunu_agency}"
 DB_USER="${DB_USER:-sunu}"
 DB_PASS="${DB_PASS:-$(openssl rand -base64 18 | tr -dc 'A-Za-z0-9' | head -c 20)}"
 SEED_PILOT="${SEED_PILOT:-yes}"                  # run SunuPilotSeeder on a first install without a DB dump
-PACKAGE="${PACKAGE:-/tmp/sunu_agency_20261012_1811}" # install package: folder, or the same path + .zip
+PACKAGE="${PACKAGE:-}"                           # install package zip or folder; empty = newest /tmp/sunu_agency_*
 USE_PACKAGE="${USE_PACKAGE:-auto}"               # auto = only if git fails, yes = always, no = never
 IMPORT_DATA="${IMPORT_DATA:-yes}"                # first install: load DB dump + uploads from the package
 # ---------------------------------------------------------------------
@@ -90,10 +91,15 @@ find_pkg_dir() {
   return 1
 }
 if [[ "$USE_PACKAGE" != no ]]; then
-  if [[ -d "$PACKAGE" ]]; then
+  if [[ -z "$PACKAGE" ]]; then
+    # Newest /tmp/sunu_agency_* zip or folder
+    PACKAGE="$(ls -1dt /tmp/sunu_agency_*.zip /tmp/sunu_agency_*/ 2>/dev/null | head -1 || true)"
+    PACKAGE="${PACKAGE%/}"
+  fi
+  if [[ -n "$PACKAGE" && -d "$PACKAGE" ]]; then
     find_pkg_dir "$PACKAGE" || true
   fi
-  if [[ -z "$PKG_DIR" ]]; then
+  if [[ -z "$PKG_DIR" && -n "$PACKAGE" ]]; then
     ZIP="$PACKAGE"
     [[ "$ZIP" == *.zip ]] || ZIP="$PACKAGE.zip"
     if [[ -f "$ZIP" ]]; then
@@ -104,18 +110,29 @@ if [[ "$USE_PACKAGE" != no ]]; then
     fi
   fi
   if [[ -n "$PKG_DIR" ]]; then
-    echo "Install package: $PKG_DIR"
+    echo "Install package found: $PKG_DIR"
   elif [[ "$USE_PACKAGE" == yes ]]; then
-    die "USE_PACKAGE=yes but no package at $PACKAGE(.zip)"
+    die "USE_PACKAGE=yes but no install package found (copy sunu_agency_*.zip to /tmp/)"
+  else
+    echo "No install package in /tmp/ (git only, no zip fallback)"
   fi
 fi
 
-# ---------------------------- git access -----------------------------
-# Decides SOURCE=git or SOURCE=package
-git_reachable() {
-  GIT_SSH_COMMAND="ssh -o BatchMode=yes -o ConnectTimeout=15" \
-    timeout 60 git ls-remote "$GIT_REPO" >/dev/null 2>&1
+# Switch to the zip after a git failure, or stop when there is no zip
+fallback_to_package() {
+  if [[ -n "$PKG_DIR" ]]; then
+    warn "$1 -> falling back to install package $PKG_DIR"
+    SOURCE=package
+  else
+    die "$1, and no install package in /tmp/. Copy sunu_agency_*.zip to /tmp/ and re-run."
+  fi
 }
+
+# ---------------------------- git access -----------------------------
+# Functions called from `if` run without set -e, so each step has `|| return 1`
+export GIT_SSH_COMMAND="ssh -o BatchMode=yes -o ConnectTimeout=15"
+repo_reachable()  { timeout 60 git ls-remote "$GIT_REPO" >/dev/null 2>&1; }
+branch_exists()   { timeout 60 git ls-remote --exit-code --heads "$GIT_REPO" "$GIT_BRANCH" >/dev/null 2>&1; }
 
 SOURCE=git
 if [[ "$USE_PACKAGE" == yes ]]; then
@@ -130,7 +147,7 @@ elif [[ "$GIT_REPO" == git@* ]]; then
   ssh-keyscan -H github.com >> /root/.ssh/known_hosts 2>/dev/null || true
 fi
 
-if [[ "$SOURCE" == git ]] && ! git_reachable; then
+if [[ "$SOURCE" == git ]] && ! repo_reachable; then
   if [[ "$GIT_REPO" == git@* ]]; then
     echo
     echo "GitHub not reachable with this server's key. To use git, add this public key to"
@@ -140,31 +157,39 @@ if [[ "$SOURCE" == git ]] && ! git_reachable; then
     echo "------------------------------------------------------------------------"
   fi
   if [[ -n "$PKG_DIR" ]]; then
-    warn "Git unavailable: falling back to install package $PKG_DIR"
-    SOURCE=package
+    fallback_to_package "Cannot reach $GIT_REPO"
   else
     read -rp "Press ENTER once the key is added (or Ctrl+C, copy the zip to /tmp/ and re-run)... "
-    git_reachable || die "Still cannot reach $GIT_REPO and no install package at $PACKAGE(.zip)"
+    repo_reachable || die "Still cannot reach $GIT_REPO and no install package in /tmp/"
   fi
+fi
+if [[ "$SOURCE" == git ]] && ! branch_exists; then
+  fallback_to_package "Branch '$GIT_BRANCH' not found on $GIT_REPO"
 fi
 
 # ---------------------------- code -----------------------------------
-mkdir -p "$(dirname "$APP_DIR")"
-if [[ "$SOURCE" == git ]]; then
+sync_from_git() {
+  git config --global --add safe.directory "$APP_DIR" || return 1
   if [[ -d "$APP_DIR/.git" ]]; then
     log "Updating code from git ($GIT_BRANCH)"
-    git config --global --add safe.directory "$APP_DIR"
-    git -C "$APP_DIR" fetch origin
-    git -C "$APP_DIR" checkout "$GIT_BRANCH"
-    git -C "$APP_DIR" reset --hard "origin/$GIT_BRANCH"
-  elif [[ -d "$APP_DIR" && -n "$(ls -A "$APP_DIR")" ]]; then
-    die "$APP_DIR exists but is not a git checkout (installed from the package?). Re-run with USE_PACKAGE=yes, or move it away."
+    git -C "$APP_DIR" fetch origin || return 1
+    git -C "$APP_DIR" checkout "$GIT_BRANCH" || return 1
+    git -C "$APP_DIR" reset --hard "origin/$GIT_BRANCH" || return 1
   else
     log "Cloning $GIT_REPO ($GIT_BRANCH) into $APP_DIR"
-    git clone --branch "$GIT_BRANCH" "$GIT_REPO" "$APP_DIR"
-    git config --global --add safe.directory "$APP_DIR"
+    git clone --branch "$GIT_BRANCH" "$GIT_REPO" "$APP_DIR" || return 1
   fi
-else
+}
+
+mkdir -p "$(dirname "$APP_DIR")"
+if [[ "$SOURCE" == git && ! -d "$APP_DIR/.git" && -d "$APP_DIR" && -n "$(ls -A "$APP_DIR")" ]]; then
+  fallback_to_package "$APP_DIR already exists and is not a git checkout (installed from a package before?)"
+fi
+if [[ "$SOURCE" == git ]] && ! sync_from_git; then
+  fallback_to_package "git clone/update failed"
+fi
+
+if [[ "$SOURCE" == package ]]; then
   log "Copying code from install package"
   # Server-only data (.env, uploads, logs, sessions) is excluded so --delete never touches it
   rsync -a --delete \
@@ -177,20 +202,29 @@ fi
 cd "$APP_DIR"
 
 # The package ships vendor/, so Composer (and internet) is only needed for git installs
-if [[ "$SOURCE" == git ]]; then
+install_composer_deps() {
   if ! command -v composer >/dev/null 2>&1; then
     log "Installing Composer"
-    EXPECTED="$(curl -fsSL https://composer.github.io/installer.sig)"
-    php -r "copy('https://getcomposer.org/installer', '/tmp/composer-setup.php');"
-    ACTUAL="$(php -r "echo hash_file('sha384', '/tmp/composer-setup.php');")"
-    [[ "$EXPECTED" == "$ACTUAL" ]] || die "Composer installer checksum mismatch"
-    php /tmp/composer-setup.php --install-dir=/usr/local/bin --filename=composer --quiet
+    local expected actual
+    expected="$(curl -fsSL https://composer.github.io/installer.sig)" || return 1
+    php -r "copy('https://getcomposer.org/installer', '/tmp/composer-setup.php');" || return 1
+    actual="$(php -r "echo hash_file('sha384', '/tmp/composer-setup.php');")" || return 1
+    [[ "$expected" == "$actual" ]] || { warn "Composer installer checksum mismatch"; return 1; }
+    php /tmp/composer-setup.php --install-dir=/usr/local/bin --filename=composer --quiet || return 1
     rm -f /tmp/composer-setup.php
   fi
   log "Installing PHP dependencies"
-  COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --optimize-autoloader --no-interaction
+  COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --optimize-autoloader --no-interaction || return 1
+}
+if [[ "$SOURCE" == git ]] && ! install_composer_deps; then
+  if [[ -d "$PKG_DIR/code/vendor" ]]; then
+    warn "Composer failed -> copying vendor/ from install package"
+    rsync -a --delete "$PKG_DIR/code/vendor/" "$APP_DIR/vendor/"
+  else
+    die "Composer failed and no install package vendor/ to fall back on"
+  fi
 fi
-[[ -f vendor/autoload.php ]] || die "vendor/ missing — composer install failed and no package vendor/"
+[[ -f vendor/autoload.php ]] || die "vendor/ missing in $APP_DIR"
 
 mkdir -p storage/app/public storage/app/cnss storage/logs \
   storage/framework/{cache/data,sessions,views} bootstrap/cache
