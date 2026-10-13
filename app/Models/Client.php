@@ -60,6 +60,21 @@ class Client extends Model
             ->useLogName('client');
     }
 
+    protected static function booted(): void
+    {
+        static::deleted(function (Client $client) {
+            $accountIds = $client->accounts()->pluck('id');
+            if ($accountIds->isEmpty()) {
+                return;
+            }
+
+            Card::whereIn('account_id', $accountIds)
+                ->whereIn('status', ['active', 'inactive'])
+                ->get()
+                ->each(fn (Card $card) => $card->block('Client deleted'));
+        });
+    }
+
     /**
      * Get the business unit that owns the client.
      */

@@ -646,11 +646,23 @@ class ApiTransactionController extends Controller
                 'kato' => $isKato,
             ]);
 
+            $holder = $customerAccount->accountable;
+
             return response()->json([
                 'success' => true,
                 'message' => 'Biometric withdrawal processed successfully',
+                'fees' => number_format((float) $tx->transaction_cost, 2, '.', ''),
+                'commission' => number_format((float) $tx->commission, 2, '.', ''),
                 'data' => [
                     'id' => $tx->id,
+                    'client_name' => $holder instanceof Client ? preg_replace('/\s+/', ' ', (string) $holder->full_name) : null,
+                    'account_number' => $tx->account_number,
+                    'reference' => $tx->reference,
+                    'transaction_date' => $tx->transaction_date->format('Y-m-d H:i:s'),
+                    'status' => $tx->status,
+                    'device_serial' => $deviceSerial,
+                    'transaction_type_code' => $transactionTypeCode,
+                    'transaction_amount' => number_format((float) $tx->transaction_amount, 2, '.', ''),
                 ],
             ], 201);
         } catch (InternalLedgerPostingException $e) {

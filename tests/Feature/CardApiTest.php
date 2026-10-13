@@ -106,6 +106,30 @@ class CardApiTest extends TestCase
             ->assertJsonPath('success', false);
     }
 
+    public function test_get_by_uid_returns_404_when_card_holder_was_deleted(): void
+    {
+        $data = $this->createBusinessUnitWithCard();
+        Client::withoutEvents(fn () => $data['client']->delete());
+
+        $this->getJson(
+            '/api/v1/cards/uid/04197D7AFE1D91?business_unit_id='.$data['bu']->id
+        )
+            ->assertNotFound()
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('message', 'Card holder not found (client deleted). Re-link the card.');
+    }
+
+    public function test_deleting_client_blocks_their_cards(): void
+    {
+        $data = $this->createBusinessUnitWithCard();
+
+        $data['client']->delete();
+
+        $data['card']->refresh();
+        $this->assertSame('blocked', $data['card']->status);
+        $this->assertSame('Client deleted', $data['card']->blocked_reason);
+    }
+
     public function test_mark_as_written_does_not_require_web_auth(): void
     {
         $data = $this->createBusinessUnitWithCard();

@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Card;
 use App\Models\Account;
 use App\Models\CardSettings;
+use App\Models\Client;
 use App\Services\CardNumberGeneratorService;
 use App\Services\ExportService;
 use Illuminate\Support\Facades\Hash;
@@ -654,6 +655,19 @@ class CardController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Card not found',
+            ], 404);
+        }
+
+        if ($card->account?->accountable_type === Client::class && ! $card->account->accountable) {
+            Log::info('Card API getByUid holder_missing', [
+                'card_id' => $card->id,
+                'account_id' => $card->account_id,
+                'client_id' => $card->account->accountable_id,
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Card holder not found (client deleted). Re-link the card.',
             ], 404);
         }
 

@@ -177,7 +177,13 @@ class InternalLedgerApiTest extends TestCase
             'reference' => 'REF-W-'.uniqid(),
         ]);
 
-        $res->assertStatus(201)->assertJsonPath('success', true);
+        $res->assertStatus(201)
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.client_name', 'C D')
+            ->assertJsonPath('data.account_number', $account->account_number)
+            ->assertJsonPath('data.transaction_amount', '10000.00')
+            ->assertJsonPath('fees', '100.00')
+            ->assertJsonPath('commission', '30.00');
 
         $tx = Transaction::findOrFail($res->json('data.id'));
         $this->assertNotNull($tx->ledger_posted_at);
