@@ -52,6 +52,7 @@ class SunuProductImportTest extends TestCase
         $res = $this->actingAs($this->admin)->get(route('business.sunu.products.import.sample'));
         $res->assertOk();
         $this->assertStringContainsString(implode(',', \App\Http\Controllers\SunuWebController::PRODUCT_IMPORT_COLUMNS), $res->streamedContent());
+        $this->assertStringContainsString('Mensuel', $res->streamedContent());
     }
 
     public function test_product_import_creates_derives_code_and_updates(): void
@@ -61,7 +62,8 @@ class SunuProductImportTest extends TestCase
             .";DCE-EXAZXX.;Capital Études;Annuel;\r\n"
             ."MICRO_RETRAITE;;Micro Épargne Retraite;;2500\r\n"
             ."BAD-CODE;;X;monthly;\r\n"
-            .";CPQOT2.;;Mensuel;\r\n";
+            .";CPQOT2.;;Mensuel;\r\n"
+            ."ENG_ONE;;English freq;quarterly;\r\n";
 
         $this->upload('business.sunu.products.import', $csv)
             ->assertRedirect(route('business.sunu.products.index'))
@@ -77,7 +79,8 @@ class SunuProductImportTest extends TestCase
         $this->assertSame('Micro Épargne Retraite', $existing->name_fr);
         $this->assertSame('2500.00', $existing->default_premium_amount);
         $this->assertSame('monthly', $existing->default_premium_frequency, 'empty cell keeps the value');
-        $this->assertSame(2, InsuranceProduct::where('business_unit_id', $this->bu->id)->count());
+        $this->assertSame('quarterly', InsuranceProduct::where('code', 'ENG_ONE')->value('default_premium_frequency'), 'English value accepted');
+        $this->assertSame(3, InsuranceProduct::where('business_unit_id', $this->bu->id)->count());
     }
 
     public function test_policy_import_reads_semicolon_french_frequency_and_sunulife_code(): void
@@ -126,6 +129,27 @@ class SunuProductImportTest extends TestCase
             ->assertSee(route('business.sunu.products.import.sample'))
             ->assertSee(route('business.sunu.products.import'))
             ->assertSee('name="file"', false);
+    }
+
+    public function test_policy_sample_is_in_french_and_both_test_files_import(): void
+    {
+        $sample = $this->actingAs($this->admin)->get(route('business.sunu.import.sample'))->streamedContent();
+        $this->assertStringContainsString('Mensuel', $sample);
+        $this->assertStringNotContainsString('monthly', $sample);
+
+        if (! is_readable('/cust/SUNU_TEST_1_products.csv') || ! is_readable('/cust/SUNU_TEST_2_customers.csv')) {
+            $this->markTestSkipped('SUNU test files not on this machine');
+        }
+        $this->upload('business.sunu.products.import', file_get_contents('/cust/SUNU_TEST_1_products.csv'))
+            ->assertSessionHas('import_errors', []);
+        foreach (['DCEIGXX' => 'DCEIGXX.', 'SUPERC2XX' => 'SUPERC2XX.', 'PFMXAZXXX' => 'PFMXAZXXX.', 'DCE_EXAZXX' => 'DCE-EXAZXX.', 'REDPXXXXX' => 'REDPXXXXX.'] as $code => $sl) {
+            $this->product($code, $sl); // already live before the test files
+        }
+        $this->upload('business.sunu.import.store', file_get_contents('/cust/SUNU_TEST_2_customers.csv'))
+            ->assertSessionHas('import_errors', []);
+        $this->assertSame(100, SunuPolicy::count());
+        $this->assertSame(['annual' => 74, 'monthly' => 25, 'semiannual' => 1],
+            SunuPolicy::selectRaw('premium_frequency, count(*) n')->groupBy('premium_frequency')->orderBy('premium_frequency')->pluck('n', 'premium_frequency')->map(fn ($n) => (int) $n)->all());
     }
 
     public function test_product_import_needs_manage_permission(): void

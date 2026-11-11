@@ -719,10 +719,10 @@ class SunuWebController extends Controller
         $date = now()->startOfMonth()->toDateString();
 
         $rows = [
-            ['ASS-000001', 'POL-000001', $codes[0], 'NDAYISHIMIYE', 'Jean', '25779000001', '2000', 'monthly', $date, ''],
-            ['ASS-000002', 'POL-000002', $codes[1], 'IRAKOZE', 'Aline', '25779000002', '5000', 'monthly', $date, 'SL-12345'],
+            ['ASS-000001', 'POL-000001', $codes[0], 'NDAYISHIMIYE', 'Jean', '25779000001', '2000', 'Mensuel', $date, ''],
+            ['ASS-000002', 'POL-000002', $codes[1], 'IRAKOZE', 'Aline', '25779000002', '5000', 'Annuel', $date, 'SL-12345'],
             // Same insured person, second product: own policy number.
-            ['ASS-000001', 'POL-000003', $codes[1], 'NDAYISHIMIYE', 'Jean', '25779000001', '5000', 'monthly', $date, ''],
+            ['ASS-000001', 'POL-000003', $codes[1], 'NDAYISHIMIYE', 'Jean', '25779000001', '5000', 'Unique', $date, ''],
         ];
 
         return response()->streamDownload(function () use ($rows) {
@@ -852,8 +852,8 @@ class SunuWebController extends Controller
     public function productImportSample(): StreamedResponse
     {
         $rows = [
-            ['MICRO_RETRAITE', '', 'Micro Épargne Retraite', 'Micro Retirement Savings', 'Retraite', 'monthly', '2500', '1000', 'VISA-001', '1', 'micro-insurance', '1'],
-            ['', 'DCE-EXAZXX.', 'Dotation Capital Études', 'Education Capital', 'Education', 'annual', '', '', '', '', 'sunulife', '1'],
+            ['MICRO_RETRAITE', '', 'Micro Épargne Retraite', 'Micro Retirement Savings', 'Retraite', 'Mensuel', '2500', '1000', 'VISA-001', '1', 'micro-insurance', '1'],
+            ['', 'DCE-EXAZXX.', 'Dotation Capital Études', 'Education Capital', 'Education', 'Annuel', '', '', '', '', 'sunulife', '1'],
         ];
 
         return response()->streamDownload(function () use ($rows) {

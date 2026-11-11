@@ -1062,7 +1062,7 @@ return [
     'sunu_guarantees' => 'Guarantees description',
     'sunu_active_on_pos' => 'Active (offered on POS terminals)',
     'sunu_product_import_title' => 'Import products (CSV)',
-    'sunu_product_import_help' => 'Columns: :columns. Key = code (existing code updated, empty cell = value kept). Empty code → derived from sunulife_product_code (DCE-EXAZXX. → DCE_EXAZXX). name_fr required. Separator , or ; accepted.',
+    'sunu_product_import_help' => 'Columns: :columns. Key = code (existing code updated, empty cell = value kept). Empty code → derived from sunulife_product_code (DCE-EXAZXX. → DCE_EXAZXX). name_fr required. default_premium_frequency: French (Mensuel, Trimestriel, Semestriel, Annuel, Unique = annual…) or English (monthly, quarterly, semiannual, annual…). Separator , or ; accepted.',
     'sunu_product_import_sample' => 'Download products sample CSV',
     'sunu_product_import_button' => 'Import products',
     'sunu_flash_product_import_done' => 'Product import done: :created created, :updated updated.',
