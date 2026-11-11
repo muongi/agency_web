@@ -27,6 +27,26 @@ class SunuWebController extends Controller
         'premium_amount', 'premium_frequency', 'effective_date', 'sunulife_policy_id',
     ];
 
+    /** French headers of the Phase 0 import (same order as IMPORT_COLUMNS). SUNU works in French. */
+    public const IMPORT_COLUMNS_FR = [
+        'numero_assure', 'numero_police', 'code_produit', 'nom', 'prenom', 'telephone',
+        'montant_prime', 'periodicite', 'date_effet', 'id_police_sunulife',
+    ];
+
+    /** Extra spellings accepted for the Phase 0 headers (after accents / spaces are normalised). */
+    public const IMPORT_HEADER_ALIASES = [
+        'numero_assure' => 'insured_number', 'no_assure' => 'insured_number', 'n_assure' => 'insured_number',
+        'numero_police' => 'policy_number', 'no_police' => 'policy_number', 'n_police' => 'policy_number',
+        'code_produit' => 'product_code', 'nom' => 'last_name', 'prenom' => 'first_name', 'prenoms' => 'first_name', 'prenom_s' => 'first_name',
+        'numero_de_police' => 'policy_number', 'numero_d_assure' => 'insured_number', 'code_du_produit' => 'product_code',
+        'montant_de_la_prime' => 'premium_amount', 'date_de_effet' => 'effective_date',
+        'first_names' => 'first_name', 'telephone' => 'phone', 'tel' => 'phone',
+        'montant_prime' => 'premium_amount', 'prime' => 'premium_amount', 'montant' => 'premium_amount',
+        'periodicite' => 'premium_frequency', 'frequence' => 'premium_frequency',
+        'date_effet' => 'effective_date', 'date_d_effet' => 'effective_date',
+        'id_police_sunulife' => 'sunulife_policy_id', 'id_sunulife' => 'sunulife_policy_id',
+    ];
+
     /** Permission needed by each action (role page groups "SUNU …" and "Configuration"). */
     public const PERMISSIONS = [
         'proposalsIndex' => 'view-sunu-proposals',
@@ -728,7 +748,7 @@ class SunuWebController extends Controller
         return response()->streamDownload(function () use ($rows) {
             $out = fopen('php://output', 'w');
             fwrite($out, "\xEF\xBB\xBF"); // BOM so Excel reads UTF-8
-            fputcsv($out, self::IMPORT_COLUMNS);
+            fputcsv($out, self::IMPORT_COLUMNS_FR);
             foreach ($rows as $row) {
                 fputcsv($out, $row);
             }
@@ -743,7 +763,7 @@ class SunuWebController extends Controller
             'file' => 'required|file|mimes:csv,txt',
         ]);
 
-        [$handle, $header, $delimiter] = self::openCsv($request->file('file')->getRealPath());
+        [$handle, $header, $delimiter] = self::openCsv($request->file('file')->getRealPath(), self::IMPORT_HEADER_ALIASES);
         if (! $header) {
             return back()->with('error', __('common.sunu_flash_import_empty'));
         }
@@ -848,6 +868,22 @@ class SunuWebController extends Controller
         'default_premium_amount', 'policy_cost_amount', 'visa_number', 'display_order', 'family', 'is_active',
     ];
 
+    /** French headers of the product import (same order as PRODUCT_IMPORT_COLUMNS). */
+    public const PRODUCT_IMPORT_COLUMNS_FR = [
+        'code', 'code_sunulife', 'nom_fr', 'nom_en', 'categorie', 'periodicite',
+        'prime_par_defaut', 'cout_police', 'numero_visa', 'ordre', 'famille', 'actif',
+    ];
+
+    public const PRODUCT_HEADER_ALIASES = [
+        'code_produit' => 'code', 'code_sunulife' => 'sunulife_product_code', 'code_produit_sunulife' => 'sunulife_product_code',
+        'nom_fr' => 'name_fr', 'nom' => 'name_fr', 'nom_francais' => 'name_fr', 'nom_en' => 'name_en', 'nom_anglais' => 'name_en',
+        'categorie' => 'category', 'periodicite' => 'default_premium_frequency', 'periodicite_par_defaut' => 'default_premium_frequency',
+        'frequence' => 'default_premium_frequency', 'prime_par_defaut' => 'default_premium_amount', 'prime' => 'default_premium_amount',
+        'montant_prime' => 'default_premium_amount', 'cout_police' => 'policy_cost_amount', 'cout_de_police' => 'policy_cost_amount',
+        'numero_visa' => 'visa_number', 'visa' => 'visa_number', 'ordre' => 'display_order', 'ordre_affichage' => 'display_order',
+        'famille' => 'family', 'actif' => 'is_active',
+    ];
+
     /** Sample CSV for the product import. */
     public function productImportSample(): StreamedResponse
     {
@@ -859,7 +895,7 @@ class SunuWebController extends Controller
         return response()->streamDownload(function () use ($rows) {
             $out = fopen('php://output', 'w');
             fwrite($out, "\xEF\xBB\xBF");
-            fputcsv($out, self::PRODUCT_IMPORT_COLUMNS);
+            fputcsv($out, self::PRODUCT_IMPORT_COLUMNS_FR);
             foreach ($rows as $row) {
                 fputcsv($out, $row);
             }
@@ -879,7 +915,7 @@ class SunuWebController extends Controller
         }
         $request->validate(['file' => 'required|file|mimes:csv,txt']);
 
-        [$handle, $header, $delimiter] = self::openCsv($request->file('file')->getRealPath());
+        [$handle, $header, $delimiter] = self::openCsv($request->file('file')->getRealPath(), self::PRODUCT_HEADER_ALIASES);
         if (! $header) {
             return back()->with('error', __('common.sunu_flash_import_empty'));
         }
@@ -960,9 +996,11 @@ class SunuWebController extends Controller
 
     /**
      * Open an uploaded CSV: strips the Excel BOM and detects the separator from the header line
-     * (French Excel saves with ";"). Returns [handle, snake_case header or null, delimiter].
+     * (French Excel saves with ";"). Headers are normalised (accents, case, spaces: "Date d'effet" →
+     * date_d_effet) then mapped through $aliases to the internal names, so French and English both work.
+     * Returns [handle, header or null, delimiter].
      */
-    public static function openCsv(string $path): array
+    public static function openCsv(string $path, array $aliases = []): array
     {
         $handle = fopen($path, 'r');
         $first = (string) fgets($handle);
@@ -970,7 +1008,11 @@ class SunuWebController extends Controller
         $delimiter = substr_count($first, ';') > substr_count($first, ',') ? ';' : ',';
         $header = $first === '' ? null : str_getcsv(rtrim($first, "\r\n"), $delimiter);
         if ($header) {
-            $header = array_map(fn ($h) => Str::snake(trim(strtolower((string) $h))), $header);
+            $header = array_map(function ($h) use ($aliases) {
+                $key = trim(preg_replace('/[^a-z0-9]+/', '_', strtolower(Str::ascii(str_replace('°', 'o', (string) $h)))), '_');
+
+                return $aliases[$key] ?? $key;
+            }, $header);
         }
 
         return [$handle, $header, $delimiter];

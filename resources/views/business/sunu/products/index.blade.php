@@ -19,7 +19,7 @@
     @if(auth()->user()->hasPermission('manage-sunu-products'))
     <div id="product-import" style="margin:20px 0; padding:12px 16px; border:1px solid var(--border-color, #ddd); border-radius:8px;">
         <h3 style="margin:0; font-size:16px;">{{ __('common.sunu_product_import_title') }}</h3>
-        <p class="muted" style="font-size:13px; margin-top:10px;">{{ __('common.sunu_product_import_help', ['columns' => implode(', ', \App\Http\Controllers\SunuWebController::PRODUCT_IMPORT_COLUMNS)]) }}</p>
+        <p class="muted" style="font-size:13px; margin-top:10px;">{{ __('common.sunu_product_import_help', ['columns' => implode(', ', \App\Http\Controllers\SunuWebController::PRODUCT_IMPORT_COLUMNS_FR)]) }}</p>
         @if(session('import_errors'))
             <div class="alert alert-warning">
                 <ul>@foreach(session('import_errors') as $e)<li>{{ $e }}</li>@endforeach</ul>

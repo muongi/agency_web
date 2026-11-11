@@ -51,7 +51,7 @@ class SunuProductImportTest extends TestCase
     {
         $res = $this->actingAs($this->admin)->get(route('business.sunu.products.import.sample'));
         $res->assertOk();
-        $this->assertStringContainsString(implode(',', \App\Http\Controllers\SunuWebController::PRODUCT_IMPORT_COLUMNS), $res->streamedContent());
+        $this->assertStringContainsString(implode(',', \App\Http\Controllers\SunuWebController::PRODUCT_IMPORT_COLUMNS_FR), $res->streamedContent());
         $this->assertStringContainsString('Mensuel', $res->streamedContent());
     }
 
@@ -150,6 +150,35 @@ class SunuProductImportTest extends TestCase
         $this->assertSame(100, SunuPolicy::count());
         $this->assertSame(['annual' => 74, 'monthly' => 25, 'semiannual' => 1],
             SunuPolicy::selectRaw('premium_frequency, count(*) n')->groupBy('premium_frequency')->orderBy('premium_frequency')->pluck('n', 'premium_frequency')->map(fn ($n) => (int) $n)->all());
+    }
+
+    public function test_french_headers_with_accents_and_english_headers_are_read(): void
+    {
+        $csv = "Code;Code SUNULIFE;Nom FR;Catégorie;Périodicité;Prime par défaut;Coût de police;Actif\n"
+            ."MICRO_A;MA.;Micro A;Retraite;Mensuel;2500;1000;1\n";
+        $this->upload('business.sunu.products.import', $csv)->assertSessionHas('import_errors', []);
+        $p = InsuranceProduct::where('code', 'MICRO_A')->first();
+        $this->assertSame(['MA.', 'Micro A', 'Retraite', 'monthly', '2500.00', '1000.00'],
+            [$p->sunulife_product_code, $p->name_fr, $p->category, $p->default_premium_frequency, $p->default_premium_amount, $p->policy_cost_amount]);
+
+        $csv = "N° assuré;Numéro de police;Code produit;Nom;Prénom(s);Téléphone;Montant prime;Périodicité;Date d'effet;ID police SUNULIFE\n"
+            ."A-9;POL-FR-1;MA.;KABORE;Awa;22670000009;3000;Semestriel;2026-01-15;SL-1\n";
+        $this->upload('business.sunu.import.store', $csv)->assertSessionHas('import_errors', []);
+        $pol = SunuPolicy::with('client')->where('policy_number', 'POL-FR-1')->first();
+        $this->assertSame(['A-9', 'KABORE', 'Awa', '22670000009', '3000.00', 'semiannual', '2026-01-15', 'SL-1'],
+            [$pol->client->insured_number, $pol->client->last_name, $pol->client->first_name, $pol->client->phone_number,
+                (string) $pol->premium_amount, $pol->premium_frequency, $pol->effective_date->toDateString(), $pol->sunulife_policy_id]);
+
+        $csv = implode(',', \App\Http\Controllers\SunuWebController::IMPORT_COLUMNS)."\n"
+            ."A-10,POL-EN-1,MICRO_A,OUEDRAOGO,Ali,22670000010,4000,quarterly,2026-02-01,\n";
+        $this->upload('business.sunu.import.store', $csv)->assertSessionHas('import_errors', []);
+        $this->assertSame('quarterly', SunuPolicy::where('policy_number', 'POL-EN-1')->value('premium_frequency'));
+    }
+
+    public function test_samples_have_french_headers(): void
+    {
+        $this->assertStringContainsString(implode(',', \App\Http\Controllers\SunuWebController::IMPORT_COLUMNS_FR),
+            $this->actingAs($this->admin)->get(route('business.sunu.import.sample'))->streamedContent());
     }
 
     public function test_product_import_needs_manage_permission(): void

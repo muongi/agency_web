@@ -6,7 +6,7 @@
 @section('content')
 <div class="card">
     <h1 style="color:var(--accent-color);">{{ __('common.sunu_import_heading') }}</h1>
-    <p>{{ __('common.sunu_import_columns', ['columns' => implode(', ', \App\Http\Controllers\SunuWebController::IMPORT_COLUMNS)]) }}</p>
+    <p>{{ __('common.sunu_import_columns', ['columns' => implode(', ', \App\Http\Controllers\SunuWebController::IMPORT_COLUMNS_FR)]) }}</p>
     <p class="muted" style="font-size: 13px;">{{ __('common.sunu_import_sample_help') }}</p>
     <p><a href="{{ route('business.sunu.import.sample') }}" class="btn btn-secondary">{{ __('common.sunu_import_sample') }}</a></p>
     @if(session('import_errors'))
