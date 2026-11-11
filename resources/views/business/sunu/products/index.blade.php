@@ -8,13 +8,17 @@
     <div style="display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;">
         <h1 style="color:var(--accent-color); margin:0;">{{ __('common.sunu_products_heading') }}</h1>
         @if(auth()->user()->hasPermission('manage-sunu-products'))
-        <a href="{{ route('business.sunu.products.create') }}" class="btn">{{ __('common.sunu_product_add') }}</a>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <a href="#product-import" class="btn btn-secondary">{{ __('common.sunu_product_import_button') }}</a>
+            <a href="{{ route('business.sunu.products.import.sample') }}" class="btn btn-secondary">{{ __('common.sunu_product_import_sample') }}</a>
+            <a href="{{ route('business.sunu.products.create') }}" class="btn">{{ __('common.sunu_product_add') }}</a>
+        </div>
         @endif
     </div>
 
     @if(auth()->user()->hasPermission('manage-sunu-products'))
-    <details style="margin:20px 0; padding:12px 16px; border:1px solid var(--border-color, #ddd); border-radius:8px;" @if(session('import_errors')) open @endif>
-        <summary style="cursor:pointer; font-weight:600;">{{ __('common.sunu_product_import_title') }}</summary>
+    <div id="product-import" style="margin:20px 0; padding:12px 16px; border:1px solid var(--border-color, #ddd); border-radius:8px;">
+        <h3 style="margin:0; font-size:16px;">{{ __('common.sunu_product_import_title') }}</h3>
         <p class="muted" style="font-size:13px; margin-top:10px;">{{ __('common.sunu_product_import_help', ['columns' => implode(', ', \App\Http\Controllers\SunuWebController::PRODUCT_IMPORT_COLUMNS)]) }}</p>
         @if(session('import_errors'))
             <div class="alert alert-warning">
@@ -27,7 +31,7 @@
             <button class="btn" type="submit">{{ __('common.sunu_product_import_button') }}</button>
             <a href="{{ route('business.sunu.products.import.sample') }}" class="btn btn-secondary">{{ __('common.sunu_product_import_sample') }}</a>
         </form>
-    </details>
+    </div>
     @endif
 
     <form method="GET" action="{{ route('business.sunu.products.index') }}" style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; margin:20px 0;">

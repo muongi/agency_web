@@ -119,6 +119,15 @@ class SunuProductImportTest extends TestCase
         $this->assertSame('1000.00', (string) $p->premium_amount);
     }
 
+    public function test_products_page_shows_import_and_sample_buttons(): void
+    {
+        $this->actingAs($this->admin)->get(route('business.sunu.products.index'))
+            ->assertOk()
+            ->assertSee(route('business.sunu.products.import.sample'))
+            ->assertSee(route('business.sunu.products.import'))
+            ->assertSee('name="file"', false);
+    }
+
     public function test_product_import_needs_manage_permission(): void
     {
         $user = User::factory()->create(['current_business_unit_id' => $this->bu->id]);
