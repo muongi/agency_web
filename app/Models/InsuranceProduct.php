@@ -11,7 +11,7 @@ class InsuranceProduct extends Model
     /** Product categories as printed on the SUNU Vie visa register. */
     public const CATEGORIES = ['Retraite', 'Projet', 'Education', 'Funérailles', 'Santé', 'Autre'];
 
-    public const FREQUENCIES = ['daily', 'weekly', 'monthly', 'quarterly', 'annual'];
+    public const FREQUENCIES = ['daily', 'weekly', 'monthly', 'quarterly', 'semiannual', 'annual'];
 
     protected $fillable = [
         'business_unit_id',

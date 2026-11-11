@@ -89,13 +89,15 @@ class SunuProductImportTest extends TestCase
             ."CPQOT2.338A;CPQOT2;IZILI;.;22666830000;11750;Unique;2026-08-14;UAVIE-2;223149\n"
             ."REP.39678;REDPXXXXX.;KABORE;DIDIER;22676140015;10000;Mensuel;2023-01-20;UAVIE-3;442859\n"
             ."MIXTEP.351J;REDPXXXXX;OUEDRAOGO;ALI;22670000000;5500;Semestriel;2023-01-20;UAVIE-4;9\n"
+            ."BAD.1;REDPXXXXX;OUEDRAOGO;ALI;22670000000;5500;Biennal;2023-01-20;UAVIE-5;9\n"
             ."X.1;NOPE.;A;B;;1;Annuel;;;10\n";
 
         $this->upload('business.sunu.import.store', $csv)
             ->assertSessionHas('import_errors', fn ($e) => count($e) === 2
-                && str_contains($e[0], 'Semestriel') && str_contains($e[1], 'NOPE.'));
+                && str_contains($e[0], 'Biennal') && str_contains($e[1], 'NOPE.'));
 
-        $this->assertSame(3, SunuPolicy::where('business_unit_id', $this->bu->id)->count());
+        $this->assertSame(4, SunuPolicy::where('business_unit_id', $this->bu->id)->count());
+        $this->assertSame('semiannual', SunuPolicy::where('policy_number', 'MIXTEP.351J')->value('premium_frequency'));
         $p = SunuPolicy::where('policy_number', 'CPQOT2.337Z')->first();
         $this->assertSame('annual', $p->premium_frequency);
         $this->assertSame('annual', SunuPolicy::where('policy_number', 'CPQOT2.338A')->value('premium_frequency'));

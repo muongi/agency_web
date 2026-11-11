@@ -994,6 +994,7 @@ class SunuWebController extends Controller
             'weekly' => 'weekly', 'h' => 'weekly', 'hebdomadaire' => 'weekly',
             'monthly' => 'monthly', 'm' => 'monthly', 'mensuel' => 'monthly', 'mensuelle' => 'monthly',
             'quarterly' => 'quarterly', 't' => 'quarterly', 'trimestriel' => 'quarterly', 'trimestrielle' => 'quarterly',
+            'semiannual' => 'semiannual', 'semi-annual' => 'semiannual', 's' => 'semiannual', 'semestriel' => 'semiannual', 'semestrielle' => 'semiannual',
             'annual' => 'annual', 'a' => 'annual', 'annuel' => 'annual', 'annuelle' => 'annual',
             'u' => 'annual', 'unique' => 'annual',
         ][$key] ?? false;
