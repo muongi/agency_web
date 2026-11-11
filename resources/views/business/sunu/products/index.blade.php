@@ -12,6 +12,24 @@
         @endif
     </div>
 
+    @if(auth()->user()->hasPermission('manage-sunu-products'))
+    <details style="margin:20px 0; padding:12px 16px; border:1px solid var(--border-color, #ddd); border-radius:8px;" @if(session('import_errors')) open @endif>
+        <summary style="cursor:pointer; font-weight:600;">{{ __('common.sunu_product_import_title') }}</summary>
+        <p class="muted" style="font-size:13px; margin-top:10px;">{{ __('common.sunu_product_import_help', ['columns' => implode(', ', \App\Http\Controllers\SunuWebController::PRODUCT_IMPORT_COLUMNS)]) }}</p>
+        @if(session('import_errors'))
+            <div class="alert alert-warning">
+                <ul>@foreach(session('import_errors') as $e)<li>{{ $e }}</li>@endforeach</ul>
+            </div>
+        @endif
+        <form method="POST" action="{{ route('business.sunu.products.import') }}" enctype="multipart/form-data" style="display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+            @csrf
+            <input type="file" name="file" accept=".csv,.txt" required class="form-input">
+            <button class="btn" type="submit">{{ __('common.sunu_product_import_button') }}</button>
+            <a href="{{ route('business.sunu.products.import.sample') }}" class="btn btn-secondary">{{ __('common.sunu_product_import_sample') }}</a>
+        </form>
+    </details>
+    @endif
+
     <form method="GET" action="{{ route('business.sunu.products.index') }}" style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; margin:20px 0;">
         <div class="form-group" style="margin:0;">
             <label class="form-label" for="q">{{ __('common.search') }}</label>

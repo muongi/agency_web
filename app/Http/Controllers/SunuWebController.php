@@ -52,6 +52,8 @@ class SunuWebController extends Controller
         'productEdit' => 'manage-sunu-products',
         'productUpdate' => 'manage-sunu-products',
         'productToggle' => 'manage-sunu-products',
+        'productImport' => 'manage-sunu-products',
+        'productImportSample' => 'manage-sunu-products',
         'importForm' => 'import-sunu-policies',
         'importSample' => 'import-sunu-policies',
         'importStore' => 'import-sunu-policies',
@@ -741,31 +743,31 @@ class SunuWebController extends Controller
             'file' => 'required|file|mimes:csv,txt',
         ]);
 
-        $path = $request->file('file')->getRealPath();
-        $handle = fopen($path, 'r');
-        $header = fgetcsv($handle);
+        [$handle, $header, $delimiter] = self::openCsv($request->file('file')->getRealPath());
         if (! $header) {
             return back()->with('error', __('common.sunu_flash_import_empty'));
         }
-        $header[0] = preg_replace('/^\xEF\xBB\xBF/', '', (string) $header[0]); // Excel UTF-8 BOM
-        $header = array_map(fn ($h) => Str::snake(trim(strtolower((string) $h))), $header);
         $created = 0;
         $errors = [];
         $line = 1;
 
-        while (($row = fgetcsv($handle)) !== false) {
+        while (($row = fgetcsv($handle, 0, $delimiter)) !== false) {
             $line++;
             if (count($row) < 2) {
                 continue;
             }
-            $data = array_combine($header, array_pad($row, count($header), null));
+            $data = array_combine($header, array_slice(array_pad($row, count($header), null), 0, count($header)));
             try {
-                $productCode = $data['product_code'] ?? $data['code_produit'] ?? null;
-                $product = InsuranceProduct::where('business_unit_id', $bu->id)
-                    ->where('code', $productCode)
-                    ->first();
+                $productCode = trim((string) ($data['product_code'] ?? $data['code_produit'] ?? ''));
+                $product = $this->findProductForImport($bu->id, $productCode);
                 if (! $product) {
-                    $errors[] = 'Unknown product: '.($productCode ?? '?');
+                    $errors[] = __('common.sunu_import_error_unknown_product', ['line' => $line, 'code' => $productCode ?: '?']);
+                    continue;
+                }
+                $rawFrequency = $data['premium_frequency'] ?? $data['periodicite'] ?? null;
+                $frequency = self::normalizeFrequency($rawFrequency);
+                if ($frequency === false) {
+                    $errors[] = __('common.sunu_import_error_frequency', ['line' => $line, 'value' => $rawFrequency]);
                     continue;
                 }
                 $policyNumber = trim((string) ($data['policy_number'] ?? $data['numero_police'] ?? ''));
@@ -821,9 +823,9 @@ class SunuWebController extends Controller
                     [
                         'client_id' => $client->id,
                         'status' => SunuPolicy::STATUS_ACTIVE,
-                        'effective_date' => $data['effective_date'] ?? now()->toDateString(),
-                        'premium_amount' => $data['premium_amount'] ?? $product->default_premium_amount,
-                        'premium_frequency' => $data['premium_frequency'] ?? $product->default_premium_frequency,
+                        'effective_date' => ($data['effective_date'] ?? '') !== '' ? $data['effective_date'] : now()->toDateString(),
+                        'premium_amount' => ($data['premium_amount'] ?? '') !== '' ? $data['premium_amount'] : $product->default_premium_amount,
+                        'premium_frequency' => $frequency ?? $product->default_premium_frequency,
                         'source' => 'sunulife',
                         'sunulife_policy_id' => $data['sunulife_policy_id'] ?? null,
                         'synced_at' => now(),
@@ -838,5 +840,183 @@ class SunuWebController extends Controller
 
         return back()->with('success', __('common.sunu_flash_import_done', ['count' => $created]))
             ->with('import_errors', array_slice($errors, 0, 20));
+    }
+
+    /** Columns of the product catalogue import CSV (form help text + sample download). */
+    public const PRODUCT_IMPORT_COLUMNS = [
+        'code', 'sunulife_product_code', 'name_fr', 'name_en', 'category', 'default_premium_frequency',
+        'default_premium_amount', 'policy_cost_amount', 'visa_number', 'display_order', 'family', 'is_active',
+    ];
+
+    /** Sample CSV for the product import. */
+    public function productImportSample(): StreamedResponse
+    {
+        $rows = [
+            ['MICRO_RETRAITE', '', 'Micro Épargne Retraite', 'Micro Retirement Savings', 'Retraite', 'monthly', '2500', '1000', 'VISA-001', '1', 'micro-insurance', '1'],
+            ['', 'DCE-EXAZXX.', 'Dotation Capital Études', 'Education Capital', 'Education', 'annual', '', '', '', '', 'sunulife', '1'],
+        ];
+
+        return response()->streamDownload(function () use ($rows) {
+            $out = fopen('php://output', 'w');
+            fwrite($out, "\xEF\xBB\xBF");
+            fputcsv($out, self::PRODUCT_IMPORT_COLUMNS);
+            foreach ($rows as $row) {
+                fputcsv($out, $row);
+            }
+            fclose($out);
+        }, 'sunu_products_sample.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    /**
+     * Product catalogue import. Upsert key = code in this business unit (existing code updated).
+     * Empty code → derived from sunulife_product_code (DCE-EXAZXX. → DCE_EXAZXX).
+     */
+    public function productImport(Request $request)
+    {
+        $bu = $this->businessUnit();
+        if (! $bu) {
+            return redirect()->route('business.dashboard')->with('error', __('common.no_business_unit_assigned'));
+        }
+        $request->validate(['file' => 'required|file|mimes:csv,txt']);
+
+        [$handle, $header, $delimiter] = self::openCsv($request->file('file')->getRealPath());
+        if (! $header) {
+            return back()->with('error', __('common.sunu_flash_import_empty'));
+        }
+        $created = 0;
+        $updated = 0;
+        $errors = [];
+        $line = 1;
+        $nextOrder = (int) InsuranceProduct::where('business_unit_id', $bu->id)->max('display_order') + 1;
+
+        while (($row = fgetcsv($handle, 0, $delimiter)) !== false) {
+            $line++;
+            if (count(array_filter($row, fn ($v) => trim((string) $v) !== '')) === 0) {
+                continue;
+            }
+            $data = array_map(fn ($v) => $v === null ? null : trim((string) $v),
+                array_combine($header, array_slice(array_pad($row, count($header), null), 0, count($header))));
+            $sunulifeCode = ($data['sunulife_product_code'] ?? '') ?: null;
+            $code = strtoupper((string) ($data['code'] ?? '')) ?: self::boProductCode((string) $sunulifeCode);
+            $frequency = self::normalizeFrequency($data['default_premium_frequency'] ?? null);
+            if ($frequency === false) {
+                $errors[] = __('common.sunu_import_error_frequency', ['line' => $line, 'value' => $data['default_premium_frequency']]);
+                continue;
+            }
+            $values = [
+                'code' => $code,
+                'sunulife_product_code' => $sunulifeCode,
+                'name_fr' => ($data['name_fr'] ?? '') ?: null,
+                'name_en' => ($data['name_en'] ?? '') ?: null,
+                'category' => ($data['category'] ?? '') ?: null,
+                'default_premium_frequency' => $frequency,
+                'default_premium_amount' => ($data['default_premium_amount'] ?? '') !== '' ? $data['default_premium_amount'] : null,
+                'policy_cost_amount' => ($data['policy_cost_amount'] ?? '') !== '' ? $data['policy_cost_amount'] : null,
+                'visa_number' => ($data['visa_number'] ?? '') ?: null,
+                'display_order' => ($data['display_order'] ?? '') !== '' ? $data['display_order'] : null,
+                'family' => ($data['family'] ?? '') ?: null,
+                'is_active' => ($data['is_active'] ?? '') === '' ? true : in_array(strtolower($data['is_active']), ['1', 'true', 'oui', 'yes', 'actif', 'active'], true),
+            ];
+            $validator = \Illuminate\Support\Facades\Validator::make($values, [
+                'code' => 'required|string|max:64|regex:/^[A-Z0-9_]+$/',
+                'sunulife_product_code' => 'nullable|string|max:64',
+                'name_fr' => 'required|string|max:191',
+                'name_en' => 'nullable|string|max:191',
+                'category' => 'nullable|string|in:'.implode(',', InsuranceProduct::CATEGORIES),
+                'default_premium_amount' => 'nullable|numeric|min:0|max:99999999',
+                'policy_cost_amount' => 'nullable|numeric|min:0|max:99999999',
+                'visa_number' => 'nullable|string|max:191',
+                'display_order' => 'nullable|integer|min:0|max:9999',
+                'family' => 'nullable|string|max:64',
+            ]);
+            if ($validator->fails()) {
+                $errors[] = __('common.sunu_product_import_error_line', ['line' => $line, 'code' => $code ?: '?', 'error' => $validator->errors()->first()]);
+                continue;
+            }
+
+            $product = InsuranceProduct::where('business_unit_id', $bu->id)->where('code', $code)->first();
+            if ($product) {
+                // Update only the columns given a value: an empty cell keeps what the office typed.
+                $product->update(array_filter($values, fn ($v) => $v !== null) + ['is_active' => $values['is_active']]);
+                $updated++;
+            } else {
+                $values['business_unit_id'] = $bu->id;
+                $values['family'] ??= 'micro-insurance';
+                $values['default_premium_frequency'] ??= 'monthly';
+                $values['display_order'] ??= $nextOrder++;
+                InsuranceProduct::create($values);
+                $created++;
+            }
+        }
+        fclose($handle);
+
+        Log::info('SUNU_PRODUCT_IMPORT', ['business_unit_id' => $bu->id, 'user_id' => auth()->id(),
+            'created' => $created, 'updated' => $updated, 'errors' => count($errors)]);
+
+        return redirect()->route('business.sunu.products.index')
+            ->with('success', __('common.sunu_flash_product_import_done', ['created' => $created, 'updated' => $updated]))
+            ->with('import_errors', array_slice($errors, 0, 50));
+    }
+
+    /**
+     * Open an uploaded CSV: strips the Excel BOM and detects the separator from the header line
+     * (French Excel saves with ";"). Returns [handle, snake_case header or null, delimiter].
+     */
+    public static function openCsv(string $path): array
+    {
+        $handle = fopen($path, 'r');
+        $first = (string) fgets($handle);
+        $first = preg_replace('/^\xEF\xBB\xBF/', '', $first);
+        $delimiter = substr_count($first, ';') > substr_count($first, ',') ? ';' : ',';
+        $header = $first === '' ? null : str_getcsv(rtrim($first, "\r\n"), $delimiter);
+        if ($header) {
+            $header = array_map(fn ($h) => Str::snake(trim(strtolower((string) $h))), $header);
+        }
+
+        return [$handle, $header, $delimiter];
+    }
+
+    /**
+     * Premium frequency from the file (BO values, SUNULIFE letters or French words).
+     * null = empty (use the product default), false = not recognised.
+     * Unique / U → annual (prime unique, decision 2026-10-26).
+     */
+    public static function normalizeFrequency(?string $value): string|null|false
+    {
+        $key = strtolower(trim((string) $value));
+        if ($key === '') {
+            return null;
+        }
+        $key = strtr($key, ['é' => 'e', 'è' => 'e', 'É' => 'e']);
+
+        return [
+            'daily' => 'daily', 'j' => 'daily', 'journalier' => 'daily', 'journaliere' => 'daily', 'quotidien' => 'daily', 'quotidienne' => 'daily',
+            'weekly' => 'weekly', 'h' => 'weekly', 'hebdomadaire' => 'weekly',
+            'monthly' => 'monthly', 'm' => 'monthly', 'mensuel' => 'monthly', 'mensuelle' => 'monthly',
+            'quarterly' => 'quarterly', 't' => 'quarterly', 'trimestriel' => 'quarterly', 'trimestrielle' => 'quarterly',
+            'annual' => 'annual', 'a' => 'annual', 'annuel' => 'annual', 'annuelle' => 'annual',
+            'u' => 'annual', 'unique' => 'annual',
+        ][$key] ?? false;
+    }
+
+    /** BO product codes must match ^[A-Z0-9_]+$ (SUNULIFE "DCE-EXAZXX." → "DCE_EXAZXX"). */
+    public static function boProductCode(string $sunulifeCode): string
+    {
+        $code = preg_replace('/[^A-Z0-9_]/', '_', rtrim(strtoupper(trim($sunulifeCode)), '.'));
+
+        return trim(preg_replace('/_+/', '_', $code), '_');
+    }
+
+    /** Product of an import line: BO code, else the SUNULIFE code as exported (CPQOT2.), else its BO form. */
+    protected function findProductForImport(int $businessUnitId, string $code): ?InsuranceProduct
+    {
+        if ($code === '') {
+            return null;
+        }
+        $base = InsuranceProduct::where('business_unit_id', $businessUnitId);
+
+        return (clone $base)->where('code', $code)->first()
+            ?? (clone $base)->where('sunulife_product_code', $code)->first()
+            ?? (clone $base)->where('code', self::boProductCode($code))->first();
     }
 }
