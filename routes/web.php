@@ -245,6 +245,7 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/products/{id}/toggle', [\App\Http\Controllers\SunuWebController::class, 'productToggle'])->whereNumber('id')->name('products.toggle');
             Route::get('/products/import/sample', [\App\Http\Controllers\SunuWebController::class, 'productImportSample'])->name('products.import.sample');
             Route::post('/products/import', [\App\Http\Controllers\SunuWebController::class, 'productImport'])->name('products.import');
+            Route::get('/products/export', [\App\Http\Controllers\SunuWebController::class, 'productsExport'])->name('products.export');
             Route::get('/pay-ins', [\App\Http\Controllers\SunuWebController::class, 'payInsIndex'])->name('payins.index');
             Route::post('/pay-ins/{id}/confirm', [\App\Http\Controllers\SunuWebController::class, 'payInConfirm'])->whereNumber('id')->name('payins.confirm');
             Route::post('/pay-ins/{id}/reject', [\App\Http\Controllers\SunuWebController::class, 'payInReject'])->whereNumber('id')->name('payins.reject');

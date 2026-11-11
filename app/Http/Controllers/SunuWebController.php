@@ -74,6 +74,7 @@ class SunuWebController extends Controller
         'productToggle' => 'manage-sunu-products',
         'productImport' => 'manage-sunu-products',
         'productImportSample' => 'manage-sunu-products',
+        'productsExport' => 'view-sunu-products',
         'importForm' => 'import-sunu-policies',
         'importSample' => 'import-sunu-policies',
         'importStore' => 'import-sunu-policies',
@@ -372,7 +373,17 @@ class SunuWebController extends Controller
             return redirect()->route('business.dashboard')->with('error', __('common.no_business_unit_assigned'));
         }
 
-        $query = InsuranceProduct::where('business_unit_id', $bu->id)->ordered();
+        return view('business.sunu.products.index', [
+            'products' => $this->productsQuery($request, $bu->id)->get(),
+            'bu' => $bu,
+            'categories' => InsuranceProduct::CATEGORIES,
+        ]);
+    }
+
+    /** Products list filters (q, category, status), shared by the list and its export. */
+    protected function productsQuery(Request $request, int $businessUnitId)
+    {
+        $query = InsuranceProduct::where('business_unit_id', $businessUnitId)->ordered();
 
         if ($request->filled('category')) {
             $query->where('category', $request->input('category'));
@@ -384,17 +395,41 @@ class SunuWebController extends Controller
             $q = '%'.$request->input('q').'%';
             $query->where(function ($w) use ($q) {
                 $w->where('code', 'like', $q)
+                    ->orWhere('sunulife_product_code', 'like', $q)
                     ->orWhere('name_fr', 'like', $q)
                     ->orWhere('name_en', 'like', $q)
                     ->orWhere('visa_number', 'like', $q);
             });
         }
 
-        return view('business.sunu.products.index', [
-            'products' => $query->get(),
-            'bu' => $bu,
-            'categories' => InsuranceProduct::CATEGORIES,
-        ]);
+        return $query;
+    }
+
+    /**
+     * Product list as CSV / Excel in the product import format (French headers and frequencies,
+     * codes exactly as stored), so it can be edited and imported back.
+     */
+    public function productsExport(Request $request)
+    {
+        $bu = $this->businessUnit();
+        if (! $bu) {
+            return redirect()->route('business.dashboard')->with('error', __('common.no_business_unit_assigned'));
+        }
+        $amount = fn ($v) => $v === null ? '' : rtrim(rtrim(number_format((float) $v, 2, '.', ''), '0'), '.');
+        $rows = $this->productsQuery($request, $bu->id)->get()->map(fn (InsuranceProduct $p) => array_combine(
+            self::PRODUCT_IMPORT_COLUMNS_FR,
+            [
+                (string) $p->code, (string) $p->sunulife_product_code, (string) $p->name_fr, (string) $p->name_en,
+                (string) $p->category, self::FREQUENCY_FR[$p->default_premium_frequency] ?? (string) $p->default_premium_frequency,
+                $amount($p->default_premium_amount), $amount($p->policy_cost_amount), (string) $p->visa_number,
+                (string) $p->display_order, (string) $p->family, $p->is_active ? '1' : '0',
+            ]
+        ))->all();
+        $filename = 'sunu_produits_'.now()->format('Ymd_His');
+
+        return $request->input('format') === 'excel'
+            ? $this->exportService->exportExcel($rows, self::PRODUCT_IMPORT_COLUMNS_FR, $filename, 'Produits')
+            : $this->exportService->exportCsv($rows, self::PRODUCT_IMPORT_COLUMNS_FR, $filename);
     }
 
     public function productCreate()
@@ -471,7 +506,7 @@ class SunuWebController extends Controller
 
     protected function validateProduct(Request $request, int $businessUnitId, ?int $ignoreId = null): array
     {
-        $codeRule = 'required|string|max:64|regex:/^[A-Z0-9_]+$/|unique:insurance_products,code,'
+        $codeRule = 'required|string|max:64|regex:'.self::PRODUCT_CODE_REGEX.'|unique:insurance_products,code,'
             .($ignoreId ?? 'NULL').',id,business_unit_id,'.$businessUnitId;
 
         return $request->validate([
@@ -489,7 +524,7 @@ class SunuWebController extends Controller
             'sunulife_product_code' => 'nullable|string|max:64',
             'is_active' => 'nullable|boolean',
         ], [
-            'code.regex' => 'Le code doit être en majuscules, chiffres ou underscore (ex: MICRO_QUIETUDE).',
+            'code.regex' => 'Le code doit être en majuscules, chiffres, _ . - (ex: CPQOT2., DCE-EXAZXX., MICRO_QUIETUDE).',
         ]) + ['is_active' => $request->boolean('is_active')];
     }
 
@@ -763,6 +798,7 @@ class SunuWebController extends Controller
             'file' => 'required|file|mimes:csv,txt',
         ]);
 
+        self::forgetProductCache();
         [$handle, $header, $delimiter] = self::openCsv($request->file('file')->getRealPath(), self::IMPORT_HEADER_ALIASES);
         if (! $header) {
             return back()->with('error', __('common.sunu_flash_import_empty'));
@@ -868,6 +904,18 @@ class SunuWebController extends Controller
         'default_premium_amount', 'policy_cost_amount', 'visa_number', 'display_order', 'family', 'is_active',
     ];
 
+    /**
+     * Product codes are kept exactly as SUNU's core system (SUNULIFE) exports them, dot included
+     * (CPQOT2., DCE-EXAZXX.). Uppercase letters, digits, _ . - only (2026-11-11).
+     */
+    public const PRODUCT_CODE_REGEX = '/^[A-Z0-9_.\-]+$/';
+
+    /** BO frequency → French word written in exports / samples (normalizeFrequency reads it back). */
+    public const FREQUENCY_FR = [
+        'daily' => 'Journalier', 'weekly' => 'Hebdomadaire', 'monthly' => 'Mensuel',
+        'quarterly' => 'Trimestriel', 'semiannual' => 'Semestriel', 'annual' => 'Annuel',
+    ];
+
     /** French headers of the product import (same order as PRODUCT_IMPORT_COLUMNS). */
     public const PRODUCT_IMPORT_COLUMNS_FR = [
         'code', 'code_sunulife', 'nom_fr', 'nom_en', 'categorie', 'periodicite',
@@ -889,7 +937,7 @@ class SunuWebController extends Controller
     {
         $rows = [
             ['MICRO_RETRAITE', '', 'Micro Épargne Retraite', 'Micro Retirement Savings', 'Retraite', 'Mensuel', '2500', '1000', 'VISA-001', '1', 'micro-insurance', '1'],
-            ['', 'DCE-EXAZXX.', 'Dotation Capital Études', 'Education Capital', 'Education', 'Annuel', '', '', '', '', 'sunulife', '1'],
+            ['DCE-EXAZXX.', 'DCE-EXAZXX.', 'Dotation Capital Études', 'Education Capital', 'Education', 'Annuel', '', '', '', '', 'sunulife', '1'],
         ];
 
         return response()->streamDownload(function () use ($rows) {
@@ -933,7 +981,8 @@ class SunuWebController extends Controller
             $data = array_map(fn ($v) => $v === null ? null : trim((string) $v),
                 array_combine($header, array_slice(array_pad($row, count($header), null), 0, count($header))));
             $sunulifeCode = ($data['sunulife_product_code'] ?? '') ?: null;
-            $code = strtoupper((string) ($data['code'] ?? '')) ?: self::boProductCode((string) $sunulifeCode);
+            // Kept as SUNU sends it (dot included); empty code = the SUNULIFE code itself.
+            $code = strtoupper((string) ($data['code'] ?? '')) ?: strtoupper((string) $sunulifeCode);
             $frequency = self::normalizeFrequency($data['default_premium_frequency'] ?? null);
             if ($frequency === false) {
                 $errors[] = __('common.sunu_import_error_frequency', ['line' => $line, 'value' => $data['default_premium_frequency']]);
@@ -954,7 +1003,7 @@ class SunuWebController extends Controller
                 'is_active' => ($data['is_active'] ?? '') === '' ? true : in_array(strtolower($data['is_active']), ['1', 'true', 'oui', 'yes', 'actif', 'active'], true),
             ];
             $validator = \Illuminate\Support\Facades\Validator::make($values, [
-                'code' => 'required|string|max:64|regex:/^[A-Z0-9_]+$/',
+                'code' => 'required|string|max:64|regex:'.self::PRODUCT_CODE_REGEX,
                 'sunulife_product_code' => 'nullable|string|max:64',
                 'name_fr' => 'required|string|max:191',
                 'name_en' => 'nullable|string|max:191',
@@ -986,6 +1035,7 @@ class SunuWebController extends Controller
         }
         fclose($handle);
 
+        self::forgetProductCache();
         Log::info('SUNU_PRODUCT_IMPORT', ['business_unit_id' => $bu->id, 'user_id' => auth()->id(),
             'created' => $created, 'updated' => $updated, 'errors' => count($errors)]);
 
@@ -1042,7 +1092,10 @@ class SunuWebController extends Controller
         ][$key] ?? false;
     }
 
-    /** BO product codes must match ^[A-Z0-9_]+$ (SUNULIFE "DCE-EXAZXX." → "DCE_EXAZXX"). */
+    /**
+     * Comparison key only (never stored): "DCE-EXAZXX." and "DCE_EXAZXX" → "DCE_EXAZXX", so a file
+     * written before 2026-11-11 (dot removed) still finds its product.
+     */
     public static function boProductCode(string $sunulifeCode): string
     {
         $code = preg_replace('/[^A-Z0-9_]/', '_', rtrim(strtoupper(trim($sunulifeCode)), '.'));
@@ -1050,16 +1103,38 @@ class SunuWebController extends Controller
         return trim(preg_replace('/_+/', '_', $code), '_');
     }
 
-    /** Product of an import line: BO code, else the SUNULIFE code as exported (CPQOT2.), else its BO form. */
+    /** Product of an import line (customer import). */
     protected function findProductForImport(int $businessUnitId, string $code): ?InsuranceProduct
     {
+        // One query per import file (cache reset at the start of each import).
+        return self::matchProductCode($businessUnitId, $code,
+            self::$productCache[$businessUnitId] ??= InsuranceProduct::where('business_unit_id', $businessUnitId)->get());
+    }
+
+    /** @var array<int, \Illuminate\Support\Collection> products per business unit, for one request */
+    protected static array $productCache = [];
+
+    /**
+     * Product by code: exact code (CPQOT2.), exact SUNULIFE code, else the same code written
+     * without the dot / with _ for - (CPQOT2, DCE_EXAZXX). Used by the imports and the TPE API.
+     */
+    public static function matchProductCode(int $businessUnitId, ?string $code, ?\Illuminate\Support\Collection $products = null): ?InsuranceProduct
+    {
+        $code = strtoupper(trim((string) $code));
         if ($code === '') {
             return null;
         }
-        $base = InsuranceProduct::where('business_unit_id', $businessUnitId);
+        $products ??= InsuranceProduct::where('business_unit_id', $businessUnitId)->get();
+        $key = self::boProductCode($code);
 
-        return (clone $base)->where('code', $code)->first()
-            ?? (clone $base)->where('sunulife_product_code', $code)->first()
-            ?? (clone $base)->where('code', self::boProductCode($code))->first();
+        return $products->first(fn ($p) => strtoupper((string) $p->code) === $code)
+            ?? $products->first(fn ($p) => strtoupper((string) $p->sunulife_product_code) === $code)
+            ?? $products->first(fn ($p) => self::boProductCode((string) $p->code) === $key
+                || ($p->sunulife_product_code && self::boProductCode($p->sunulife_product_code) === $key));
+    }
+
+    public static function forgetProductCache(): void
+    {
+        self::$productCache = [];
     }
 }

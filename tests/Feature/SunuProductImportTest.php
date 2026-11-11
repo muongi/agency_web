@@ -55,13 +55,13 @@ class SunuProductImportTest extends TestCase
         $this->assertStringContainsString('Mensuel', $res->streamedContent());
     }
 
-    public function test_product_import_creates_derives_code_and_updates(): void
+    public function test_product_import_keeps_sunu_code_verbatim_and_updates(): void
     {
         $existing = $this->product('MICRO_RETRAITE');
         $csv = "\xEF\xBB\xBFcode;sunulife_product_code;name_fr;default_premium_frequency;default_premium_amount\r\n"
             .";DCE-EXAZXX.;Capital Études;Annuel;\r\n"
             ."MICRO_RETRAITE;;Micro Épargne Retraite;;2500\r\n"
-            ."BAD-CODE;;X;monthly;\r\n"
+            ."bad code;;X;monthly;\r\n"
             .";CPQOT2.;;Mensuel;\r\n"
             ."ENG_ONE;;English freq;quarterly;\r\n";
 
@@ -69,7 +69,7 @@ class SunuProductImportTest extends TestCase
             ->assertRedirect(route('business.sunu.products.index'))
             ->assertSessionHas('import_errors', fn ($e) => count($e) === 2);
 
-        $new = InsuranceProduct::where('code', 'DCE_EXAZXX')->first();
+        $new = InsuranceProduct::where('code', 'DCE-EXAZXX.')->first();
         $this->assertNotNull($new);
         $this->assertSame('DCE-EXAZXX.', $new->sunulife_product_code);
         $this->assertSame('annual', $new->default_premium_frequency);
@@ -142,12 +142,17 @@ class SunuProductImportTest extends TestCase
         }
         $this->upload('business.sunu.products.import', file_get_contents('/cust/SUNU_TEST_1_products.csv'))
             ->assertSessionHas('import_errors', []);
-        foreach (['DCEIGXX' => 'DCEIGXX.', 'SUPERC2XX' => 'SUPERC2XX.', 'PFMXAZXXX' => 'PFMXAZXXX.', 'DCE_EXAZXX' => 'DCE-EXAZXX.', 'REDPXXXXX' => 'REDPXXXXX.'] as $code => $sl) {
-            $this->product($code, $sl); // already live before the test files
+        foreach (['DCEIGXX.', 'SUPERC2XX.', 'PFMXAZXXX.', 'DCE-EXAZXX.', 'REDPXXXXX.'] as $code) {
+            $this->product($code, $code); // already live (codes restored by the 2026-11-11 migration)
         }
         $this->upload('business.sunu.import.store', file_get_contents('/cust/SUNU_TEST_2_customers.csv'))
             ->assertSessionHas('import_errors', []);
         $this->assertSame(100, SunuPolicy::count());
+        // Every policy points at the product whose code is exactly the code in SUNU's file.
+        $rows = array_map('str_getcsv', array_slice(file('/cust/SUNU_TEST_2_customers.csv', FILE_IGNORE_NEW_LINES), 1));
+        foreach ($rows as $r) {
+            $this->assertSame($r[2], SunuPolicy::with('product')->where('policy_number', $r[1])->first()->product->code);
+        }
         $this->assertSame(['annual' => 74, 'monthly' => 25, 'semiannual' => 1],
             SunuPolicy::selectRaw('premium_frequency, count(*) n')->groupBy('premium_frequency')->orderBy('premium_frequency')->pluck('n', 'premium_frequency')->map(fn ($n) => (int) $n)->all());
     }
@@ -179,6 +184,78 @@ class SunuProductImportTest extends TestCase
     {
         $this->assertStringContainsString(implode(',', \App\Http\Controllers\SunuWebController::IMPORT_COLUMNS_FR),
             $this->actingAs($this->admin)->get(route('business.sunu.import.sample'))->streamedContent());
+    }
+
+    public function test_product_form_accepts_sunu_codes_with_dot_and_dash(): void
+    {
+        $base = ['name_fr' => 'X', 'default_premium_frequency' => 'annual', 'is_active' => 1];
+        $this->actingAs($this->admin)->post(route('business.sunu.products.store'), $base + ['code' => 'CPQOT2.'])
+            ->assertSessionHasNoErrors();
+        $this->actingAs($this->admin)->post(route('business.sunu.products.store'), $base + ['code' => 'DCE-EXAZXX.'])
+            ->assertSessionHasNoErrors();
+        $this->actingAs($this->admin)->post(route('business.sunu.products.store'), $base + ['code' => 'bad code'])
+            ->assertSessionHasErrors('code');
+        $p = InsuranceProduct::where('code', 'CPQOT2.')->first();
+        $this->actingAs($this->admin)->put(route('business.sunu.products.update', $p->id), array_merge($base, ['code' => 'CPQOT2.', 'name_fr' => 'Renamed']))
+            ->assertSessionHasNoErrors();
+        $this->assertSame(['CPQOT2.', 'Renamed'], [$p->fresh()->code, $p->fresh()->name_fr]);
+        $this->actingAs($this->admin)->get(route('business.sunu.products.edit', $p->id))->assertSee('value="CPQOT2."', false);
+    }
+
+    public function test_customer_import_finds_dotted_product_from_old_style_codes(): void
+    {
+        $this->product('CPQOT2.', 'CPQOT2.');
+        $this->product('DCE-EXAZXX.', 'DCE-EXAZXX.');
+        $csv = implode(',', \App\Http\Controllers\SunuWebController::IMPORT_COLUMNS_FR)."\n"
+            ."1,P-1,CPQOT2.,A,B,,100,Annuel,2026-01-01,\n"
+            ."1,P-2,CPQOT2,A,B,,100,Annuel,2026-01-01,\n"
+            ."2,P-3,DCE_EXAZXX,C,D,,100,Mensuel,2026-01-01,\n";
+        $this->upload('business.sunu.import.store', $csv)->assertSessionHas('import_errors', []);
+        $this->assertSame(['P-1' => 'CPQOT2.', 'P-2' => 'CPQOT2.', 'P-3' => 'DCE-EXAZXX.'],
+            SunuPolicy::with('product')->orderBy('policy_number')->get()->mapWithKeys(fn ($p) => [$p->policy_number => $p->product->code])->all());
+    }
+
+    public function test_restore_migration_puts_original_code_back_and_skips_collisions(): void
+    {
+        $a = $this->product('DCEIGXX', 'DCEIGXX.');
+        $b = $this->product('DCE_EXAZXX', 'DCE-EXAZXX.');
+        $c = $this->product('TAKEN', 'CPQOT2.');
+        $this->product('CPQOT2.');
+        $plain = $this->product('MICRO_QUIETUDE');
+        $migration = require base_path('database/migrations/2026_11_11_000000_restore_sunulife_product_codes.php');
+        $migration->up();
+        $this->assertSame(['DCEIGXX.', 'DCE-EXAZXX.', 'TAKEN', 'MICRO_QUIETUDE'],
+            [$a->fresh()->code, $b->fresh()->code, $c->fresh()->code, $plain->fresh()->code]);
+        $migration->down();
+        $this->assertSame(['DCEIGXX', 'DCE_EXAZXX'], [$a->fresh()->code, $b->fresh()->code]);
+    }
+
+    public function test_products_export_round_trips_with_codes_unchanged(): void
+    {
+        InsuranceProduct::create(['business_unit_id' => $this->bu->id, 'code' => 'CPQOT2.', 'sunulife_product_code' => 'CPQOT2.', 'name_fr' => 'Quiétude',
+            'category' => 'Retraite', 'default_premium_frequency' => 'monthly', 'default_premium_amount' => 2500, 'policy_cost_amount' => 1000, 'is_active' => true]);
+        $this->product('DCE-EXAZXX.', 'DCE-EXAZXX.')->update(['is_active' => false, 'default_premium_frequency' => 'semiannual']);
+        $csv = $this->actingAs($this->admin)->get(route('business.sunu.products.export', ['format' => 'csv']))->assertOk()->streamedContent();
+        $flat = str_replace(';', ',', $csv); // ";" in French, "," otherwise (ExportService::csvDelimiter)
+        $this->assertStringContainsString('code,code_sunulife,nom_fr', $flat);
+        $this->assertStringContainsString('CPQOT2.,CPQOT2.,Quiétude,,Retraite,Mensuel,2500,1000', $flat);
+        $this->assertStringContainsString('DCE-EXAZXX.,DCE-EXAZXX.,DCE-EXAZXX.,,,Semestriel', $flat);
+
+        $this->upload('business.sunu.products.import', $csv)->assertSessionHas('import_errors', []);
+        $this->assertSame(2, InsuranceProduct::where('business_unit_id', $this->bu->id)->count(), 'nothing duplicated');
+        $p = InsuranceProduct::where('code', 'CPQOT2.')->first();
+        $this->assertSame(['monthly', '2500.00', '1000.00', true], [$p->default_premium_frequency, $p->default_premium_amount, $p->policy_cost_amount, $p->is_active]);
+        $this->assertFalse(InsuranceProduct::where('code', 'DCE-EXAZXX.')->value('is_active'));
+
+        $this->actingAs($this->admin)->get(route('business.sunu.products.export', ['format' => 'excel']))->assertOk();
+        $this->actingAs($this->admin)->get(route('business.sunu.products.index'))->assertSee(route('business.sunu.products.export', ['format' => 'csv']));
+    }
+
+    public function test_products_export_needs_view_permission(): void
+    {
+        $user = User::factory()->create(['current_business_unit_id' => $this->bu->id]);
+        $user->businessUnits()->attach($this->bu->id, ['is_active' => true]);
+        $this->actingAs($user)->get(route('business.sunu.products.export'))->assertForbidden();
     }
 
     public function test_product_import_needs_manage_permission(): void

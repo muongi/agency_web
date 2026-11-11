@@ -370,7 +370,7 @@ class SunuController extends Controller
                 // One number may cover several products: the product must then be given.
                 $productId = $request->input('insurance_product_id')
                     ?: ($request->filled('product_code')
-                        ? InsuranceProduct::where('business_unit_id', $buId)->where('code', $request->input('product_code'))->value('id')
+                        ? \App\Http\Controllers\SunuWebController::matchProductCode((int) $buId, $request->input('product_code'))?->id
                         : null);
                 try {
                     $found = $this->subscriptions->resolveForPremium($buId, (string) $voluntary, $productId ? (int) $productId : null);

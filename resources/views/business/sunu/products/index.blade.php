@@ -7,13 +7,15 @@
 <div class="card">
     <div style="display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;">
         <h1 style="color:var(--accent-color); margin:0;">{{ __('common.sunu_products_heading') }}</h1>
-        @if(auth()->user()->hasPermission('manage-sunu-products'))
         <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <a href="{{ route('business.sunu.products.export', array_merge(request()->query(), ['format' => 'csv'])) }}" class="btn btn-secondary">{{ __('common.sunu_products_export_csv') }}</a>
+            <a href="{{ route('business.sunu.products.export', array_merge(request()->query(), ['format' => 'excel'])) }}" class="btn btn-secondary">{{ __('common.sunu_products_export_excel') }}</a>
+        @if(auth()->user()->hasPermission('manage-sunu-products'))
             <a href="#product-import" class="btn btn-secondary">{{ __('common.sunu_product_import_button') }}</a>
             <a href="{{ route('business.sunu.products.import.sample') }}" class="btn btn-secondary">{{ __('common.sunu_product_import_sample') }}</a>
             <a href="{{ route('business.sunu.products.create') }}" class="btn">{{ __('common.sunu_product_add') }}</a>
-        </div>
         @endif
+        </div>
     </div>
 
     @if(auth()->user()->hasPermission('manage-sunu-products'))
@@ -80,7 +82,12 @@
             @forelse($products as $p)
                 <tr>
                     <td>{{ $p->display_order }}</td>
-                    <td><strong>{{ $p->code }}</strong></td>
+                    <td>
+                        <strong>{{ $p->code }}</strong>
+                        @if($p->sunulife_product_code && $p->sunulife_product_code !== $p->code)
+                            <div style="color:var(--text-muted); font-size:12px;">{{ __('common.sunu_sunulife_code') }} : {{ $p->sunulife_product_code }}</div>
+                        @endif
+                    </td>
                     <td>
                         {{ $p->localizedName() }}
                         @if($p->guarantees_description)
