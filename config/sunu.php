@@ -24,6 +24,16 @@ return [
     */
     'default_agent_pin' => env('SUNU_DEFAULT_AGENT_PIN'),
 
+    /*
+    | SUNU-only mode: one business (SUNU). A super admin lands inside SUNU (no separate
+    | super-admin area, no "Switch to Superadmin"), creating or switching business units is
+    | refused, and super-admin tools sit in an "Administration" sidebar group. Set
+    | SUNU_SINGLE_BUSINESS=false for a multi-business deployment.
+    | business_unit_id: SUNU's id; empty = the first active business unit.
+    */
+    'single_business' => (bool) env('SUNU_SINGLE_BUSINESS', true),
+    'business_unit_id' => env('SUNU_BUSINESS_UNIT_ID'),
+
     /** Wrong collection PINs before the PIN is locked. */
     'pin_max_attempts' => 5,
 ];

@@ -47,6 +47,13 @@ class LoginController extends Controller
                 }
             }
 
+            // SUNU-only mode: the super admin works inside SUNU (the only business)
+            if ($user->isSuperAdmin() && \App\Support\SunuBusiness::locked()) {
+                $user->update(['current_business_unit_id' => \App\Support\SunuBusiness::main()->id]);
+
+                return redirect()->intended(route('business.dashboard'));
+            }
+
             // If super admin, redirect to super admin dashboard
             if ($user->isSuperAdmin()) {
                 return redirect()->intended(route('superadmin.dashboard'));

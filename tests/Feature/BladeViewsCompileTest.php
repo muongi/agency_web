@@ -36,6 +36,7 @@ class BladeViewsCompileTest extends TestCase
 
     public function test_superadmin_business_unit_create_page_opens(): void
     {
+        config(['sunu.single_business' => false]); // SUNU-only mode redirects this page (SunuSingleBusinessTest)
         $admin = User::factory()->create(['is_super_admin' => true]);
 
         $this->actingAs($admin)->get(route('superadmin.business-units.create'))->assertOk();

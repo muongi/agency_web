@@ -6,7 +6,9 @@
 <div class="card">
     <div class="toolbar">
         <h1 class="text-accent">{{ __('common.business_units') }}</h1>
+        @unless(\App\Support\SunuBusiness::locked())
         <a href="{{ route('superadmin.business-units.create') }}" class="btn">{{ __('common.create_business_unit') }}</a>
+        @endunless
     </div>
 
     @if($businessUnits->count() > 0)
@@ -75,10 +77,12 @@
                                             <button type="submit" class="btn" style="padding: 6px 12px; font-size: 12px; background: var(--accent);">{{ __('common.register_with_kato') }}</button>
                                         </form>
                                     @endif
+                                    @unless(\App\Support\SunuBusiness::locked())
                                     <form action="{{ route('superadmin.switch-business', $businessUnit->id) }}" method="POST" style="display: inline;">
                                         @csrf
                                         <button type="submit" class="btn btn-sm">{{ __('common.switch_business') }}</button>
                                     </form>
+                                    @endunless
                                 </div>
                             </td>
                         </tr>
@@ -93,7 +97,9 @@
     @else
         <div class="muted-center">
             <p class="mb-20">{{ __('common.no_business_units') }}</p>
+            @unless(\App\Support\SunuBusiness::locked())
             <a href="{{ route('superadmin.business-units.create') }}" class="btn">{{ __('common.create_business_unit') }}</a>
+            @endunless
         </div>
     @endif
 </div>

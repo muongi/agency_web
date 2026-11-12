@@ -29,6 +29,8 @@ class KatoIntegrationTest extends TestCase
         parent::setUp();
         // Core banking is hidden by default (SUNU deployment); these tests cover the banking pages.
         config(['sunu.core_banking' => true]);
+        // These tests create and switch business units (multi-business deployment).
+        config(['sunu.single_business' => false]);
     }
 
     private const KATO_BASE = 'https://kato.test/api/v2/agency';

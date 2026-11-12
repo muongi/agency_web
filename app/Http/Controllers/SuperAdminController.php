@@ -13,6 +13,7 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use App\Support\SunuBusiness;
 
 class SuperAdminController extends Controller
 {
@@ -21,8 +22,20 @@ class SuperAdminController extends Controller
         $this->middleware(['auth', 'superadmin']);
     }
 
+    /** SUNU-only mode: back to SUNU settings with a message (creating / switching is refused). */
+    protected function singleBusinessRefusal(string $action)
+    {
+        Log::info('SUNU_SINGLE_BUSINESS_BLOCKED', ['action' => $action, 'user_id' => auth()->id()]);
+
+        return redirect()->route('superadmin.business-units.edit', SunuBusiness::main()->id)
+            ->with('error', __('common.sunu_single_business_blocked'));
+    }
+
     public function dashboard()
     {
+        if (SunuBusiness::locked()) {
+            return redirect()->route('business.dashboard');
+        }
         $businessUnits = BusinessUnit::withCount('users')->latest()->get();
         $transactionTypesCount = TransactionType::global()->count();
         return view('superadmin.dashboard', compact('businessUnits', 'transactionTypesCount'));
@@ -30,6 +43,9 @@ class SuperAdminController extends Controller
 
     public function createBusinessUnit()
     {
+        if (SunuBusiness::locked()) {
+            return $this->singleBusinessRefusal('create');
+        }
         $coreBankingSystems = CoreBankingSystem::where('is_active', true)->orderBy('name')->get();
         $globalTransactionTypes = TransactionType::global()->active()->orderBy('name')->get();
         return view('superadmin.business-units.create', compact('coreBankingSystems', 'globalTransactionTypes'));
@@ -37,6 +53,9 @@ class SuperAdminController extends Controller
 
     public function storeBusinessUnit(Request $request)
     {
+        if (SunuBusiness::locked()) {
+            return $this->singleBusinessRefusal('store');
+        }
         $validated = $request->validate(array_merge([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -321,6 +340,9 @@ class SuperAdminController extends Controller
 
     public function indexBusinessUnits()
     {
+        if (SunuBusiness::locked()) {
+            return redirect()->route('superadmin.business-units.edit', SunuBusiness::main()->id);
+        }
         $businessUnits = BusinessUnit::with('coreBankingSystem')->withCount('users')->latest()->paginate(15);
         return view('superadmin.business-units.index', compact('businessUnits'));
     }
@@ -329,6 +351,10 @@ class SuperAdminController extends Controller
     {
         $businessUnit = BusinessUnit::findOrFail($businessUnitId);
         $user = auth()->user();
+        if (SunuBusiness::locked() && (int) $businessUnit->id !== (int) SunuBusiness::main()->id) {
+            Log::info('SUNU_SINGLE_BUSINESS_BLOCKED', ['action' => 'switch', 'business_unit_id' => $businessUnit->id, 'user_id' => $user->id]);
+            abort(404);
+        }
 
         if ($user->isSuperAdmin()) {
             $user->update(['current_business_unit_id' => $businessUnitId]);
@@ -348,6 +374,9 @@ class SuperAdminController extends Controller
 
         if (!$user->isSuperAdmin()) {
             abort(403);
+        }
+        if (SunuBusiness::locked()) {
+            return redirect()->route('business.dashboard'); // no separate super-admin area
         }
 
         $user->update(['current_business_unit_id' => null]);

@@ -117,7 +117,31 @@
                         <span>{{ __('common.dashboard') }}</span>
                     </a>
 
-                    @if($user->isSuperAdmin())
+                    @if($user->isSuperAdmin() && config('sunu.single_business') && $user->current_business_unit_id)
+                        {{-- SUNU-only mode: super-admin tools live here (no separate super-admin area) --}}
+                        @php $saOpen = request()->routeIs('superadmin.business-units.*', 'superadmin.sms.*', 'superadmin.user-management.permissions.*'); @endphp
+                        <div class="menu-group" data-group="sunu-admin">
+                            <div class="menu-group-title {{ $saOpen ? 'active' : '' }}" onclick="toggleSubmenu(this)">
+                                <span class="menu-icon"><x-icon name="building" /></span>
+                                <span>{{ __('common.sunu_admin_menu') }}</span>
+                                <span class="menu-toggle {{ $saOpen ? '' : 'collapsed' }}">▼</span>
+                            </div>
+                            <div class="submenu {{ $saOpen ? 'expanded' : 'collapsed' }}">
+                                <a href="{{ route('superadmin.business-units.edit', $user->current_business_unit_id) }}" class="submenu-item {{ request()->routeIs('superadmin.business-units.*') ? 'active' : '' }}">
+                                    {{ __('common.sunu_settings') }}
+                                </a>
+                                <a href="{{ route('superadmin.sms.config.index') }}" class="submenu-item {{ request()->routeIs('superadmin.sms.config.*') ? 'active' : '' }}">
+                                    {{ __('common.sms_configuration') }}
+                                </a>
+                                <a href="{{ route('superadmin.sms.load_credits') }}" class="submenu-item {{ request()->routeIs('superadmin.sms.load_credits', 'superadmin.sms.store_credits') ? 'active' : '' }}">
+                                    {{ __('common.load_sms_credits') }}
+                                </a>
+                                <a href="{{ route('superadmin.user-management.permissions.index') }}" class="submenu-item {{ request()->routeIs('superadmin.user-management.permissions.*') ? 'active' : '' }}">
+                                    {{ __('common.permissions') }}
+                                </a>
+                            </div>
+                        </div>
+                    @elseif($user->isSuperAdmin())
                         <a href="{{ route('superadmin.business-units.index') }}" class="menu-item {{ request()->routeIs('superadmin.business-units.*') ? 'active' : '' }}">
                             <span class="menu-icon"><x-icon name="building" /></span>
                             <span>{{ __('common.business_units') }}</span>
@@ -468,7 +492,7 @@
                         $isSuperAdmin = $user->isSuperAdmin();
                         $hasBusinessUnit = $user->current_business_unit_id !== null;
                     @endphp
-                    @if($isSuperAdmin && $hasBusinessUnit)
+                    @if($isSuperAdmin && $hasBusinessUnit && ! config('sunu.single_business'))
                         <form action="{{ route('superadmin.switch-back') }}" method="POST" style="display: inline;">
                             @csrf
                             <button type="submit" class="btn btn-sm">{{ __('common.switch_to_superadmin') }}</button>

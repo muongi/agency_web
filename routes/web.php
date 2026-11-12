@@ -34,7 +34,7 @@ Route::post('/theme/switch', [\App\Http\Controllers\ThemeController::class, 'swi
 Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', function () {
         $user = auth()->user();
-        if ($user->isSuperAdmin()) {
+        if ($user->isSuperAdmin() && ! \App\Support\SunuBusiness::locked()) {
             return redirect()->route('superadmin.dashboard');
         }
 

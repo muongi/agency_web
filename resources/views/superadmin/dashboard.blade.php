@@ -5,9 +5,11 @@
 @section('content')
 <x-page-header :title="__('common.super_admin') . ' ' . __('common.dashboard')"
                :subtitle="__('common.welcome') . ', ' . auth()->user()->name . '!'">
+    @unless(\App\Support\SunuBusiness::locked())
     <a href="{{ route('superadmin.business-units.create') }}" class="btn">
         <x-icon name="plus" :size="16" /> {{ __('common.create_business_unit') }}
     </a>
+    @endunless
 </x-page-header>
 
 <div class="stat-grid">
@@ -30,10 +32,12 @@
                         <p style="color: var(--text-secondary); font-size: 14px;">{{ $businessUnit->email }}</p>
                     @endif
                 </div>
+                @unless(\App\Support\SunuBusiness::locked())
                 <form action="{{ route('superadmin.switch-business', $businessUnit->id) }}" method="POST" style="display: inline;">
                     @csrf
                     <button type="submit" class="btn btn-sm">{{ __('common.switch_business') }}</button>
                 </form>
+                @endunless
             </div>
         @endforeach
     </div>
