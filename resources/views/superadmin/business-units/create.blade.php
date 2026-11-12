@@ -228,7 +228,6 @@
             </div>
         </div>
 
-        @endif
 
         <div class="form-group" style="margin-top: 30px; padding: 20px; background: var(--bg-secondary); border-radius: 4px; border: 1px solid var(--border-color);">
             <label class="form-label" style="margin-bottom: 15px; color: var(--accent); font-size: 16px;">{{ __('common.modules') }}</label>
